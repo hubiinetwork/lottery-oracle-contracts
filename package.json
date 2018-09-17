@@ -1,0 +1,33 @@
+{
+  "name": "lottery-resolver-contracts",
+  "version": "1.0.0-alpha.1",
+  "description": "Smart contracts for the hubii Lottery Resolver Oracle",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hubiinetwork/lottery-resolver-contracts.git"
+  },
+  "keywords": [
+    "ethereum",
+    "solidity",
+    "javascript",
+    "smart-contract",
+    "blockchain",
+    "truffle-framework"
+  ],
+  "author": "Jens Ivar Jørdre <jensivar@hubii.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hubiinetwork/lottery-resolver-contracts/issues"
+  },
+  "homepage": "https://github.com/hubiinetwork/lottery-resolver-contracts#readme",
+  "dependencies": {
+    "truffle": "^5.0.0-beta.0"
+  }
+}
