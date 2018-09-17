@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node run-tests.js",
+    "test": "npx truffle test",
     "version:compiler": "solcjs --version"
   },
   "repository": {
