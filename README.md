@@ -1,10 +1,10 @@
-# LOTTERY RESOLVER CONTRACTS
+# LOTTERY ORACLE CONTRACTS
 
-## About the Lottery Resolver
+## About the Lottery Oracle
 
-The Lottery Resolver is described in [Simple Lottery Resolver v0.1](https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit?usp=sharing) as a prototype for the nahmii data availability oracle.
+The Lottery Oracle is described in [Simple Lottery Resolver v0.1](https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit?usp=sharing) as a prototype for the nahmii data availability oracle.
 
-This repository contains Solidity smart contracts and auxilliary JavaScript code for the testing and deployment of Lottery Resolver. The implementation is created using [Truffle Framework](https://truffleframework.com/).
+This repository contains Solidity smart contracts and auxilliary JavaScript code for the testing and deployment of Lottery Oracle. The implementation is created using [Truffle Framework](https://truffleframework.com/).
 
 ## About nahmii
 
