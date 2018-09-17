@@ -7,7 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node run-tests.js"
+    "test": "node run-tests.js",
+    "version:compiler": "solcjs --version"
   },
   "repository": {
     "type": "git",
