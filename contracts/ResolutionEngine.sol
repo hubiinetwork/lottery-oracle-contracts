@@ -36,6 +36,7 @@ contract ResolutionEngine is RBACed {
     /// @param _address The concerned address
     function setOracle(address _address) public onlyRoleAccessor(OWNER_ROLE) {
         oracle = Oracle(_address);
+        addRoleAccessorInternal(ORACLE_ROLE, _address);
         emit OracleSet(_address);
     }
 }
