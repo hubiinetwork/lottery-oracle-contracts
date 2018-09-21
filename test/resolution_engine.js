@@ -20,8 +20,9 @@ contract('ResolutionEngine', (accounts) => {
     describe('constructor()', () => {
         it('should test successfully', async () => {
             resolutionEngine.address.should.have.lengthOf(42);
-            (await resolutionEngine.isOwner.call(accounts[0])).should.be.true;
-            (await resolutionEngine.isOwner.call(accounts[1])).should.not.be.true;
+            const ownerRole = await resolutionEngine.OWNER_ROLE.call();
+            (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
+            (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[1])).should.not.be.true;
         });
     });
 

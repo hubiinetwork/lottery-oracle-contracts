@@ -6,25 +6,23 @@
 
 pragma solidity ^0.4.25;
 
-import {Ownable} from "./Ownable.sol";
+import {RBACed} from "./RBACed.sol";
 import {Oracle} from "./Oracle.sol";
 
 /// @title ResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A resolution engine base contract
-contract ResolutionEngine is Ownable {
+contract ResolutionEngine is RBACed {
 
     event OracleSet(address indexed _address);
 
+    string constant public ORACLE_ROLE = "ORACLE";
+
     Oracle public oracle;
 
-    /// @notice `msg.sender` will be added to the set of owners
+    /// @notice `msg.sender` will be added as accessor to the owner role
     constructor() public {
-    }
-
-    modifier onlyOracle() {
-        require(isSetOracle(msg.sender));
-        _;
+        addRoleInternal(ORACLE_ROLE);
     }
 
     /// @notice Gauge whether an address is the one of the set oracle
@@ -36,7 +34,7 @@ contract ResolutionEngine is Ownable {
 
     /// @notice Set the oracle by its address
     /// @param _address The concerned address
-    function setOracle(address _address) public onlyOwner {
+    function setOracle(address _address) public onlyRoleAccessor(OWNER_ROLE) {
         oracle = Oracle(_address);
         emit OracleSet(_address);
     }
