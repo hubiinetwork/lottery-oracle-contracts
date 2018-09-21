@@ -20,8 +20,9 @@ contract('Oracle', (accounts) => {
     describe('constructor()', () => {
         it('should test successfully', async () => {
             oracle.address.should.have.lengthOf(42);
-            (await oracle.isOwner.call(accounts[0])).should.be.true;
-            (await oracle.isOwner.call(accounts[1])).should.not.be.true;
+            const ownerRole = await oracle.OWNER_ROLE.call();
+            (await oracle.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
+            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.not.be.true;
         });
     });
 
@@ -46,7 +47,7 @@ contract('Oracle', (accounts) => {
 
         describe('if called by owner', () => {
             it('should test successfully', async () => {
-                const result = await oracle.addResolutionEngine(engineAddress, {from: accounts[0]});
+                const result = await oracle.addResolutionEngine(engineAddress);
                 result.logs[0].event.should.equal('ResolutionEngineAdded');
                 (await oracle.hasResolutionEngine.call(engineAddress)).should.be.true;
             });
@@ -68,11 +69,11 @@ contract('Oracle', (accounts) => {
 
         describe('if called by owner', () => {
             beforeEach(async () => {
-                await oracle.addResolutionEngine(engineAddress, {from: accounts[0]});
+                await oracle.addResolutionEngine(engineAddress);
             });
 
             it('should test successfully', async () => {
-                const result = await oracle.removeResolutionEngine(engineAddress, {from: accounts[0]});
+                const result = await oracle.removeResolutionEngine(engineAddress);
                 result.logs[0].event.should.equal('ResolutionEngineRemoved');
                 (await oracle.hasResolutionEngine.call(engineAddress)).should.be.false;
             });

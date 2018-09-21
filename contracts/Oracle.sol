@@ -6,7 +6,7 @@
 
 pragma solidity ^0.4.25;
 
-import {Ownable} from "./Ownable.sol";
+import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
 
 /// @title ResolutionEnginesLib
@@ -51,7 +51,7 @@ library ResolutionEnginesLib {
 /// @title Oracle
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A lottery oracle
-contract Oracle is Ownable {
+contract Oracle is RBACed {
     using ResolutionEnginesLib for ResolutionEnginesLib.ResolutionEngines;
 
     event ResolutionEngineAdded(address indexed _address);
@@ -59,27 +59,27 @@ contract Oracle is Ownable {
 
     ResolutionEnginesLib.ResolutionEngines resolutionEngines;
 
-    /// @notice `msg.sender` will be added to the set of owners
+    /// @notice `msg.sender` will be added as accessor to the owner role
     constructor() public {
     }
 
-    /// @notice Gauge whether an address is the one of a registered owner
+    /// @notice Gauge whether an address is the one of a registered resolution engine
     /// @param _address The concerned address
-    /// @return true if address is registered owner, else false
+    /// @return true if address is the one of a registered resolution engine, else false
     function hasResolutionEngine(address _address) public view returns (bool) {
         return resolutionEngines.has(_address);
     }
 
     /// @notice Register a resolution engine by its address
     /// @param _address The concerned address
-    function addResolutionEngine(address _address) public onlyOwner {
+    function addResolutionEngine(address _address) public onlyRoleAccessor(OWNER_ROLE) {
         resolutionEngines.add(_address);
         emit ResolutionEngineAdded(_address);
     }
 
     /// @notice Deregister a resolution engine by its address
     /// @param _address The concerned address
-    function removeResolutionEngine(address _address) public onlyOwner {
+    function removeResolutionEngine(address _address) public onlyRoleAccessor(OWNER_ROLE) {
         resolutionEngines.remove(_address);
         emit ResolutionEngineRemoved(_address);
     }

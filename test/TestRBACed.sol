@@ -6,12 +6,12 @@
 
 pragma solidity ^0.4.25;
 
-import {Ownable} from "../contracts/Ownable.sol";
+import {RBACed} from "../contracts/RBACed.sol";
 
 /// @title TestOwnable
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
-/// @notice An ownable only to be tested on
-contract TestOwnable is Ownable {
+/// @notice An RBACed only to be tested on
+contract TestRBACed is RBACed {
     constructor() public {
     }
 }
