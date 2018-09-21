@@ -1,8 +1,7 @@
-var ConvertLib = artifacts.require("./ConvertLib.sol");
-var MetaCoin = artifacts.require("./MetaCoin.sol");
+const Oracle = artifacts.require('Oracle');
+const ResolutionEngine = artifacts.require('ResolutionEngine');
 
-module.exports = function(deployer) {
-  deployer.deploy(ConvertLib);
-  deployer.link(ConvertLib, MetaCoin);
-  deployer.deploy(MetaCoin);
+module.exports = (deployer) => {
+    deployer.deploy(Oracle);
+    deployer.deploy(ResolutionEngine);
 };
