@@ -31,7 +31,7 @@ contract Ownable {
 
     /// @notice Gauge whether an address is the one of a registered owner
     /// @param _address The concerned address
-    /// @return true if address is registered owner, else false
+    /// @return true if address is the one of a registered owner, else false
     function isOwner(address _address) public view returns (bool) {
         return owners.has(_address);
     }

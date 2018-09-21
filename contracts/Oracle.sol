@@ -63,9 +63,9 @@ contract Oracle is Ownable {
     constructor() public {
     }
 
-    /// @notice Gauge whether an address is the one of a registered owner
+    /// @notice Gauge whether an address is the one of a registered resolution engine
     /// @param _address The concerned address
-    /// @return true if address is registered owner, else false
+    /// @return true if address is the one of a registered resolution engine, else false
     function hasResolutionEngine(address _address) public view returns (bool) {
         return resolutionEngines.has(_address);
     }
