@@ -80,8 +80,10 @@ contract RBACed {
     }
 
     function addRoleInternal(string _role) internal {
-        roles.push(_role);
-        roleIndexMap[role2Key(_role)] = roles.length;
+        if (0 == roleIndexMap[role2Key(_role)]) {
+            roles.push(_role);
+            roleIndexMap[role2Key(_role)] = roles.length;
+        }
     }
 
     function addRoleAccessorInternal(string _role, address _address) internal {
