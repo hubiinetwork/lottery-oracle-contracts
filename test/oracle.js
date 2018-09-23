@@ -15,8 +15,9 @@ chai.use(bnChai(BN));
 chai.should();
 
 const Oracle = artifacts.require('Oracle');
+const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
-contract('Oracle', (accounts) => {
+contract.only('Oracle', (accounts) => {
     let oracle;
 
     beforeEach(async () => {
@@ -83,6 +84,31 @@ contract('Oracle', (accounts) => {
                 result.logs[0].event.should.equal('ResolutionEngineRemoved');
                 (await oracle.hasResolutionEngine.call(engineAddress)).should.be.false;
             });
+        });
+    });
+
+    describe('stakeTokens()', () => {
+        describe('if called on non-registered resolution engine', () => {
+            let resolutionEngineAddress;
+
+            before(() => {
+               resolutionEngineAddress = Wallet.createRandom().address;
+            });
+
+            it('should revert', async () => {
+                oracle.stakeTokens(resolutionEngineAddress, 100, true).should.be.rejected;
+            });
+        });
+
+        describe('if called on registered resolution engine', () => {
+            let mockedResolutionEngine;
+
+            before(async () => {
+                mockedResolutionEngine = await MockedResolutionEngine.new();
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+            });
+
+            it('should test successfully');
         });
     });
 });

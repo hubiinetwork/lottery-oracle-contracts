@@ -67,7 +67,7 @@ contract ResolutionEngine is RBACed {
         emit TokenSet(_token);
     }
 
-    /// @notice For the given phase number stake the amount of tokens at the given status
+    /// @notice For the current phase number stake the amount of tokens at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _wallet The concerned wallet
     /// @param _amount The amount staked
