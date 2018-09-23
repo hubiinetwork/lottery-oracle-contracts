@@ -1,3 +1,9 @@
+/*
+ * Lottery oracle
+ *
+ * Copyright (C) 2017-2018 Hubii AS
+ */
+
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');

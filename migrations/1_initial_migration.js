@@ -1,5 +1,11 @@
-var Migrations = artifacts.require("./Migrations.sol");
+/*
+ * Lottery oracle
+ *
+ * Copyright (C) 2017-2018 Hubii AS
+ */
 
-module.exports = function(deployer) {
-  deployer.deploy(Migrations);
+const Migrations = artifacts.require('Migrations');
+
+module.exports = async (deployer) => {
+  await deployer.deploy(Migrations);
 };

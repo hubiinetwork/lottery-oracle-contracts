@@ -6,12 +6,12 @@
 
 pragma solidity ^0.4.25;
 
-import {RBACed} from "../contracts/RBACed.sol";
+import {ERC20Mintable} from "openzeppelin-solidity/contracts/token/ERC20/ERC20Mintable.sol";
 
-/// @title TestRBACed
+/// @title TestToken
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
-/// @notice An RBACed only to be tested on
-contract TestRBACed is RBACed {
+/// @notice A test token
+contract TestToken is ERC20Mintable {
     constructor() public {
     }
 }
