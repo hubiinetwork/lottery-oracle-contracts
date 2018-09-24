@@ -35,9 +35,11 @@ library ResolutionEnginesLib {
     function remove(ResolutionEngines storage _engines, address _address) internal {
         bytes32 key = address2Key(_address);
         if (_engines.map[key] != 0) {
-            _engines.list[_engines.map[key] - 1] = _engines.list[_engines.list.length - 1];
-            delete _engines.list[_engines.list.length - 1];
-            // TODO Consider whether this statement is obsolete
+            if (_engines.map[key] < _engines.list.length) {
+                _engines.list[_engines.map[key] - 1] = _engines.list[_engines.list.length - 1];
+                _engines.map[address2Key(address(_engines.list[_engines.map[key] - 1]))] = _engines.map[key];
+                delete _engines.list[_engines.list.length - 1];
+            }
             _engines.list.length--;
             _engines.map[key] = 0;
         }
@@ -74,6 +76,16 @@ contract Oracle is RBACed {
     /// @return true if address is the one of a registered resolution engine, else false
     function hasResolutionEngine(address _resolutionEngine) public view returns (bool) {
         return resolutionEngines.has(_resolutionEngine);
+    }
+
+    /// @notice Return the count of registered resolution engines
+    /// @return The count of registered resolution engines
+    function resolutionEnginesCount()
+    public
+    view
+    returns (uint256)
+    {
+        return resolutionEngines.list.length;
     }
 
     /// @notice Register a resolution engine by its address
