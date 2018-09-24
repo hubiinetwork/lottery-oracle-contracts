@@ -56,7 +56,7 @@ contract Oracle is RBACed {
 
     event ResolutionEngineAdded(address indexed _resolutionEngine);
     event ResolutionEngineRemoved(address indexed _resolutionEngine);
-    event TokensStaked(address _resolutionEngine, address _wallet, uint256 _amount, bool _status);
+    event TokensStaked(address _resolutionEngine, address _wallet, bool _status, uint256 _amount);
 
     ResolutionEnginesLib.ResolutionEngines resolutionEngines;
 
@@ -99,16 +99,16 @@ contract Oracle is RBACed {
     /// @notice For the current phase number of the given resolution engine stake the amount of tokens at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _resolutionEngine The concerned resolution engine
+    /// @param _verificationPhaseNumber The verification phase number to stake into
     /// @param _amount The amount staked
     /// @param _status The status staked at
-    function stakeTokens(address _resolutionEngine, uint256 _amount, bool _status)
+    function stakeTokens(address _resolutionEngine, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
     public
     onlyRegisteredResolutionEngine(_resolutionEngine)
     {
-        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
-        bytes4 signature = bytes4(keccak256("receive(address,uint256,bool"));
-        require(address(resolutionEngine).delegatecall(signature, msg.sender, _amount, _status));
+        bytes4 signature = bytes4(keccak256("stakeTokens(address,uint256,bool,uint256)"));
+        require(_resolutionEngine.delegatecall(signature, msg.sender, _verificationPhaseNumber, _status, _amount));
 
-        emit TokensStaked(_resolutionEngine, msg.sender, _amount, _status);
+        emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
     }
 }

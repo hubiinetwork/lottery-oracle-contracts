@@ -15,13 +15,15 @@ chai.use(bnChai(BN));
 chai.should();
 
 const Oracle = artifacts.require('Oracle');
+const TestToken = artifacts.require('TestToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
-contract.only('Oracle', (accounts) => {
-    let oracle;
+contract('Oracle', (accounts) => {
+    let oracle, testToken;
 
     beforeEach(async () => {
         oracle = await Oracle.deployed();
+        testToken = await TestToken.new();
     });
 
     describe('constructor()', () => {
@@ -96,19 +98,31 @@ contract.only('Oracle', (accounts) => {
             });
 
             it('should revert', async () => {
-                oracle.stakeTokens(resolutionEngineAddress, 100, true).should.be.rejected;
+                oracle.stakeTokens(resolutionEngineAddress, 0, true, 100).should.be.rejected;
             });
         });
 
         describe('if called on registered resolution engine', () => {
             let mockedResolutionEngine;
 
-            before(async () => {
+            beforeEach(async () => {
                 mockedResolutionEngine = await MockedResolutionEngine.new();
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[1], 100);
+                await testToken.approve(oracle.address, 100, {from: accounts[1]});
             });
 
-            it('should test successfully');
+            afterEach(async () => {
+                await oracle.removeResolutionEngine(mockedResolutionEngine.address);
+            });
+
+            it('should test successfully', async () => {
+                const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
+                result.logs[0].event.should.equal('TokensStaked');
+                // TODO Solve issue that suggest couple of resolution engines
+                // (await mockedResolutionEngine.stakes.call(accounts[1], 100)).should.be.true;
+            });
         });
     });
 });

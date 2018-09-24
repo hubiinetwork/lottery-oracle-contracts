@@ -16,8 +16,8 @@ library VerificationPhaseLib {
         mapping(bool => mapping(address => uint256)) statusWalletStakeMap;
     }
 
-    function stake(VerificationPhase storage _phase, bool _status,
-        address _wallet, uint256 _amount) internal {
+    function stake(VerificationPhase storage _phase, address _wallet,
+        bool _status, uint256 _amount) internal {
         _phase.statusWalletStakeMap[_status][_wallet] = _amount;
     }
 }
@@ -30,7 +30,7 @@ contract ResolutionEngine is RBACed {
 
     event OracleSet(address indexed _oracle);
     event TokenSet(address indexed _token);
-    event TokensStaked(uint256 _verificationPhaseNumber, address _wallet, uint256 _amount, bool _status);
+    event TokensStaked(uint256 _verificationPhaseNumber, address _wallet, bool _status, uint256 _amount);
 
     string constant public ORACLE_ROLE = "ORACLE";
 
@@ -44,6 +44,11 @@ contract ResolutionEngine is RBACed {
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor() public {
         addRoleInternal(ORACLE_ROLE);
+    }
+
+    modifier onlyCurrentPhaseNumber(uint256 _verificationPhaseNumber) {
+        require(verificationPhaseNumber == _verificationPhaseNumber);
+        _;
     }
 
     /// @notice Set the oracle by its address
@@ -70,15 +75,17 @@ contract ResolutionEngine is RBACed {
     /// @notice For the current phase number stake the amount of tokens at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _wallet The concerned wallet
-    /// @param _amount The amount staked
+    /// @param _verificationPhaseNumber The verification phase number to stake into
     /// @param _status The status staked at
-    function stakeTokens(address _wallet, uint256 _amount, bool _status)
+    /// @param _amount The amount staked
+    function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
     public
     onlyRoleAccessor(ORACLE_ROLE)
+    onlyCurrentPhaseNumber(_verificationPhaseNumber)
     {
         token.transferFrom(_wallet, this, _amount);
 
-        verificationPhaseMap[verificationPhaseNumber].stake(_status, _wallet, _amount);
-        emit TokensStaked(verificationPhaseNumber, _wallet, _amount, _status);
+        verificationPhaseMap[_verificationPhaseNumber].stake(_wallet, _status, _amount);
+        emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
     }
 }

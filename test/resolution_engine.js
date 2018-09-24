@@ -85,6 +85,7 @@ contract('ResolutionEngine', (accounts) => {
     describe('stakeTokens()', () => {
         before(async () => {
             await resolutionEngine.setToken(testToken.address);
+            await resolutionEngine.addRoleAccessor(oracleRole, accounts[1])
 
             await testToken.mint(accounts[2], 100);
             await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
@@ -92,17 +93,19 @@ contract('ResolutionEngine', (accounts) => {
 
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 0, 100, true, {from: accounts[1]}).should.be.rejected;
+                resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called on non-current verification phase number', () => {
+            it('should revert', async () => {
+                resolutionEngine.stakeTokens(accounts[2], 1, true, 100, {from: accounts[1]}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
-            beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(oracleRole, accounts[1], {from: accounts[0]})
-            });
-
             it('should test successfully', async () => {
-                const result = await resolutionEngine.stakeTokens(accounts[2], 100, true, {from: accounts[1]});
+                const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[1]});
                 result.logs[0].event.should.equal('TokensStaked');
             });
         });
