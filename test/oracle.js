@@ -152,7 +152,7 @@ contract('Oracle', (accounts) => {
             it('should test successfully', async () => {
                 const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
                 result.logs[0].event.should.equal('TokensStaked');
-                // TODO Solve issue that suggest couple of resolution engines (
+                // TODO Solve issue that suggest couple of resolution engines (https://github.com/hubiinetwork/lottery-oracle-contracts/issues/17)
                 // (await mockedResolutionEngine.stakes.call(accounts[1], true)).should.eq.BN(100);
             });
         });
