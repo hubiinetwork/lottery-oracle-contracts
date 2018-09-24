@@ -35,9 +35,11 @@ library ResolutionEnginesLib {
     function remove(ResolutionEngines storage _engines, address _address) internal {
         bytes32 key = address2Key(_address);
         if (_engines.map[key] != 0) {
-            _engines.list[_engines.map[key] - 1] = _engines.list[_engines.list.length - 1];
-            delete _engines.list[_engines.list.length - 1];
-            // TODO Consider whether this statement is obsolete
+            if (_engines.map[key] < _engines.list.length) {
+                _engines.list[_engines.map[key] - 1] = _engines.list[_engines.list.length - 1];
+                _engines.map[address2Key(address(_engines.list[_engines.map[key] - 1]))] = _engines.map[key];
+                delete _engines.list[_engines.list.length - 1];
+            }
             _engines.list.length--;
             _engines.map[key] = 0;
         }
@@ -54,8 +56,9 @@ library ResolutionEnginesLib {
 contract Oracle is RBACed {
     using ResolutionEnginesLib for ResolutionEnginesLib.ResolutionEngines;
 
-    event ResolutionEngineAdded(address indexed _address);
-    event ResolutionEngineRemoved(address indexed _address);
+    event ResolutionEngineAdded(address indexed _resolutionEngine);
+    event ResolutionEngineRemoved(address indexed _resolutionEngine);
+    event TokensStaked(address _resolutionEngine, address _wallet, bool _status, uint256 _amount);
 
     ResolutionEnginesLib.ResolutionEngines resolutionEngines;
 
@@ -63,24 +66,61 @@ contract Oracle is RBACed {
     constructor() public {
     }
 
+    modifier onlyRegisteredResolutionEngine(address _resolutionEngine) {
+        require(hasResolutionEngine(_resolutionEngine));
+        _;
+    }
+
     /// @notice Gauge whether an address is the one of a registered resolution engine
-    /// @param _address The concerned address
+    /// @param _resolutionEngine The concerned address
     /// @return true if address is the one of a registered resolution engine, else false
-    function hasResolutionEngine(address _address) public view returns (bool) {
-        return resolutionEngines.has(_address);
+    function hasResolutionEngine(address _resolutionEngine) public view returns (bool) {
+        return resolutionEngines.has(_resolutionEngine);
+    }
+
+    /// @notice Return the count of registered resolution engines
+    /// @return The count of registered resolution engines
+    function resolutionEnginesCount()
+    public
+    view
+    returns (uint256)
+    {
+        return resolutionEngines.list.length;
     }
 
     /// @notice Register a resolution engine by its address
-    /// @param _address The concerned address
-    function addResolutionEngine(address _address) public onlyRoleAccessor(OWNER_ROLE) {
-        resolutionEngines.add(_address);
-        emit ResolutionEngineAdded(_address);
+    /// @param _resolutionEngine The concerned address
+    function addResolutionEngine(address _resolutionEngine)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        resolutionEngines.add(_resolutionEngine);
+        emit ResolutionEngineAdded(_resolutionEngine);
     }
 
     /// @notice Deregister a resolution engine by its address
-    /// @param _address The concerned address
-    function removeResolutionEngine(address _address) public onlyRoleAccessor(OWNER_ROLE) {
-        resolutionEngines.remove(_address);
-        emit ResolutionEngineRemoved(_address);
+    /// @param _resolutionEngine The concerned address
+    function removeResolutionEngine(address _resolutionEngine)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        resolutionEngines.remove(_resolutionEngine);
+        emit ResolutionEngineRemoved(_resolutionEngine);
+    }
+
+    /// @notice For the current phase number of the given resolution engine stake the amount of tokens at the given status
+    /// @dev Client has to do prior approval of the transfer of the given amount
+    /// @param _resolutionEngine The concerned resolution engine
+    /// @param _verificationPhaseNumber The verification phase number to stake into
+    /// @param _amount The amount staked
+    /// @param _status The status staked at
+    function stakeTokens(address _resolutionEngine, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
+    public
+    onlyRegisteredResolutionEngine(_resolutionEngine)
+    {
+        bytes4 signature = bytes4(keccak256("stakeTokens(address,uint256,bool,uint256)"));
+        require(_resolutionEngine.delegatecall(signature, msg.sender, _verificationPhaseNumber, _status, _amount));
+
+        emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
     }
 }
