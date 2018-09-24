@@ -35,41 +35,22 @@ contract ResolutionEngine is RBACed {
     string constant public ORACLE_ROLE = "ORACLE";
 
     Oracle public oracle;
-
     ERC20 public token;
 
     uint256 public verificationPhaseNumber;
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) private verificationPhaseMap;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor() public {
+    constructor(address _oracle, address _token) public {
+        oracle = Oracle(_oracle);
+        token = ERC20(_token);
         addRoleInternal(ORACLE_ROLE);
+        addRoleAccessorInternal(ORACLE_ROLE, _oracle);
     }
 
     modifier onlyCurrentPhaseNumber(uint256 _verificationPhaseNumber) {
         require(verificationPhaseNumber == _verificationPhaseNumber);
         _;
-    }
-
-    /// @notice Set the oracle by its address
-    /// @param _oracle The concerned oracle address
-    function setOracle(address _oracle)
-    public
-    onlyRoleAccessor(OWNER_ROLE)
-    {
-        oracle = Oracle(_oracle);
-        addRoleAccessorInternal(ORACLE_ROLE, _oracle);
-        emit OracleSet(_oracle);
-    }
-
-    /// @notice Set the token by its address
-    /// @param _token The concerned token address
-    function setToken(address _token)
-    public
-    onlyRoleAccessor(OWNER_ROLE)
-    {
-        token = ERC20(_token);
-        emit TokenSet(_token);
     }
 
     /// @notice For the current phase number stake the amount of tokens at the given status
@@ -86,6 +67,7 @@ contract ResolutionEngine is RBACed {
         token.transferFrom(_wallet, this, _amount);
 
         verificationPhaseMap[_verificationPhaseNumber].stake(_wallet, _status, _amount);
+
         emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
     }
 }

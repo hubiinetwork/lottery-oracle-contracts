@@ -13,8 +13,13 @@ contract MockedResolutionEngine {
     event TokensStaked(address _this, uint256 _verificationPhaseNumber, address _wallet, bool _status, uint256 _amount);
 
     mapping(address => mapping(bool => uint256)) public stakes;
+    address public token;
 
     constructor() public {
+    }
+
+    function setToken(address _token) public {
+        token = _token;
     }
 
     function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount) public {

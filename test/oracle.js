@@ -31,7 +31,7 @@ contract('Oracle', (accounts) => {
             oracle.address.should.have.lengthOf(42);
             const ownerRole = await oracle.OWNER_ROLE.call();
             (await oracle.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.not.be.true;
+            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
         });
     });
 

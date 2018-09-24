@@ -18,12 +18,12 @@ contract BountyFund is RBACed {
     event TokensDeposited(address _wallet, uint256 _amount);
 
     ResolutionEngine public resolutionEngine;
-    ERC20 token;
+    ERC20 public token;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _resolutionEngine) {
+    constructor(address _resolutionEngine) public {
         resolutionEngine = ResolutionEngine(_resolutionEngine);
-        token = ERC20(_token);
+        token = ERC20(resolutionEngine.token());
     }
 
     modifier onlyRegisteredResolutionEngine() {
@@ -36,7 +36,6 @@ contract BountyFund is RBACed {
     /// @param _amount The amount to deposit
     function depositTokens(uint256 _amount)
     public
-    onlyRegisteredResolutionEngine(_resolutionEngine)
     {
         token.transferFrom(msg.sender, this, _amount);
         emit TokensDeposited(msg.sender, _amount);
