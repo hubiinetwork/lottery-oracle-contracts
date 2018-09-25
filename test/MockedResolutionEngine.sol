@@ -33,4 +33,8 @@ contract MockedResolutionEngine {
         stakes[_wallet][_status] = _amount;
         emit TokensStaked(address(this), _verificationPhaseNumber, _wallet, _status, _amount);
     }
+
+    function _withdrawTokens(uint256 _amount) public {
+        bountyFund.withdrawTokens(_amount);
+    }
 }

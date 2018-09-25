@@ -23,14 +23,17 @@ contract('BountyFund', (accounts) => {
 
     before(async () => {
         testToken = await TestToken.new();
+
         resolutionEngine = await MockedResolutionEngine.new();
         await resolutionEngine.setToken(testToken.address);
+
         bountyFund = await BountyFund.new(resolutionEngine.address);
     });
 
     describe('constructor()', () => {
         it('initialize successfully', async () => {
             bountyFund.address.should.have.lengthOf(42);
+
             const ownerRole = await bountyFund.OWNER_ROLE.call();
             (await bountyFund.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
             (await bountyFund.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
@@ -57,8 +60,32 @@ contract('BountyFund', (accounts) => {
 
         it('successfully transfer tokens to bounty fund', async () => {
             const result = await bountyFund.depositTokens(100, {from: accounts[2]});
+
             result.logs[0].event.should.equal('TokensDeposited');
             (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(100);
+        });
+    });
+
+    describe('withdrawTokens()', () => {
+        describe('if done by agent not registered as resolution engine', () => {
+            before(async () => {
+                await testToken.mint(bountyFund.address, 100);
+            });
+
+            it('should revert', async () => {
+                bountyFund.withdrawTokens(100).should.be.rejected;
+            });
+        });
+
+        describe('if done by registered resolution engine', () => {
+            before(async () => {
+                await testToken.mint(bountyFund.address, 100);
+            });
+
+            it('successfully transfer tokens to bounty fund', async () => {
+                await resolutionEngine._withdrawTokens(100);
+                (await testToken.balanceOf.call(resolutionEngine.address)).should.eq.BN(100);
+            });
         });
     });
 });
