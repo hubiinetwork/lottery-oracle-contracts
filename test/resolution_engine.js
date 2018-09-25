@@ -14,83 +14,53 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
+const Oracle = artifacts.require('Oracle');
 const ResolutionEngine = artifacts.require('ResolutionEngine');
 const TestToken = artifacts.require('TestToken');
 
 contract('ResolutionEngine', (accounts) => {
-    let resolutionEngine, oracleRole, testToken;
-
-    before(async () => {
-        testToken = await TestToken.new();
-    });
+    let oracleAddress, testToken, resolutionEngine, ownerRole, oracleRole;
 
     beforeEach(async () => {
-        resolutionEngine = await ResolutionEngine.deployed();
-        oracleRole = await resolutionEngine.ORACLE_ROLE();
+        oracleAddress = accounts[1];
+        testToken = await TestToken.new();
+
+        resolutionEngine = await ResolutionEngine.new(oracleAddress, testToken.address);
+
+        ownerRole = await resolutionEngine.OWNER_ROLE.call();
+        oracleRole = await resolutionEngine.ORACLE_ROLE.call();
     });
 
     describe('constructor()', () => {
-        it('should test successfully', async () => {
+        it('should successfully initialize', async () => {
             resolutionEngine.address.should.have.lengthOf(42);
-            const ownerRole = await resolutionEngine.OWNER_ROLE.call();
             (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[1])).should.not.be.true;
+            (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+            (await resolutionEngine.isRoleAccessor.call(oracleRole, accounts[0])).should.be.false;
+            (await resolutionEngine.isRoleAccessor.call(oracleRole, accounts[1])).should.be.true;
         });
     });
 
-    describe('setOracle()', () => {
-        let oracleAddress;
-
-        beforeEach(() => {
-            oracleAddress = Wallet.createRandom().address;
+    describe('setBountyFund()', () => {
+        describe('when called the first time', () => {
+            it('should successfully set the bounty fund', async () => {
+                const result = await resolutionEngine.setBountyFund(accounts[1]);
+                result.logs[0].event.should.equal('BountyFundSet');
+            });
         });
 
-        describe('if called by non-owner', () => {
+        describe('when called the second time', () => {
+            beforeEach(async () => {
+                await resolutionEngine.setBountyFund(accounts[1]);
+            });
+
             it('should revert', async () => {
-                resolutionEngine.setOracle(oracleAddress, {from: accounts[1]}).should.be.rejected;
-            });
-        });
-
-        describe('if called by owner', () => {
-            it('should test successfully', async () => {
-                const result = await resolutionEngine.setOracle(oracleAddress);
-                result.logs[0].event.should.equal('OracleSet');
-                (await resolutionEngine.oracle.call()).should.equal(oracleAddress);
-            });
-        });
-    });
-
-    describe('setToken()', () => {
-        let tokenAddress;
-
-        beforeEach(() => {
-            tokenAddress = Wallet.createRandom().address;
-        });
-
-        describe('if called by non-owner', () => {
-            it('should revert', async () => {
-                resolutionEngine.setToken(tokenAddress, {from: accounts[1]}).should.be.rejected;
-            });
-        });
-
-        describe('if called by owner', () => {
-            it('should test successfully', async () => {
-                const result = await resolutionEngine.setToken(tokenAddress);
-                result.logs[0].event.should.equal('TokenSet');
-                (await resolutionEngine.token.call()).should.equal(tokenAddress);
+                resolutionEngine.setBountyFund(accounts[1]).should.be.rejected;
             });
         });
     });
 
     describe('stakeTokens()', () => {
-        before(async () => {
-            await resolutionEngine.setToken(testToken.address);
-            await resolutionEngine.addRoleAccessor(oracleRole, accounts[1])
-
-            await testToken.mint(accounts[2], 100);
-            await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
-        });
-
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
                 resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
@@ -104,7 +74,12 @@ contract('ResolutionEngine', (accounts) => {
         });
 
         describe('if called by oracle', () => {
-            it('should test successfully', async () => {
+            beforeEach(async () => {
+                await testToken.mint(accounts[2], 100);
+                await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
+            });
+
+            it('should successfully stake tokens', async () => {
                 const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[1]});
                 result.logs[0].event.should.equal('TokensStaked');
             });

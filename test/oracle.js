@@ -31,7 +31,7 @@ contract('Oracle', (accounts) => {
             oracle.address.should.have.lengthOf(42);
             const ownerRole = await oracle.OWNER_ROLE.call();
             (await oracle.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.not.be.true;
+            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
         });
     });
 
@@ -152,7 +152,7 @@ contract('Oracle', (accounts) => {
             it('should test successfully', async () => {
                 const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
                 result.logs[0].event.should.equal('TokensStaked');
-                // TODO Solve issue that suggest couple of resolution engines (
+                // TODO Solve issue that suggest couple of resolution engines (https://github.com/hubiinetwork/lottery-oracle-contracts/issues/17)
                 // (await mockedResolutionEngine.stakes.call(accounts[1], true)).should.eq.BN(100);
             });
         });
