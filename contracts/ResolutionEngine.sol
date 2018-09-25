@@ -8,6 +8,7 @@ pragma solidity ^0.4.25;
 
 import {RBACed} from "./RBACed.sol";
 import {Oracle} from "./Oracle.sol";
+import {BountyFund} from "./BountyFund.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 library VerificationPhaseLib {
@@ -30,12 +31,14 @@ contract ResolutionEngine is RBACed {
 
     event OracleSet(address indexed _oracle);
     event TokenSet(address indexed _token);
+    event BountyFundSet(address indexed _bountyFund);
     event TokensStaked(uint256 _verificationPhaseNumber, address _wallet, bool _status, uint256 _amount);
 
     string constant public ORACLE_ROLE = "ORACLE";
 
     Oracle public oracle;
     ERC20 public token;
+    BountyFund public bountyFund;
 
     uint256 public verificationPhaseNumber;
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) private verificationPhaseMap;
@@ -51,6 +54,15 @@ contract ResolutionEngine is RBACed {
     modifier onlyCurrentPhaseNumber(uint256 _verificationPhaseNumber) {
         require(verificationPhaseNumber == _verificationPhaseNumber);
         _;
+    }
+
+    /// @notice Set the bounty fund of this resolution engine
+    /// @dev This function can only be called once
+    /// @param _bountyFund The address of the concerned bounty fund
+    function setBountyFund(address _bountyFund) public {
+        require(address(0) == address(bountyFund));
+        bountyFund = BountyFund(_bountyFund);
+        emit BountyFundSet(_bountyFund);
     }
 
     /// @notice For the current phase number stake the amount of tokens at the given status

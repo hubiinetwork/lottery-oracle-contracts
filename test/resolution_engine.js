@@ -21,21 +21,42 @@ const TestToken = artifacts.require('TestToken');
 contract('ResolutionEngine', (accounts) => {
     let oracleAddress, testToken, resolutionEngine, ownerRole, oracleRole;
 
-    before(async () => {
+    beforeEach(async () => {
         oracleAddress = accounts[1];
         testToken = await TestToken.new();
+
         resolutionEngine = await ResolutionEngine.new(oracleAddress, testToken.address);
+
         ownerRole = await resolutionEngine.OWNER_ROLE.call();
         oracleRole = await resolutionEngine.ORACLE_ROLE.call();
     });
 
     describe('constructor()', () => {
-        it('should test successfully', async () => {
+        it('should successfully initialize', async () => {
             resolutionEngine.address.should.have.lengthOf(42);
             (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
             (await resolutionEngine.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
             (await resolutionEngine.isRoleAccessor.call(oracleRole, accounts[0])).should.be.false;
             (await resolutionEngine.isRoleAccessor.call(oracleRole, accounts[1])).should.be.true;
+        });
+    });
+
+    describe('setBountyFund()', () => {
+        describe('when called the first time', () => {
+            it('should successfully set the bounty fund', async () => {
+                const result = await resolutionEngine.setBountyFund(accounts[1]);
+                result.logs[0].event.should.equal('BountyFundSet');
+            });
+        });
+
+        describe('when called the second time', () => {
+            beforeEach(async () => {
+                await resolutionEngine.setBountyFund(accounts[1]);
+            });
+
+            it('should revert', async () => {
+                resolutionEngine.setBountyFund(accounts[1]).should.be.rejected;
+            });
         });
     });
 
@@ -53,12 +74,12 @@ contract('ResolutionEngine', (accounts) => {
         });
 
         describe('if called by oracle', () => {
-            before(async () => {
+            beforeEach(async () => {
                 await testToken.mint(accounts[2], 100);
                 await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
             });
 
-            it('should test successfully', async () => {
+            it('should successfully stake tokens', async () => {
                 const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[1]});
                 result.logs[0].event.should.equal('TokensStaked');
             });
