@@ -22,10 +22,10 @@ contract('BountyFund', (accounts) => {
     let testToken, bountyFund, resolutionEngine;
 
     before(async () => {
+        const oracle = Wallet.createRandom().address;
         testToken = await TestToken.new();
 
-        resolutionEngine = await MockedResolutionEngine.new();
-        await resolutionEngine.setToken(testToken.address);
+        resolutionEngine = await MockedResolutionEngine.new(oracle, testToken.address);
 
         bountyFund = await BountyFund.new(resolutionEngine.address);
     });
@@ -88,7 +88,7 @@ contract('BountyFund', (accounts) => {
 
             describe('if fraction is too large', () => {
                 before(async () => {
-                    fraction = partsPer.mul(web3.utils.toBN(2));
+                    fraction = partsPer.muln(2);
                 });
 
                 it('should revert', async () => {
@@ -101,7 +101,7 @@ contract('BountyFund', (accounts) => {
 
                 before(async () => {
                     balanceBefore = await testToken.balanceOf(bountyFund.address);
-                    fraction = partsPer.div(web3.utils.toBN(2));
+                    fraction = partsPer.divn(2);
                 });
 
                 it('should successfully transfer tokens to bounty fund', async () => {

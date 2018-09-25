@@ -16,4 +16,3 @@ module.exports = async (deployer) => {
     await deployer.deploy(ResolutionEngine, Oracle.address, Wallet.createRandom().address);
     await deployer.deploy(BountyFund, ResolutionEngine.address);
 };
-

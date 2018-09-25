@@ -94,7 +94,10 @@ contract Oracle is RBACed {
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
+        // Add resolution engine
         resolutionEngines.add(_resolutionEngine);
+
+        // Emit event
         emit ResolutionEngineAdded(_resolutionEngine);
     }
 
@@ -104,7 +107,10 @@ contract Oracle is RBACed {
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
+        // Remove resolution engine
         resolutionEngines.remove(_resolutionEngine);
+
+        // Emit event
         emit ResolutionEngineRemoved(_resolutionEngine);
     }
 
@@ -118,9 +124,11 @@ contract Oracle is RBACed {
     public
     onlyRegisteredResolutionEngine(_resolutionEngine)
     {
+        // Call resolution engine stake tokens by means of delegate call
         bytes4 signature = bytes4(keccak256("stakeTokens(address,uint256,bool,uint256)"));
         require(_resolutionEngine.delegatecall(signature, msg.sender, _verificationPhaseNumber, _status, _amount));
 
+        // Emit event
         emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
     }
 }

@@ -96,7 +96,7 @@ contract('Oracle', (accounts) => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
                     (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
-                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.sub(web3.utils.toBN(1)));
+                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.subn(1));
                 });
             });
 
@@ -115,7 +115,7 @@ contract('Oracle', (accounts) => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
                     (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
-                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.sub(web3.utils.toBN(1)));
+                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.subn(1));
                 });
             });
         });
@@ -138,7 +138,7 @@ contract('Oracle', (accounts) => {
             let mockedResolutionEngine;
 
             beforeEach(async () => {
-                mockedResolutionEngine = await MockedResolutionEngine.new();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, testToken.address);
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
                 await testToken.mint(accounts[1], 100);
