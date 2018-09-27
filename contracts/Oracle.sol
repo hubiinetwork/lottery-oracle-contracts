@@ -114,7 +114,8 @@ contract Oracle is RBACed {
         emit ResolutionEngineRemoved(_resolutionEngine);
     }
 
-    /// @notice For the current phase number of the given resolution engine stake the amount of tokens at the given status
+    /// @notice For the current phase number of the given resolution engine stake the amount of tokens
+    /// at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _resolutionEngine The concerned resolution engine
     /// @param _verificationPhaseNumber The verification phase number to stake into

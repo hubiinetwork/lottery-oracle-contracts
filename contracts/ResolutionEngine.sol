@@ -146,9 +146,11 @@ contract ResolutionEngine is RBACed {
     }
 
     /// @notice For the current phase number stake the amount of tokens at the given status
-    /// @dev Client has to do prior approval of the transfer of the given amount. The function can only be called by oracle.
+    /// @dev Client has to do prior approval of the transfer of the given amount. The function can only
+    /// be called by oracle.
     /// @param _wallet The concerned wallet
-    /// @param _verificationPhaseNumber The verification phase number to stake into, which can only be the current verification phase number
+    /// @param _verificationPhaseNumber The verification phase number to stake into, which can only be
+    /// the current verification phase number
     /// @param _status The status staked at
     /// @param _amount The amount staked
     function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
@@ -159,7 +161,7 @@ contract ResolutionEngine is RBACed {
         // Transfer tokens to this
         token.transferFrom(_wallet, this, _amount);
 
-        // Update stats
+        // Update metrics
         verificationPhaseMap[_verificationPhaseNumber].stake(_wallet, _status, _amount);
         walletAmountMap[_wallet] = walletAmountMap[_wallet].add(_amount);
         blockAmountMap[block.number] = blockAmountMap[block.number].add(_amount);
@@ -168,16 +170,16 @@ contract ResolutionEngine is RBACed {
         emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
     }
 
-    /// @notice Get the stats for the given verification phase number
+    /// @notice Get the metrics for the given verification phase number
     /// @dev Reverts if provided verification phase number is higher than current verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    function statsByVerificationPhaseNumber(uint256 _verificationPhaseNumber)
+    function metricsByVerificationPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
-    returns (VerificationPhaseLib.State state, uint256 trueAmount, uint256 falseAmount, uint256 amount,
-        uint256 numberOfWallets, uint256 startBlock, uint256 endBlock,
-        uint256 numberOfBlocks, uint256 bounty)
+    returns (VerificationPhaseLib.State state, uint256 trueAmount, uint256 falseAmount,
+        uint256 amount, uint256 numberOfWallets, uint256 startBlock,
+        uint256 endBlock, uint256 numberOfBlocks, uint256 bounty)
     {
         state = verificationPhaseMap[_verificationPhaseNumber].state;
         trueAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[true];
@@ -190,11 +192,11 @@ contract ResolutionEngine is RBACed {
         bounty = verificationPhaseMap[_verificationPhaseNumber].bounty;
     }
 
-    /// @notice Get the stats for the given verification phase number and wallet
+    /// @notice Get the metrics for the given verification phase number and wallet
     /// @dev Reverts if provided verification phase number is higher than current verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _wallet The address of the concerned wallet
-    function statsByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet)
+    function metricsByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet)
     public
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
@@ -203,9 +205,9 @@ contract ResolutionEngine is RBACed {
         amount = verificationPhaseMap[_verificationPhaseNumber].walletAmountMap[_wallet];
     }
 
-    /// @notice Get the stats for the wallet
+    /// @notice Get the metrics for the wallet
     /// @param _wallet The address of the concerned wallet
-    function statsByWallet(address _wallet)
+    function metricsByWallet(address _wallet)
     public
     view
     returns (uint256 amount)
@@ -213,10 +215,10 @@ contract ResolutionEngine is RBACed {
         amount = walletAmountMap[_wallet];
     }
 
-    /// @notice Get the stats for the block
+    /// @notice Get the metrics for the block
     /// @dev Reverts if provided block number is higher than current block number
     /// @param _blockNumber The concerned block number
-    function statsByBlockNumber(uint256 _blockNumber)
+    function metricsByBlockNumber(uint256 _blockNumber)
     public
     view
     onlyCurrentOrEarlierBlockNumber(_blockNumber)

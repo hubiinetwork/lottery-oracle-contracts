@@ -138,16 +138,16 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
-    describe('statsByVerificationPhaseNumber()', () => {
+    describe('metricsByVerificationPhaseNumber()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.statsByVerificationPhaseNumber(1).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumber(1).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
-            it('should return stats of verification phase number', async () => {
-                const result = await resolutionEngine.statsByVerificationPhaseNumber(0);
+            it('should return metrics of verification phase number', async () => {
+                const result = await resolutionEngine.metricsByVerificationPhaseNumber(0);
                 result.state.should.exist.and.eq.BN(0);
                 result.trueAmount.should.exist.and.eq.BN(0);
                 result.falseAmount.should.exist.and.eq.BN(0);
@@ -161,29 +161,29 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
-    describe('statsByVerificationPhaseNumberAndWallet()', () => {
+    describe('metricsByVerificationPhaseNumberAndWallet()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.statsByVerificationPhaseNumberAndWallet(1, Wallet.createRandom().address).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, Wallet.createRandom().address).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
-            it('should return stats of verification phase number and wallet', async () => {
-                const result = await resolutionEngine.statsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
+            it('should return metrics of verification phase number and wallet', async () => {
+                const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
                 result.should.exist.and.eq.BN(0);
             });
         });
     });
 
-    describe('statsByWallet()', () => {
-        it('should return stats of wallet', async () => {
-            const result = await resolutionEngine.statsByWallet(Wallet.createRandom().address);
+    describe('metricsByWallet()', () => {
+        it('should return metrics of wallet', async () => {
+            const result = await resolutionEngine.metricsByWallet(Wallet.createRandom().address);
             result.should.exist.and.eq.BN(0);
         });
     });
 
-    describe('statsByBlockNumber()', () => {
+    describe('metricsByBlockNumber()', () => {
         describe('if block number is too large', () => {
             let blockNumber;
 
@@ -192,13 +192,13 @@ contract('ResolutionEngine', (accounts) => {
             });
 
             it('should revert', async () => {
-                resolutionEngine.statsByBlockNumber(blockNumber * 2).should.be.rejected;
+                resolutionEngine.metricsByBlockNumber(blockNumber * 2).should.be.rejected;
             });
         });
 
         describe('if block number is within bounds', () => {
-            it('should return stats of block number', async () => {
-                const result = await resolutionEngine.statsByBlockNumber(0);
+            it('should return metrics of block number', async () => {
+                const result = await resolutionEngine.metricsByBlockNumber(0);
                 result.should.exist.and.eq.BN(0);
             });
         });
@@ -221,7 +221,7 @@ contract('ResolutionEngine', (accounts) => {
             it('should successfully open the verification phase', async () => {
                 await mockedResolutionEngine._openVerificationPhase();
 
-                const result = await mockedResolutionEngine.statsByVerificationPhaseNumber(0);
+                const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber(0);
                 result.startBlock.should.exist.and.be.gt.BN(0);
                 result.endBlock.should.exist.and.eq.BN(0);
                 result.numberOfBlocks.should.exist.and.be.gt.BN(0);
@@ -258,7 +258,7 @@ contract('ResolutionEngine', (accounts) => {
         it('should successfully close the verification phase', async () => {
             await mockedResolutionEngine._closeVerificationPhase();
 
-            const result = await mockedResolutionEngine.statsByVerificationPhaseNumber(0);
+            const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber(0);
             result.startBlock.should.exist.and.be.gt.BN(0);
             result.endBlock.should.exist.and.be.gt.BN(0);
             result.numberOfBlocks.should.exist.and.be.gte.BN(0);
