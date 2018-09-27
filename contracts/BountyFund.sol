@@ -17,19 +17,21 @@ import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract BountyFund is RBACed {
     using SafeMath for uint256;
 
-    event TokensDeposited(address _wallet, uint256 _amount, uint256 _balance);
-    event TokensWithdrawn(address _wallet, uint256 _amount, uint256 _balance);
+    event TokensDeposited(address indexed _wallet, uint256 _amount, uint256 _balance);
+    event TokensWithdrawn(address indexed _wallet, uint256 _amount, uint256 _balance);
 
-    uint256 constant public PARTS_PER = 1e2;
+    uint256 constant public PARTS_PER = 1e18;
 
     ResolutionEngine public resolutionEngine;
     ERC20 public token;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _resolutionEngine) public {
+        // Initialize resolution engine
         resolutionEngine = ResolutionEngine(_resolutionEngine);
         resolutionEngine.setBountyFund(this);
 
+        // Initialize token
         token = ERC20(resolutionEngine.token());
     }
 
@@ -44,7 +46,10 @@ contract BountyFund is RBACed {
     function depositTokens(uint256 _amount)
     public
     {
+        // Transfer tokens to this
         token.transferFrom(msg.sender, this, _amount);
+
+        // Emit event
         emit TokensDeposited(msg.sender, _amount, token.balanceOf(this));
     }
 
@@ -54,11 +59,18 @@ contract BountyFund is RBACed {
     function withdrawTokens(uint256 _fraction)
     public
     onlyRegisteredResolutionEngine
+    returns (uint256)
     {
+        // Calculate amount to transfer
         uint256 amount = token.balanceOf(this).mul(_fraction).div(PARTS_PER);
 
+        // Transfer tokens to sender
         token.transfer(msg.sender, amount);
 
+        // Emit event
         emit TokensWithdrawn(msg.sender, amount, token.balanceOf(this));
+
+        // Return calculated amount
+        return amount;
     }
 }

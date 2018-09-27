@@ -26,7 +26,10 @@ contract RBACed {
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor() public {
+        // Add role
         addRoleInternal(OWNER_ROLE);
+
+        // Add role accessor
         addRoleAccessorInternal(OWNER_ROLE, msg.sender);
     }
 
@@ -51,7 +54,10 @@ contract RBACed {
     /// @notice Add role
     /// @param _role The concerned role
     function addRole(string _role) public onlyRoleAccessor(OWNER_ROLE) {
+        // Add role
         addRoleInternal(_role);
+
+        // Emit event
         emit RoleAdded(_role);
     }
 
@@ -67,7 +73,10 @@ contract RBACed {
     /// @param _role The concerned role
     /// @param _address The concerned address
     function addRoleAccessor(string _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+        // Add role accessor
         addRoleAccessorInternal(_role, _address);
+
+        // Emit event
         emit RoleAccessorAdded(_role, _address);
     }
 
@@ -75,7 +84,10 @@ contract RBACed {
     /// @param _role The concerned role
     /// @param _address The concerned address
     function removeRoleAccessor(string _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+        // Remove role accessor
         roleAccessorsMap[role2Key(_role)].remove(_address);
+
+        // Emit event
         emit RoleAccessorRemoved(_role, _address);
     }
 
