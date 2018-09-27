@@ -25,8 +25,8 @@ library VerificationPhaseLib {
         mapping(address => bool) walletStakedMap;
         uint256 stakingWallets;
 
-        mapping(address => uint256) walletAmountMap;
-        mapping(uint256 => uint256) blockAmountMap;
+        mapping(address => mapping(bool => uint256)) walletStatusAmountMap;
+        mapping(uint256 => mapping(bool => uint256)) blockStatusAmountMap;
 
         uint256 bounty;
         uint256 startBlock;
@@ -44,7 +44,7 @@ library VerificationPhaseLib {
         _phase.endBlock = block.number;
     }
 
-    function stake(VerificationPhase storage _phase, address _wallet,
+    function updateMetrics(VerificationPhase storage _phase, address _wallet,
         bool _status, uint256 _amount) internal {
 
         _phase.statusAmountMap[_status] = _phase.statusAmountMap[_status].add(_amount);
@@ -54,8 +54,8 @@ library VerificationPhaseLib {
             _phase.stakingWallets++;
         }
 
-        _phase.walletAmountMap[_wallet] = _phase.walletAmountMap[_wallet].add(_amount);
-        _phase.blockAmountMap[block.number] = _phase.blockAmountMap[block.number].add(_amount);
+        _phase.walletStatusAmountMap[_wallet][_status] = _phase.walletStatusAmountMap[_wallet][_status].add(_amount);
+        _phase.blockStatusAmountMap[block.number][_status] = _phase.blockStatusAmountMap[block.number][_status].add(_amount);
     }
 }
 
@@ -83,8 +83,8 @@ contract ResolutionEngine is RBACed {
 
     uint256 public verificationPhaseNumber;
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) private verificationPhaseMap;
-    mapping(address => uint256) private walletAmountMap;
-    mapping(uint256 => uint256) private blockAmountMap;
+    mapping(address => mapping(bool => uint256)) private walletStatusAmountMap;
+    mapping(uint256 => mapping(bool => uint256)) private blockStatusAmountMap;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _token) public {
@@ -162,9 +162,7 @@ contract ResolutionEngine is RBACed {
         token.transferFrom(_wallet, this, _amount);
 
         // Update metrics
-        verificationPhaseMap[_verificationPhaseNumber].stake(_wallet, _status, _amount);
-        walletAmountMap[_wallet] = walletAmountMap[_wallet].add(_amount);
-        blockAmountMap[block.number] = blockAmountMap[block.number].add(_amount);
+        updateMetrics(_wallet, _verificationPhaseNumber, _status, _amount);
 
         // Emit event
         emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
@@ -200,9 +198,11 @@ contract ResolutionEngine is RBACed {
     public
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
-    returns (uint256 amount)
+    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
     {
-        amount = verificationPhaseMap[_verificationPhaseNumber].walletAmountMap[_wallet];
+        trueAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][true];
+        falseAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][false];
+        amount = trueAmount.add(falseAmount);
     }
 
     /// @notice Get the metrics for the wallet
@@ -210,9 +210,11 @@ contract ResolutionEngine is RBACed {
     function metricsByWallet(address _wallet)
     public
     view
-    returns (uint256 amount)
+    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
     {
-        amount = walletAmountMap[_wallet];
+        trueAmount = walletStatusAmountMap[_wallet][true];
+        falseAmount = walletStatusAmountMap[_wallet][false];
+        amount = trueAmount.add(falseAmount);
     }
 
     /// @notice Get the metrics for the block
@@ -222,9 +224,11 @@ contract ResolutionEngine is RBACed {
     public
     view
     onlyCurrentOrEarlierBlockNumber(_blockNumber)
-    returns (uint256 amount)
+    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
     {
-        amount = blockAmountMap[_blockNumber];
+        trueAmount = blockStatusAmountMap[_blockNumber][true];
+        falseAmount = blockStatusAmountMap[_blockNumber][false];
+        amount = trueAmount.add(falseAmount);
     }
 
     /// @notice Open verification phase
@@ -255,5 +259,16 @@ contract ResolutionEngine is RBACed {
 
         // Bump verification phase number
         verificationPhaseNumber++;
+    }
+
+    /// @notice Update the metrics
+    /// @param _wallet The concerned wallet
+    /// @param _verificationPhaseNumber The verification phase number to stake into
+    /// @param _status The status staked at
+    /// @param _amount The amount staked
+    function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount) private {
+        walletStatusAmountMap[_wallet][_status] = walletStatusAmountMap[_wallet][_status].add(_amount);
+        blockStatusAmountMap[block.number][_status] = blockStatusAmountMap[block.number][_status].add(_amount);
+        verificationPhaseMap[_verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
     }
 }

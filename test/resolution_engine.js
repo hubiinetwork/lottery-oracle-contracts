@@ -171,7 +171,9 @@ contract('ResolutionEngine', (accounts) => {
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number and wallet', async () => {
                 const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
-                result.should.exist.and.eq.BN(0);
+                result.trueAmount.should.exist.and.eq.BN(0);
+                result.falseAmount.should.exist.and.eq.BN(0);
+                result.amount.should.exist.and.eq.BN(0);
             });
         });
     });
@@ -179,7 +181,9 @@ contract('ResolutionEngine', (accounts) => {
     describe('metricsByWallet()', () => {
         it('should return metrics of wallet', async () => {
             const result = await resolutionEngine.metricsByWallet(Wallet.createRandom().address);
-            result.should.exist.and.eq.BN(0);
+            result.trueAmount.should.exist.and.eq.BN(0);
+            result.falseAmount.should.exist.and.eq.BN(0);
+            result.amount.should.exist.and.eq.BN(0);
         });
     });
 
@@ -199,7 +203,9 @@ contract('ResolutionEngine', (accounts) => {
         describe('if block number is within bounds', () => {
             it('should return metrics of block number', async () => {
                 const result = await resolutionEngine.metricsByBlockNumber(0);
-                result.should.exist.and.eq.BN(0);
+                result.trueAmount.should.exist.and.eq.BN(0);
+                result.falseAmount.should.exist.and.eq.BN(0);
+                result.amount.should.exist.and.eq.BN(0);
             });
         });
     });
