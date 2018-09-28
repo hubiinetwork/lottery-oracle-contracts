@@ -74,11 +74,7 @@ contract ResolutionEngine is RBACed {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
-    event OracleSet(address indexed _oracle);
-    event TokenSet(address indexed _token);
-    event BountyFundSet(address _bountyFund);
-    event BountyFractionSet(uint256 _bountyFraction);
-    event TokensStaked(uint256 indexed _verificationPhaseNumber, address indexed _wallet, bool _status, uint256 _amount);
+    event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status, uint256 _amount);
     event BountyWithdrawn(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
@@ -137,32 +133,29 @@ contract ResolutionEngine is RBACed {
         _;
     }
 
-    /// @notice For the current phase number stake the amount of tokens at the given status
-    /// @dev Client has to do prior approval of the transfer of the given amount. The function can only
-    /// be called by oracle.
+    /// @notice Update metrics following a stake operation in the orcle
+    /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
-    /// @param _verificationPhaseNumber The verification phase number to stake into, which can only be
+    /// @param _verificationPhaseNumber The verification phase number whose metrics will be updated, which can only be
     /// the current verification phase number
     /// @param _status The status staked at
     /// @param _amount The amount staked
-    function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
+    function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
     public
     onlyRoleAccessor(ORACLE_ROLE)
     onlyCurrentPhaseNumber(_verificationPhaseNumber)
     {
-        // Transfer tokens to this
-        token.transferFrom(_wallet, this, _amount);
-
         // Update metrics
-        updateMetrics(_wallet, _verificationPhaseNumber, _status, _amount);
+        walletStatusAmountMap[_wallet][_status] = walletStatusAmountMap[_wallet][_status].add(_amount);
+        blockStatusAmountMap[block.number][_status] = blockStatusAmountMap[block.number][_status].add(_amount);
+        verificationPhaseMap[verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
 
         //        if (resolutionCriteriaMet()) {
         //            closeVerificationPhase();
         //            openVerificationPhase();
         //        }
 
-        // Emit event
-        emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
+        emit MetricsUpdated(_wallet, _verificationPhaseNumber, _status, _amount);
     }
 
     /// @notice Get the metrics for the given verification phase number
@@ -304,15 +297,4 @@ contract ResolutionEngine is RBACed {
     //
     //        // TODO Execute the payout
     //    }
-
-    /// @notice Update the metrics
-    /// @param _wallet The concerned wallet
-    /// @param _verificationPhaseNumber The verification phase number to stake into
-    /// @param _status The status staked at
-    /// @param _amount The stakeAmount staked
-    function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount) private {
-        walletStatusAmountMap[_wallet][_status] = walletStatusAmountMap[_wallet][_status].add(_amount);
-        blockStatusAmountMap[block.number][_status] = blockStatusAmountMap[block.number][_status].add(_amount);
-        verificationPhaseMap[_verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
-    }
 }

@@ -28,7 +28,7 @@ contract('ResolutionEngine', (accounts) => {
         testToken = await TestToken.new();
 
         bountyFund = await BountyFund.new(testToken.address);
-        testToken.mint(bountyFund.address, 100);
+        await testToken.mint(bountyFund.address, 100);
 
         const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
         resolutionEngine = await ResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
@@ -47,28 +47,23 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
-    describe('stakeTokens()', () => {
+    describe('updateMetrics()', () => {
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
+                resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
             });
         });
 
         describe('if called on non-current verification phase number', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 1, true, 100, {from: oracle}).should.be.rejected;
+                resolutionEngine.updateMetrics(accounts[2], 1, true, 100, {from: oracle}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
-            beforeEach(async () => {
-                await testToken.mint(accounts[2], 100);
-                await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
-            });
-
-            it('should successfully stake tokens', async () => {
-                const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: oracle});
-                result.logs[0].event.should.equal('TokensStaked');
+            it('should successfully update metrics', async () => {
+                const result = await resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: oracle});
+                result.logs[0].event.should.equal('MetricsUpdated');
             });
         });
     });
@@ -151,7 +146,7 @@ contract('ResolutionEngine', (accounts) => {
 
         beforeEach(async () => {
             bountyFund = await BountyFund.new(testToken.address);
-            testToken.mint(bountyFund.address, 100);
+            await testToken.mint(bountyFund.address, 100);
 
             const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
             mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
@@ -172,7 +167,7 @@ contract('ResolutionEngine', (accounts) => {
 
             beforeEach(async () => {
                 bountyFund = await BountyFund.new(testToken.address);
-                testToken.mint(bountyFund.address, 100);
+                await testToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
@@ -187,18 +182,18 @@ contract('ResolutionEngine', (accounts) => {
     describe('closeVerificationPhase()', () => {
         let mockedResolutionEngine, verificationPhaseNumberBefore, bountyBalanceBefore;
 
-        beforeEach(async () => {
-            bountyFund = await BountyFund.new(testToken.address);
-            testToken.mint(bountyFund.address, 100);
-
-            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
-
-            verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
-            bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
-        });
-
         describe('if verification status is unchanged', () => {
+            beforeEach(async () => {
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 100);
+
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+
+                verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
+                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
+            });
+
             it('should successfully close the verification phase without toggling verification status', async () => {
                 await mockedResolutionEngine._closeVerificationPhase();
 
@@ -216,9 +211,21 @@ contract('ResolutionEngine', (accounts) => {
 
         describe('if verification status is changed', () => {
             beforeEach(async () => {
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 100);
+
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
                 await testToken.mint(accounts[2], 100);
-                await testToken.approve(mockedResolutionEngine.address, 100, {from: accounts[2]});
-                await mockedResolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: oracle});
+                await testToken.approve(oracle.address, 100, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[2]});
+
+                verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
+                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
             });
 
             it('should successfully close the verification phase and toggle verification status', async () => {

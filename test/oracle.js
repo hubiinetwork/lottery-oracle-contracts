@@ -135,8 +135,8 @@ contract('Oracle', (accounts) => {
             });
         });
 
-        describe.skip('if called on registered resolution engine', () => {
-            let mockedResolutionEngine/*, balanceBefore*/;
+        describe('if called on registered resolution engine', () => {
+            let mockedResolutionEngine, balanceBefore;
 
             beforeEach(async () => {
                 oracle = await Oracle.new();
@@ -152,17 +152,17 @@ contract('Oracle', (accounts) => {
                 await testToken.mint(accounts[1], 100);
                 await testToken.approve(oracle.address, 100, {from: accounts[1]});
 
+                balanceBefore = await testToken.balanceOf.call(accounts[1]);
             });
 
             // TODO Solve issue that suggest that test tokens are not transferred to resolution engine through delegate call
             it('should successfully stake tokens', async () => {
-                // balanceBefore = await testToken.balanceOf.call(accounts[1]);
 
                 const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                // (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
+                (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
             });
         });
     });
