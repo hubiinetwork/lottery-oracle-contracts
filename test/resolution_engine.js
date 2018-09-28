@@ -84,14 +84,15 @@ contract('ResolutionEngine', (accounts) => {
             it('should return metrics of verification phase number', async () => {
                 const result = await resolutionEngine.metricsByVerificationPhaseNumber(0);
                 result.state.should.exist.and.eq.BN(1);
-                result.trueAmount.should.exist.and.eq.BN(0);
-                result.falseAmount.should.exist.and.eq.BN(0);
-                result.amount.should.exist.and.eq.BN(0);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
                 result.numberOfWallets.should.exist.and.eq.BN(0);
+                result.bountyAmount.should.exist.and.be.eq.BN(10);
+                result.bountyAwarded.should.exist.and.be.false;
                 result.startBlock.should.exist.and.be.gt.BN(0);
                 result.endBlock.should.exist.and.eq.BN(0);
                 result.numberOfBlocks.should.exist.and.be.gt.BN(0);
-                result.bounty.should.exist.and.be.eq.BN(10);
             });
         });
     });
@@ -106,9 +107,9 @@ contract('ResolutionEngine', (accounts) => {
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number and wallet', async () => {
                 const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
-                result.trueAmount.should.exist.and.eq.BN(0);
-                result.falseAmount.should.exist.and.eq.BN(0);
-                result.amount.should.exist.and.eq.BN(0);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
             });
         });
     });
@@ -116,9 +117,9 @@ contract('ResolutionEngine', (accounts) => {
     describe('metricsByWallet()', () => {
         it('should return metrics of wallet', async () => {
             const result = await resolutionEngine.metricsByWallet(Wallet.createRandom().address);
-            result.trueAmount.should.exist.and.eq.BN(0);
-            result.falseAmount.should.exist.and.eq.BN(0);
-            result.amount.should.exist.and.eq.BN(0);
+            result.trueStakeAmount.should.exist.and.eq.BN(0);
+            result.falseStakeAmount.should.exist.and.eq.BN(0);
+            result.stakeAmount.should.exist.and.eq.BN(0);
         });
     });
 
@@ -138,10 +139,30 @@ contract('ResolutionEngine', (accounts) => {
         describe('if block number is within bounds', () => {
             it('should return metrics of block number', async () => {
                 const result = await resolutionEngine.metricsByBlockNumber(0);
-                result.trueAmount.should.exist.and.eq.BN(0);
-                result.falseAmount.should.exist.and.eq.BN(0);
-                result.amount.should.exist.and.eq.BN(0);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
             });
+        });
+    });
+
+    describe('withdrawFromBountyFund()', () => {
+        let mockedResolutionEngine, balanceBefore;
+
+        beforeEach(async () => {
+            bountyFund = await BountyFund.new(testToken.address);
+            testToken.mint(bountyFund.address, 100);
+
+            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+            mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+
+            balanceBefore = await testToken.balanceOf.call(mockedResolutionEngine.address);
+        });
+
+        it('should successfully withdraw', async () => {
+            await mockedResolutionEngine._withdrawFromBountyFund();
+
+            (await testToken.balanceOf.call(mockedResolutionEngine.address)).should.eq.BN(balanceBefore.addn(9));
         });
     });
 

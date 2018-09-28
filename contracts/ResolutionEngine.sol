@@ -16,9 +16,11 @@ library VerificationPhaseLib {
     using SafeMath for uint256;
 
     enum State {Unopened, Opened, Closed}
+    enum Status {Null, True, False}
 
     struct VerificationPhase {
         State state;
+        Status status;
 
         mapping(bool => uint256) statusAmountMap;
 
@@ -28,20 +30,26 @@ library VerificationPhaseLib {
         mapping(address => mapping(bool => uint256)) walletStatusAmountMap;
         mapping(uint256 => mapping(bool => uint256)) blockStatusAmountMap;
 
-        uint256 bounty;
+        uint256 bountyAmount;
+        bool bountyAwarded;
+
         uint256 startBlock;
         uint256 endBlock;
     }
 
-    function open(VerificationPhase storage _phase, uint256 _bounty) internal {
+    function open(VerificationPhase storage _phase, uint256 _bountyAmount) internal {
         _phase.state = State.Opened;
-        _phase.bounty = _bounty;
+        _phase.bountyAmount = _bountyAmount;
         _phase.startBlock = block.number;
     }
 
     function close(VerificationPhase storage _phase) internal {
         _phase.state = State.Closed;
         _phase.endBlock = block.number;
+        if (_phase.statusAmountMap[true] > _phase.statusAmountMap[false])
+            _phase.status = Status.True;
+        else if (_phase.statusAmountMap[true] < _phase.statusAmountMap[false])
+            _phase.status = Status.False;
     }
 
     function updateMetrics(VerificationPhase storage _phase, address _wallet,
@@ -68,9 +76,10 @@ contract ResolutionEngine is RBACed {
 
     event OracleSet(address indexed _oracle);
     event TokenSet(address indexed _token);
-    event BountyFundSet(address indexed _bountyFund);
-    event BountyFractionSet(uint256 indexed _bountyFraction);
+    event BountyFundSet(address _bountyFund);
+    event BountyFractionSet(uint256 _bountyFraction);
     event TokensStaked(uint256 indexed _verificationPhaseNumber, address indexed _wallet, bool _status, uint256 _amount);
+    event BountyWithdrawn(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
 
@@ -80,11 +89,14 @@ contract ResolutionEngine is RBACed {
     ERC20 public token;
     BountyFund public bountyFund;
     uint256 public bountyFraction;
+    uint256 public bountyAmount;
 
     uint256 public verificationPhaseNumber;
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) private verificationPhaseMap;
     mapping(address => mapping(bool => uint256)) private walletStatusAmountMap;
     mapping(uint256 => mapping(bool => uint256)) private blockStatusAmountMap;
+
+    VerificationPhaseLib.Status public verificationStatus;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction) public {
@@ -102,6 +114,9 @@ contract ResolutionEngine is RBACed {
 
         // Initialize bounty fraction
         bountyFraction = _bountyFraction;
+
+        // Withdraw bounty
+        withdrawFromBountyFund();
 
         // Open verification phase
         openVerificationPhase();
@@ -141,6 +156,11 @@ contract ResolutionEngine is RBACed {
         // Update metrics
         updateMetrics(_wallet, _verificationPhaseNumber, _status, _amount);
 
+        //        if (resolutionCriteriaMet()) {
+        //            closeVerificationPhase();
+        //            openVerificationPhase();
+        //        }
+
         // Emit event
         emit TokensStaked(_verificationPhaseNumber, _wallet, _status, _amount);
     }
@@ -152,19 +172,20 @@ contract ResolutionEngine is RBACed {
     public
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
-    returns (VerificationPhaseLib.State state, uint256 trueAmount, uint256 falseAmount,
-        uint256 amount, uint256 numberOfWallets, uint256 startBlock,
-        uint256 endBlock, uint256 numberOfBlocks, uint256 bounty)
+    returns (VerificationPhaseLib.State state, uint256 trueStakeAmount, uint256 falseStakeAmount,
+        uint256 stakeAmount, uint256 numberOfWallets, uint256 startBlock, uint256 endBlock,
+        uint256 numberOfBlocks, uint256 bountyAmount, bool bountyAwarded)
     {
         state = verificationPhaseMap[_verificationPhaseNumber].state;
-        trueAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[true];
-        falseAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[false];
-        amount = trueAmount.add(falseAmount);
+        trueStakeAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[true];
+        falseStakeAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[false];
+        stakeAmount = trueStakeAmount.add(falseStakeAmount);
         numberOfWallets = verificationPhaseMap[_verificationPhaseNumber].stakingWallets;
+        bountyAmount = verificationPhaseMap[_verificationPhaseNumber].bountyAmount;
+        bountyAwarded = verificationPhaseMap[_verificationPhaseNumber].bountyAwarded;
         startBlock = verificationPhaseMap[_verificationPhaseNumber].startBlock;
         endBlock = verificationPhaseMap[_verificationPhaseNumber].endBlock;
         numberOfBlocks = (endBlock == 0 ? block.number : endBlock) - startBlock;
-        bounty = verificationPhaseMap[_verificationPhaseNumber].bounty;
     }
 
     /// @notice Get the metrics for the given verification phase number and wallet
@@ -175,11 +196,11 @@ contract ResolutionEngine is RBACed {
     public
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
-    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
+    returns (uint256 trueStakeAmount, uint256 falseStakeAmount, uint256 stakeAmount)
     {
-        trueAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][true];
-        falseAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][false];
-        amount = trueAmount.add(falseAmount);
+        trueStakeAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][true];
+        falseStakeAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][false];
+        stakeAmount = trueStakeAmount.add(falseStakeAmount);
     }
 
     /// @notice Get the metrics for the wallet
@@ -187,11 +208,11 @@ contract ResolutionEngine is RBACed {
     function metricsByWallet(address _wallet)
     public
     view
-    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
+    returns (uint256 trueStakeAmount, uint256 falseStakeAmount, uint256 stakeAmount)
     {
-        trueAmount = walletStatusAmountMap[_wallet][true];
-        falseAmount = walletStatusAmountMap[_wallet][false];
-        amount = trueAmount.add(falseAmount);
+        trueStakeAmount = walletStatusAmountMap[_wallet][true];
+        falseStakeAmount = walletStatusAmountMap[_wallet][false];
+        stakeAmount = trueStakeAmount.add(falseStakeAmount);
     }
 
     /// @notice Get the metrics for the block
@@ -201,20 +222,39 @@ contract ResolutionEngine is RBACed {
     public
     view
     onlyCurrentOrEarlierBlockNumber(_blockNumber)
-    returns (uint256 trueAmount, uint256 falseAmount, uint256 amount)
+    returns (uint256 trueStakeAmount, uint256 falseStakeAmount, uint256 stakeAmount)
     {
-        trueAmount = blockStatusAmountMap[_blockNumber][true];
-        falseAmount = blockStatusAmountMap[_blockNumber][false];
-        amount = trueAmount.add(falseAmount);
+        trueStakeAmount = blockStatusAmountMap[_blockNumber][true];
+        falseStakeAmount = blockStatusAmountMap[_blockNumber][false];
+        stakeAmount = trueStakeAmount.add(falseStakeAmount);
+    }
+
+    //    function calculatePayoutByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet)
+    //    public
+    //    view
+    //    returns (uint256)
+    //    {
+    //        bool resolutionResult = verificationPhaseMap[_verificationPhaseNumber].resolutionResult();
+    //
+    //        uint256 walletResolutionAmount =
+    //        verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][resolutionResult];
+    //        uint256 resolutionAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[resolutionResult];
+    //        uint256 stakeFraction = walletResolutionAmount.div(resolutionAmount);
+    //    }
+
+    /// @notice Withdraw from bounty fund
+    function withdrawFromBountyFund() internal {
+        // Withdraw from bounty fund
+        bountyAmount = bountyFund.withdrawTokens(bountyFraction);
+
+        // Emit event
+        emit BountyWithdrawn(verificationPhaseNumber, bountyFraction, bountyAmount);
     }
 
     /// @notice Open verification phase
     function openVerificationPhase() internal {
         // Require that verification phase is not open
         require(verificationPhaseMap[verificationPhaseNumber].state == VerificationPhaseLib.State.Unopened);
-
-        // Withdraw from bounty fund
-        uint256 bountyAmount = bountyFund.withdrawTokens(bountyFraction);
 
         // Open the verification phase
         verificationPhaseMap[verificationPhaseNumber].open(bountyAmount);
@@ -231,6 +271,18 @@ contract ResolutionEngine is RBACed {
         // Close the verification phase
         verificationPhaseMap[verificationPhaseNumber].close();
 
+        // If new verification status...
+        if (verificationPhaseMap[verificationPhaseNumber].status != verificationStatus) {
+            // Update verification status of this resolution engine
+            verificationStatus = verificationPhaseMap[verificationPhaseNumber].status;
+
+            // Award bounty to this verification phase
+            verificationPhaseMap[verificationPhaseNumber].bountyAwarded = true;
+
+            // Withdraw new bounty
+            withdrawFromBountyFund();
+        }
+
         // Emit event
         emit VerificationPhaseClosed(verificationPhaseNumber);
 
@@ -238,11 +290,26 @@ contract ResolutionEngine is RBACed {
         verificationPhaseNumber++;
     }
 
+    //    function resolutionCriteriaMet() internal view returns (bool);
+    //
+    //    function claim(uint256 _lowVerificationPhaseNumber, uint256 _highVerificationPhaseNumber) internal {
+    //        for (uint256 i = _lowVerificationPhaseNumber; i <= _highVerificationPhaseNumber; i++)
+    //            claimByVerificationPhaseNumberAndWallet(i, msg.sender);
+    //    }
+    //
+    //    function claimByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet) internal {
+    //        // TODO Assure that this verification phase has not been payed out already wallet
+    //
+    //        uint256 payout = calculatePayoutByVerificationPhaseNumberAndWallet(_verificationPhaseNumber, _wallet);
+    //
+    //        // TODO Execute the payout
+    //    }
+
     /// @notice Update the metrics
     /// @param _wallet The concerned wallet
     /// @param _verificationPhaseNumber The verification phase number to stake into
     /// @param _status The status staked at
-    /// @param _amount The amount staked
+    /// @param _amount The stakeAmount staked
     function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount) private {
         walletStatusAmountMap[_wallet][_status] = walletStatusAmountMap[_wallet][_status].add(_amount);
         blockStatusAmountMap[block.number][_status] = blockStatusAmountMap[block.number][_status].add(_amount);

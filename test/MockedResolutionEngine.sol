@@ -31,6 +31,10 @@ contract MockedResolutionEngine is ResolutionEngine {
         bountyFund.withdrawTokens(_fraction);
     }
 
+    function _withdrawFromBountyFund() public {
+        withdrawFromBountyFund();
+    }
+
     function _openVerificationPhase() public {
         openVerificationPhase();
     }

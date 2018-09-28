@@ -130,7 +130,7 @@ contract('BountyFund', (accounts) => {
                 let balanceBefore;
 
                 beforeEach(async () => {
-                    balanceBefore = await testToken.balanceOf(bountyFund.address);
+                    balanceBefore = await testToken.balanceOf.call(bountyFund.address);
                     fraction = partsPer.divn(2);
                 });
 
