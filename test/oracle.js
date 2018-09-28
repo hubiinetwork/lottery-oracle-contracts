@@ -15,6 +15,7 @@ chai.use(bnChai(BN));
 chai.should();
 
 const Oracle = artifacts.require('Oracle');
+const BountyFund = artifacts.require('BountyFund');
 const TestToken = artifacts.require('TestToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
@@ -123,14 +124,14 @@ contract('Oracle', (accounts) => {
 
     describe('stakeTokens()', () => {
         describe('if called on non-registered resolution engine', () => {
-            let resolutionEngineAddress;
+            let resolutionEngine;
 
             before(() => {
-                resolutionEngineAddress = Wallet.createRandom().address;
+                resolutionEngine = Wallet.createRandom().address;
             });
 
             it('should revert', async () => {
-                oracle.stakeTokens(resolutionEngineAddress, 0, true, 100).should.be.rejected;
+                oracle.stakeTokens(resolutionEngine, 0, true, 100).should.be.rejected;
             });
         });
 
@@ -138,7 +139,12 @@ contract('Oracle', (accounts) => {
             let mockedResolutionEngine;
 
             beforeEach(async () => {
-                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, testToken.address);
+                const bountyFund = await BountyFund.new(testToken.address);
+                testToken.mint(bountyFund.address, 100);
+
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
                 await testToken.mint(accounts[1], 100);

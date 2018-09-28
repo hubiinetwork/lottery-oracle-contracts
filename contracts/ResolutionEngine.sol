@@ -87,16 +87,24 @@ contract ResolutionEngine is RBACed {
     mapping(uint256 => mapping(bool => uint256)) private blockStatusAmountMap;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _token) public {
+    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction) public {
         // Initialize oracle
         oracle = Oracle(_oracle);
-
-        // Initialize token
-        token = ERC20(_token);
-
-        // Update oracle role based access
         addRoleInternal(ORACLE_ROLE);
         addRoleAccessorInternal(ORACLE_ROLE, _oracle);
+
+        // Initialize bounty fund
+        bountyFund = BountyFund(_bountyFund);
+        bountyFund.setResolutionEngine(this);
+
+        // Initialize token to the one of bounty fund
+        token = ERC20(bountyFund.token());
+
+        // Initialize bounty fraction
+        bountyFraction = _bountyFraction;
+
+        // Open verification phase
+        openVerificationPhase();
     }
 
     modifier onlyCurrentPhaseNumber(uint256 _verificationPhaseNumber) {
@@ -112,37 +120,6 @@ contract ResolutionEngine is RBACed {
     modifier onlyCurrentOrEarlierBlockNumber(uint256 _blockNumber) {
         require(block.number >= _blockNumber);
         _;
-    }
-
-    /// @notice Set the bounty fund of this resolution engine
-    /// @dev This function can only be called once
-    /// @param _bountyFund The address of the concerned bounty fund
-    function setBountyFund(address _bountyFund) public {
-        require(address(0) == address(bountyFund));
-
-        // Update bounty fund
-        bountyFund = BountyFund(_bountyFund);
-
-        // Emit event
-        emit BountyFundSet(_bountyFund);
-    }
-
-    /// @notice Set the bounty fraction of this resolution engine
-    /// @dev This requires the presence of bounty fund and can only be called once
-    /// @param _bountyFraction The concerned bounty fraction, which must be less than bounty fund's entirety value
-    function setBountyFraction(uint256 _bountyFraction) public {
-        // Require that bounty fund has been set and concerned bounty fraction is not greater than entirety
-        require(address(0) != address(bountyFund));
-        require(_bountyFraction <= bountyFund.PARTS_PER());
-
-        // Require that bounty fraction has not previously been set
-        require(0 == bountyFraction);
-
-        // Update bounty fraction
-        bountyFraction = _bountyFraction;
-
-        // Emit event
-        emit BountyFractionSet(_bountyFraction);
     }
 
     /// @notice For the current phase number stake the amount of tokens at the given status

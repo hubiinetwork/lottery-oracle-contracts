@@ -17,10 +17,12 @@ contract MockedResolutionEngine is ResolutionEngine {
 
     mapping(address => mapping(bool => uint256)) public stakes;
 
-    constructor(address _oracle, address _token) ResolutionEngine(_oracle, _token) public {
+    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction) ResolutionEngine(_oracle, _bountyFund, _bountyFraction) public {
     }
 
-    function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount) public {
+    function stakeTokens(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
+    public
+    {
         stakes[_wallet][_status] = _amount;
         emit TokensStaked(address(this), _verificationPhaseNumber, _wallet, _status, _amount);
     }

@@ -17,27 +17,38 @@ import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract BountyFund is RBACed {
     using SafeMath for uint256;
 
+    event ResolutionEngineSet(address indexed _resolutionEngine);
     event TokensDeposited(address indexed _wallet, uint256 _amount, uint256 _balance);
     event TokensWithdrawn(address indexed _wallet, uint256 _amount, uint256 _balance);
 
     uint256 constant public PARTS_PER = 1e18;
 
-    ResolutionEngine public resolutionEngine;
     ERC20 public token;
+    ResolutionEngine public resolutionEngine;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _resolutionEngine) public {
-        // Initialize resolution engine
-        resolutionEngine = ResolutionEngine(_resolutionEngine);
-        resolutionEngine.setBountyFund(this);
-
+    constructor(address _token) public {
         // Initialize token
-        token = ERC20(resolutionEngine.token());
+        token = ERC20(_token);
     }
 
     modifier onlyRegisteredResolutionEngine() {
         require(msg.sender == address(resolutionEngine));
         _;
+    }
+
+    /// @notice Set the resolution engine of this bounty fund
+    /// @dev This function can only be called once
+    /// @param _resolutionEngine The address of the concerned resolution engine
+    function setResolutionEngine(address _resolutionEngine) public {
+        require(address(0) != _resolutionEngine);
+        require(address(0) == address(resolutionEngine));
+
+        // Update resolution engine
+        resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Emit event
+        emit ResolutionEngineSet(_resolutionEngine);
     }
 
     /// @notice Deposit the amount of token
