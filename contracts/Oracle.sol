@@ -126,7 +126,7 @@ contract Oracle is RBACed {
     onlyRegisteredResolutionEngine(_resolutionEngine)
     {
         // Call resolution engine stake tokens by means of delegate call
-        bytes4 signature = bytes4(keccak256("stakeTokens(address,uint256,bool,uint256)"));
+        bytes4 signature = bytes4(keccak256(abi.encode("stakeTokens(address,uint256,bool,uint256)")));
         require(_resolutionEngine.delegatecall(signature, msg.sender, _verificationPhaseNumber, _status, _amount));
 
         // Emit event

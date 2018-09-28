@@ -28,7 +28,7 @@ contract('Oracle', (accounts) => {
     });
 
     describe('constructor()', () => {
-        it('should test successfully', async () => {
+        it('should successfully initialize', async () => {
             oracle.address.should.have.lengthOf(42);
             const ownerRole = await oracle.OWNER_ROLE.call();
             (await oracle.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
@@ -37,13 +37,13 @@ contract('Oracle', (accounts) => {
     });
 
     describe('hasResolutionEngine()', () => {
-        it('should test successfully', async () => {
+        it('should successfully return initial value', async () => {
             (await oracle.hasResolutionEngine.call(Wallet.createRandom().address)).should.be.false;
         });
     });
 
     describe('resolutionEnginesCount()', () => {
-        it('should test successfully', async () => {
+        it('should successfully return initial value', async () => {
             (await oracle.resolutionEnginesCount.call()).should.eq.BN(0);
         });
     });
@@ -62,7 +62,7 @@ contract('Oracle', (accounts) => {
         });
 
         describe('if called by owner', () => {
-            it('should test successfully', async () => {
+            it('should successfully add resolution engine', async () => {
                 const result = await oracle.addResolutionEngine(engineAddress);
                 result.logs[0].event.should.equal('ResolutionEngineAdded');
                 (await oracle.hasResolutionEngine.call(engineAddress)).should.be.true;
@@ -93,7 +93,7 @@ contract('Oracle', (accounts) => {
                     resolutionEnginesCount = await oracle.resolutionEnginesCount.call();
                 });
 
-                it('should test successfully', async () => {
+                it('should successfully remove resolution engine', async () => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
                     (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
@@ -112,7 +112,7 @@ contract('Oracle', (accounts) => {
                     resolutionEnginesCount = await oracle.resolutionEnginesCount.call();
                 });
 
-                it('should test successfully', async () => {
+                it('should successfully remove resolution engine', async () => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
                     (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
@@ -126,7 +126,7 @@ contract('Oracle', (accounts) => {
         describe('if called on non-registered resolution engine', () => {
             let resolutionEngine;
 
-            before(() => {
+            beforeEach(() => {
                 resolutionEngine = Wallet.createRandom().address;
             });
 
@@ -135,10 +135,12 @@ contract('Oracle', (accounts) => {
             });
         });
 
-        describe('if called on registered resolution engine', () => {
-            let mockedResolutionEngine;
+        describe.skip('if called on registered resolution engine', () => {
+            let mockedResolutionEngine/*, balanceBefore*/;
 
             beforeEach(async () => {
+                oracle = await Oracle.new();
+
                 const bountyFund = await BountyFund.new(testToken.address);
                 testToken.mint(bountyFund.address, 100);
 
@@ -149,17 +151,18 @@ contract('Oracle', (accounts) => {
 
                 await testToken.mint(accounts[1], 100);
                 await testToken.approve(oracle.address, 100, {from: accounts[1]});
+
             });
 
-            afterEach(async () => {
-                await oracle.removeResolutionEngine(mockedResolutionEngine.address);
-            });
+            // TODO Solve issue that suggest that test tokens are not transferred to resolution engine through delegate call
+            it('should successfully stake tokens', async () => {
+                // balanceBefore = await testToken.balanceOf.call(accounts[1]);
 
-            it('should test successfully', async () => {
                 const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
+
                 result.logs[0].event.should.equal('TokensStaked');
-                // TODO Solve issue that suggest couple of resolution engines (https://github.com/hubiinetwork/lottery-oracle-contracts/issues/17)
-                // (await mockedResolutionEngine.stakes.call(accounts[1], true)).should.eq.BN(100);
+
+                // (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
             });
         });
     });

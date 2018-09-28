@@ -56,7 +56,7 @@ contract('ResolutionEngine', (accounts) => {
 
         describe('if called on non-current verification phase number', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 1, true, 100, {from: accounts[1]}).should.be.rejected;
+                resolutionEngine.stakeTokens(accounts[2], 1, true, 100, {from: oracle}).should.be.rejected;
             });
         });
 
@@ -67,7 +67,7 @@ contract('ResolutionEngine', (accounts) => {
             });
 
             it('should successfully stake tokens', async () => {
-                const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[1]});
+                const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: oracle});
                 result.logs[0].event.should.equal('TokensStaked');
             });
         });
@@ -76,13 +76,13 @@ contract('ResolutionEngine', (accounts) => {
     describe('metricsByVerificationPhaseNumber()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.metricsByVerificationPhaseNumber(1).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumber.call(1).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number', async () => {
-                const result = await resolutionEngine.metricsByVerificationPhaseNumber(0);
+                const result = await resolutionEngine.metricsByVerificationPhaseNumber.call(0);
                 result.state.should.exist.and.eq.BN(1);
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
@@ -100,13 +100,13 @@ contract('ResolutionEngine', (accounts) => {
     describe('metricsByVerificationPhaseNumberAndWallet()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, Wallet.createRandom().address).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, Wallet.createRandom().address).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number and wallet', async () => {
-                const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
+                const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, Wallet.createRandom().address);
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
                 result.stakeAmount.should.exist.and.eq.BN(0);
@@ -116,7 +116,7 @@ contract('ResolutionEngine', (accounts) => {
 
     describe('metricsByWallet()', () => {
         it('should return metrics of wallet', async () => {
-            const result = await resolutionEngine.metricsByWallet(Wallet.createRandom().address);
+            const result = await resolutionEngine.metricsByWallet.call(Wallet.createRandom().address);
             result.trueStakeAmount.should.exist.and.eq.BN(0);
             result.falseStakeAmount.should.exist.and.eq.BN(0);
             result.stakeAmount.should.exist.and.eq.BN(0);
@@ -132,13 +132,13 @@ contract('ResolutionEngine', (accounts) => {
             });
 
             it('should revert', async () => {
-                resolutionEngine.metricsByBlockNumber(blockNumber * 2).should.be.rejected;
+                resolutionEngine.metricsByBlockNumber.call(blockNumber * 2).should.be.rejected;
             });
         });
 
         describe('if block number is within bounds', () => {
             it('should return metrics of block number', async () => {
-                const result = await resolutionEngine.metricsByBlockNumber(0);
+                const result = await resolutionEngine.metricsByBlockNumber.call(0);
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
                 result.stakeAmount.should.exist.and.eq.BN(0);
@@ -185,7 +185,7 @@ contract('ResolutionEngine', (accounts) => {
     });
 
     describe('closeVerificationPhase()', () => {
-        let mockedResolutionEngine, verificationPhaseNumberBefore;
+        let mockedResolutionEngine, verificationPhaseNumberBefore, bountyBalanceBefore;
 
         beforeEach(async () => {
             bountyFund = await BountyFund.new(testToken.address);
@@ -195,17 +195,45 @@ contract('ResolutionEngine', (accounts) => {
             mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
 
             verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
+            bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
         });
 
-        it('should successfully close the verification phase', async () => {
-            await mockedResolutionEngine._closeVerificationPhase();
+        describe('if verification status is unchanged', () => {
+            it('should successfully close the verification phase without toggling verification status', async () => {
+                await mockedResolutionEngine._closeVerificationPhase();
 
-            const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber(0);
-            result.startBlock.should.exist.and.be.gt.BN(0);
-            result.endBlock.should.exist.and.be.gt.BN(0);
-            result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
+                const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber(0);
+                result.startBlock.should.exist.and.be.gt.BN(0);
+                result.endBlock.should.exist.and.be.gt.BN(0);
+                result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
+                result.bountyAwarded.should.exist.and.be.false;
 
-            (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore);
+
+                (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+            });
+        });
+
+        describe('if verification status is changed', () => {
+            beforeEach(async () => {
+                await testToken.mint(accounts[2], 100);
+                await testToken.approve(mockedResolutionEngine.address, 100, {from: accounts[2]});
+                await mockedResolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: oracle});
+            });
+
+            it('should successfully close the verification phase and toggle verification status', async () => {
+                await mockedResolutionEngine._closeVerificationPhase();
+
+                const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber.call(0);
+                result.startBlock.should.exist.and.be.gt.BN(0);
+                result.endBlock.should.exist.and.be.gt.BN(0);
+                result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
+                result.bountyAwarded.should.exist.and.be.true;
+
+                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore.subn(9));
+
+                (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+            });
         });
     });
 });

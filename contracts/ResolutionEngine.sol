@@ -173,8 +173,8 @@ contract ResolutionEngine is RBACed {
     view
     onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
     returns (VerificationPhaseLib.State state, uint256 trueStakeAmount, uint256 falseStakeAmount,
-        uint256 stakeAmount, uint256 numberOfWallets, uint256 startBlock, uint256 endBlock,
-        uint256 numberOfBlocks, uint256 bountyAmount, bool bountyAwarded)
+        uint256 stakeAmount, uint256 numberOfWallets, uint256 bountyAmount, bool bountyAwarded,
+        uint256 startBlock, uint256 endBlock, uint256 numberOfBlocks)
     {
         state = verificationPhaseMap[_verificationPhaseNumber].state;
         trueStakeAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[true];
