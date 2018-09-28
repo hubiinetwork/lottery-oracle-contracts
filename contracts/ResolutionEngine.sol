@@ -6,6 +6,7 @@
 
 pragma solidity ^0.4.25;
 
+import {Resolvable} from "./Resolvable.sol";
 import {RBACed} from "./RBACed.sol";
 import {Oracle} from "./Oracle.sol";
 import {BountyFund} from "./BountyFund.sol";
@@ -70,11 +71,12 @@ library VerificationPhaseLib {
 /// @title ResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A resolution engine base contract
-contract ResolutionEngine is RBACed {
+contract ResolutionEngine is Resolvable, RBACed {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
     event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status, uint256 _amount);
+    event ConditionallyResolved(uint256 indexed _verificationPhaseNumber);
     event BountyWithdrawn(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
@@ -150,12 +152,25 @@ contract ResolutionEngine is RBACed {
         blockStatusAmountMap[block.number][_status] = blockStatusAmountMap[block.number][_status].add(_amount);
         verificationPhaseMap[verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
 
-        //        if (resolutionCriteriaMet()) {
-        //            closeVerificationPhase();
-        //            openVerificationPhase();
-        //        }
-
         emit MetricsUpdated(_wallet, _verificationPhaseNumber, _status, _amount);
+    }
+
+    /// @notice Resolve the market if resolution criteria have been met
+    /// @dev The function can only be called by oracle.
+    function resolveConditionally() public onlyRoleAccessor(ORACLE_ROLE)
+    {
+        if (resolutionCriteriaMet()) {
+            closeVerificationPhase();
+            openVerificationPhase();
+        }
+
+        emit ConditionallyResolved(verificationPhaseNumber);
+    }
+
+    /// @notice Gauge whether the resolution criteria have been met
+    /// @return true if resolution criteria have been met, else false
+    function resolutionCriteriaMet() public view returns (bool) {
+        return false;
     }
 
     /// @notice Get the metrics for the given verification phase number
@@ -283,8 +298,6 @@ contract ResolutionEngine is RBACed {
         verificationPhaseNumber++;
     }
 
-    //    function resolutionCriteriaMet() internal view returns (bool);
-    //
     //    function claim(uint256 _lowVerificationPhaseNumber, uint256 _highVerificationPhaseNumber) internal {
     //        for (uint256 i = _lowVerificationPhaseNumber; i <= _highVerificationPhaseNumber; i++)
     //            claimByVerificationPhaseNumberAndWallet(i, msg.sender);

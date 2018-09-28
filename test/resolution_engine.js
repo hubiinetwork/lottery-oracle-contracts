@@ -21,17 +21,17 @@ const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 const TestToken = artifacts.require('TestToken');
 
 contract('ResolutionEngine', (accounts) => {
-    let oracle, testToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
+    let oracleAddress, testToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
 
     beforeEach(async () => {
-        oracle = accounts[1];
+        oracleAddress = accounts[1];
         testToken = await TestToken.new();
 
         bountyFund = await BountyFund.new(testToken.address);
         await testToken.mint(bountyFund.address, 100);
 
         const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-        resolutionEngine = await ResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+        resolutionEngine = await ResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
         ownerRole = await resolutionEngine.OWNER_ROLE.call();
         oracleRole = await resolutionEngine.ORACLE_ROLE.call();
@@ -56,14 +56,30 @@ contract('ResolutionEngine', (accounts) => {
 
         describe('if called on non-current verification phase number', () => {
             it('should revert', async () => {
-                resolutionEngine.updateMetrics(accounts[2], 1, true, 100, {from: oracle}).should.be.rejected;
+                resolutionEngine.updateMetrics(accounts[2], 1, true, 100, {from: oracleAddress}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
             it('should successfully update metrics', async () => {
-                const result = await resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: oracle});
+                const result = await resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: oracleAddress});
                 result.logs[0].event.should.equal('MetricsUpdated');
+            });
+        });
+    });
+
+    describe('resolveConditionally()', () => {
+        describe('if called by non-oracle', () => {
+            it('should revert', async () => {
+                resolutionEngine.resolveConditionally({from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called by oracle', () => {
+            it('should successfully complete', async () => {
+                const result = await resolutionEngine.resolveConditionally({from: oracleAddress});
+
+                result.logs[0].event.should.equal('ConditionallyResolved');
             });
         });
     });
@@ -149,7 +165,7 @@ contract('ResolutionEngine', (accounts) => {
             await testToken.mint(bountyFund.address, 100);
 
             const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+            mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
             balanceBefore = await testToken.balanceOf.call(mockedResolutionEngine.address);
         });
@@ -170,7 +186,7 @@ contract('ResolutionEngine', (accounts) => {
                 await testToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-                mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
             });
 
             it('should revert', async () => {
@@ -188,7 +204,7 @@ contract('ResolutionEngine', (accounts) => {
                 await testToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-                mockedResolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, bountyFraction);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
                 verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
                 bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
