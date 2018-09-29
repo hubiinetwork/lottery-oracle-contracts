@@ -12,5 +12,5 @@ pragma solidity ^0.4.25;
 interface Resolvable {
     /// @notice Gauge whether the resolution criteria have been met
     /// @return true if resolution criteria have been met, else false
-    function resolutionCriteriaMet() public view returns (bool);
+    function resolutionCriteriaMet() external view returns (bool);
 }

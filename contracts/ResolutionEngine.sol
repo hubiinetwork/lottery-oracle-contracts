@@ -21,7 +21,7 @@ library VerificationPhaseLib {
 
     struct VerificationPhase {
         State state;
-        Status status;
+        Status result;
 
         mapping(bool => uint256) statusAmountMap;
 
@@ -48,9 +48,9 @@ library VerificationPhaseLib {
         _phase.state = State.Closed;
         _phase.endBlock = block.number;
         if (_phase.statusAmountMap[true] > _phase.statusAmountMap[false])
-            _phase.status = Status.True;
+            _phase.result = Status.True;
         else if (_phase.statusAmountMap[true] < _phase.statusAmountMap[false])
-            _phase.status = Status.False;
+            _phase.result = Status.False;
     }
 
     function updateMetrics(VerificationPhase storage _phase, address _wallet,
@@ -237,18 +237,29 @@ contract ResolutionEngine is Resolvable, RBACed {
         stakeAmount = trueStakeAmount.add(falseStakeAmount);
     }
 
-    //    function calculatePayoutByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet)
-    //    public
-    //    view
-    //    returns (uint256)
-    //    {
-    //        bool resolutionResult = verificationPhaseMap[_verificationPhaseNumber].resolutionResult();
-    //
-    //        uint256 walletResolutionAmount =
-    //        verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][resolutionResult];
-    //        uint256 resolutionAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[resolutionResult];
-    //        uint256 stakeFraction = walletResolutionAmount.div(resolutionAmount);
-    //    }
+    /// @notice Calculate the payout of the given wallet at the given verification phase number
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @param _wallet The address of the concerned wallet
+    function calculatePayout(uint256 _verificationPhaseNumber, address _wallet)
+    public
+    view
+    returns (uint256)
+    {
+        // Return 0 if no non-null verification status has been obtained
+        if (VerificationPhaseLib.Status.Null == verificationPhaseMap[_verificationPhaseNumber].result)
+            return 0;
+
+        bool status = verificationPhaseMap[_verificationPhaseNumber].result == VerificationPhaseLib.Status.True;
+
+        uint256 lot = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[!status];
+        if (verificationPhaseMap[_verificationPhaseNumber].bountyAwarded)
+            lot = lot.add(verificationPhaseMap[_verificationPhaseNumber].bountyAmount);
+
+        uint256 walletStatusAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][status];
+        uint256 statusAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[status];
+
+        return lot.mul(walletStatusAmount).div(statusAmount);
+    }
 
     /// @notice Withdraw from bounty fund
     function withdrawFromBountyFund() internal {
@@ -280,9 +291,9 @@ contract ResolutionEngine is Resolvable, RBACed {
         verificationPhaseMap[verificationPhaseNumber].close();
 
         // If new verification status...
-        if (verificationPhaseMap[verificationPhaseNumber].status != verificationStatus) {
+        if (verificationPhaseMap[verificationPhaseNumber].result != verificationStatus) {
             // Update verification status of this resolution engine
-            verificationStatus = verificationPhaseMap[verificationPhaseNumber].status;
+            verificationStatus = verificationPhaseMap[verificationPhaseNumber].result;
 
             // Award bounty to this verification phase
             verificationPhaseMap[verificationPhaseNumber].bountyAwarded = true;

@@ -6,7 +6,7 @@
 
 pragma solidity ^0.4.25;
 
-import {ResolutionEngine} from "../contracts/ResolutionEngine.sol";
+import {VerificationPhaseLib, ResolutionEngine} from "../contracts/ResolutionEngine.sol";
 import {BountyFund} from "../contracts/BountyFund.sol";
 
 /// @title MockedResolutionEngine
@@ -33,5 +33,9 @@ contract MockedResolutionEngine is ResolutionEngine {
 
     function _closeVerificationPhase() public {
         closeVerificationPhase();
+    }
+
+    function _setVerificationStatus(VerificationPhaseLib.Status _status) public {
+        verificationStatus = _status;
     }
 }

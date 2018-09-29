@@ -157,6 +157,90 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
+    describe('calculatePayout()', () => {
+        describe('if resolution result is null-status', () => {
+            it('should return 0', async () => {
+                const payout = await resolutionEngine.calculatePayout.call(0, Wallet.createRandom().address);
+
+                payout.should.eq.BN(0);
+            });
+        });
+
+        // 1st scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
+        describe('if bounty was not awarded', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 1000);
+
+                const bountyFraction = await bountyFund.PARTS_PER.call();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await mockedResolutionEngine._setVerificationStatus(1);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 10);
+                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 10, {from: accounts[2]});
+
+                await testToken.mint(accounts[3], 90);
+                await testToken.approve(oracle.address, 90, {from: accounts[3]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 90, {from: accounts[3]});
+
+                await testToken.mint(accounts[4], 50);
+                await testToken.approve(oracle.address, 50, {from: accounts[4]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 50, {from: accounts[4]});
+
+                await mockedResolutionEngine._closeVerificationPhase();
+            });
+
+            it('should return 0', async () => {
+                const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
+
+                payout.should.eq.BN(5);
+            });
+        });
+
+        // 2nd scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
+        describe('if bounty was awarded', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 1000);
+
+                const bountyFraction = await bountyFund.PARTS_PER.call();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await mockedResolutionEngine._setVerificationStatus(1);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 10);
+                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 10, {from: accounts[2]});
+
+                await testToken.mint(accounts[3], 50);
+                await testToken.approve(oracle.address, 50, {from: accounts[3]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 50, {from: accounts[3]});
+
+                await testToken.mint(accounts[4], 90);
+                await testToken.approve(oracle.address, 90, {from: accounts[4]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 90, {from: accounts[4]});
+
+                await mockedResolutionEngine._closeVerificationPhase();
+            });
+
+            it('should return 0', async () => {
+                const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
+
+                payout.should.eq.BN(105);
+            });
+        });
+    });
+
     describe('withdrawFromBountyFund()', () => {
         let mockedResolutionEngine, balanceBefore;
 
@@ -198,7 +282,7 @@ contract('ResolutionEngine', (accounts) => {
     describe('closeVerificationPhase()', () => {
         let mockedResolutionEngine, verificationPhaseNumberBefore, bountyBalanceBefore;
 
-        describe('if verification status is unchanged', () => {
+        describe('if resolution result equals verification status', () => {
             beforeEach(async () => {
                 bountyFund = await BountyFund.new(testToken.address);
                 await testToken.mint(bountyFund.address, 100);
@@ -225,7 +309,7 @@ contract('ResolutionEngine', (accounts) => {
             });
         });
 
-        describe('if verification status is changed', () => {
+        describe('if resolution result differs from verification status', () => {
             beforeEach(async () => {
                 const oracle = await Oracle.new();
 
