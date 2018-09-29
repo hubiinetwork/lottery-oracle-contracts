@@ -8,6 +8,7 @@ pragma solidity ^0.4.25;
 
 import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
+import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 /// @title ResolutionEnginesLib
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
@@ -114,7 +115,8 @@ contract Oracle is RBACed {
         emit ResolutionEngineRemoved(_resolutionEngine);
     }
 
-    /// @notice For the current phase number of the given resolution engine stake the amount of tokens at the given status
+    /// @notice For the current phase number of the given resolution engine stake the amount of tokens
+    /// at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _resolutionEngine The concerned resolution engine
     /// @param _verificationPhaseNumber The verification phase number to stake into
@@ -124,9 +126,23 @@ contract Oracle is RBACed {
     public
     onlyRegisteredResolutionEngine(_resolutionEngine)
     {
-        // Call resolution engine stake tokens by means of delegate call
-        bytes4 signature = bytes4(keccak256("stakeTokens(address,uint256,bool,uint256)"));
-        require(_resolutionEngine.delegatecall(signature, msg.sender, _verificationPhaseNumber, _status, _amount));
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Require that stake targets current verification phase number
+        require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber);
+
+        // Initialize token
+        ERC20 token = ERC20(resolutionEngine.token());
+
+        // Transfer from msg.sender to this oracle
+        token.transferFrom(msg.sender, _resolutionEngine, _amount);
+
+        // Approve of resolution transferring
+        token.approve(resolutionEngine, _amount);
+
+        // Update metrics post transfer
+        resolutionEngine.updateMetrics(msg.sender, _verificationPhaseNumber, _status, _amount);
 
         // Emit event
         emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);

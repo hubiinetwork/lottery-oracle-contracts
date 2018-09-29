@@ -27,12 +27,14 @@ contract('ResolutionEngine', (accounts) => {
         oracleAddress = accounts[1];
         testToken = await TestToken.new();
 
-        resolutionEngine = await ResolutionEngine.new(oracleAddress, testToken.address);
+        bountyFund = await BountyFund.new(testToken.address);
+        await testToken.mint(bountyFund.address, 100);
+
+        const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+        resolutionEngine = await ResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
         ownerRole = await resolutionEngine.OWNER_ROLE.call();
         oracleRole = await resolutionEngine.ORACLE_ROLE.call();
-
-        bountyFund = await BountyFund.new(resolutionEngine.address);
     });
 
     describe('constructor()', () => {
@@ -45,145 +47,94 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
-    describe('setBountyFund()', () => {
-        describe('when called the first time', () => {
-            beforeEach(async () => {
-                resolutionEngine = await ResolutionEngine.new(oracleAddress, testToken.address);
-            });
-
-            it('should successfully set the bounty fund', async () => {
-                const result = await resolutionEngine.setBountyFund(bountyFund.address);
-                result.logs[0].event.should.equal('BountyFundSet');
-            });
-        });
-
-        describe('when called the second time', () => {
-            it('should revert', async () => {
-                resolutionEngine.setBountyFund(bountyFund.address).should.be.rejected;
-            });
-        });
-    });
-
-    describe('setBountyFraction()', () => {
-        let bountyFraction;
-
-        describe('when called without bounty fund set', () => {
-            beforeEach(async () => {
-                resolutionEngine = await ResolutionEngine.new(oracleAddress, testToken.address);
-                bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            });
-
-            it('should revert', async () => {
-                resolutionEngine.setBountyFraction(bountyFraction).should.be.rejected;
-            });
-        });
-
-        describe('when bounty fraction is too large', () => {
-            beforeEach(async () => {
-                bountyFraction = (await bountyFund.PARTS_PER.call()).muln(10);
-            });
-
-            it('should revert', async () => {
-                resolutionEngine.setBountyFund(bountyFraction).should.be.rejected;
-            });
-        });
-
-        describe('when called the first time', () => {
-            beforeEach(async () => {
-                bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            });
-
-            it('should successfully set the bounty fraction', async () => {
-                const result = await resolutionEngine.setBountyFraction(bountyFraction);
-                result.logs[0].event.should.equal('BountyFractionSet');
-                (await resolutionEngine.bountyFraction.call()).should.eq.BN(bountyFraction);
-            });
-        });
-
-        describe('when called the second time', () => {
-            beforeEach(async () => {
-                bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-                await resolutionEngine.setBountyFraction(bountyFraction);
-            });
-
-            it('should revert', async () => {
-                resolutionEngine.setBountyFraction(bountyFraction).should.be.rejected;
-            });
-        });
-    });
-
-    describe('stakeTokens()', () => {
+    describe('updateMetrics()', () => {
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
+                resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: accounts[2]}).should.be.rejected;
             });
         });
 
         describe('if called on non-current verification phase number', () => {
             it('should revert', async () => {
-                resolutionEngine.stakeTokens(accounts[2], 1, true, 100, {from: accounts[1]}).should.be.rejected;
+                resolutionEngine.updateMetrics(accounts[2], 1, true, 100, {from: oracleAddress}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
-            beforeEach(async () => {
-                await testToken.mint(accounts[2], 100);
-                await testToken.approve(resolutionEngine.address, 100, {from: accounts[2]});
-            });
-
-            it('should successfully stake tokens', async () => {
-                const result = await resolutionEngine.stakeTokens(accounts[2], 0, true, 100, {from: accounts[1]});
-                result.logs[0].event.should.equal('TokensStaked');
+            it('should successfully update metrics', async () => {
+                const result = await resolutionEngine.updateMetrics(accounts[2], 0, true, 100, {from: oracleAddress});
+                result.logs[0].event.should.equal('MetricsUpdated');
             });
         });
     });
 
-    describe('statsByVerificationPhaseNumber()', () => {
+    describe('resolveConditionally()', () => {
+        describe('if called by non-oracle', () => {
+            it('should revert', async () => {
+                resolutionEngine.resolveConditionally({from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called by oracle', () => {
+            it('should successfully complete', async () => {
+                const result = await resolutionEngine.resolveConditionally({from: oracleAddress});
+
+                result.logs[0].event.should.equal('ConditionallyResolved');
+            });
+        });
+    });
+
+    describe('metricsByVerificationPhaseNumber()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.statsByVerificationPhaseNumber(1).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumber.call(1).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
-            it('should return stats of verification phase number', async () => {
-                const result = await resolutionEngine.statsByVerificationPhaseNumber(0);
-                result.state.should.exist.and.eq.BN(0);
-                result.trueAmount.should.exist.and.eq.BN(0);
-                result.falseAmount.should.exist.and.eq.BN(0);
-                result.amount.should.exist.and.eq.BN(0);
+            it('should return metrics of verification phase number', async () => {
+                const result = await resolutionEngine.metricsByVerificationPhaseNumber.call(0);
+                result.state.should.exist.and.eq.BN(1);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
                 result.numberOfWallets.should.exist.and.eq.BN(0);
-                result.startBlock.should.exist.and.eq.BN(0);
+                result.bountyAmount.should.exist.and.be.eq.BN(10);
+                result.bountyAwarded.should.exist.and.be.false;
+                result.startBlock.should.exist.and.be.gt.BN(0);
                 result.endBlock.should.exist.and.eq.BN(0);
                 result.numberOfBlocks.should.exist.and.be.gt.BN(0);
-                result.bounty.should.exist.and.eq.BN(0);
             });
         });
     });
 
-    describe('statsByVerificationPhaseNumberAndWallet()', () => {
+    describe('metricsByVerificationPhaseNumberAndWallet()', () => {
         describe('if verification phase number is too large', () => {
             it('should revert', async () => {
-                resolutionEngine.statsByVerificationPhaseNumberAndWallet(1, Wallet.createRandom().address).should.be.rejected;
+                resolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, Wallet.createRandom().address).should.be.rejected;
             });
         });
 
         describe('if verification phase number is within bounds', () => {
-            it('should return stats of verification phase number and wallet', async () => {
-                const result = await resolutionEngine.statsByVerificationPhaseNumberAndWallet(0, Wallet.createRandom().address);
-                result.should.exist.and.eq.BN(0);
+            it('should return metrics of verification phase number and wallet', async () => {
+                const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, Wallet.createRandom().address);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
             });
         });
     });
 
-    describe('statsByWallet()', () => {
-        it('should return stats of wallet', async () => {
-            const result = await resolutionEngine.statsByWallet(Wallet.createRandom().address);
-            result.should.exist.and.eq.BN(0);
+    describe('metricsByWallet()', () => {
+        it('should return metrics of wallet', async () => {
+            const result = await resolutionEngine.metricsByWallet.call(Wallet.createRandom().address);
+            result.trueStakeAmount.should.exist.and.eq.BN(0);
+            result.falseStakeAmount.should.exist.and.eq.BN(0);
+            result.stakeAmount.should.exist.and.eq.BN(0);
         });
     });
 
-    describe('statsByBlockNumber()', () => {
+    describe('metricsByBlockNumber()', () => {
         describe('if block number is too large', () => {
             let blockNumber;
 
@@ -192,46 +143,134 @@ contract('ResolutionEngine', (accounts) => {
             });
 
             it('should revert', async () => {
-                resolutionEngine.statsByBlockNumber(blockNumber * 2).should.be.rejected;
+                resolutionEngine.metricsByBlockNumber.call(blockNumber * 2).should.be.rejected;
             });
         });
 
         describe('if block number is within bounds', () => {
-            it('should return stats of block number', async () => {
-                const result = await resolutionEngine.statsByBlockNumber(0);
-                result.should.exist.and.eq.BN(0);
+            it('should return metrics of block number', async () => {
+                const result = await resolutionEngine.metricsByBlockNumber.call(0);
+                result.trueStakeAmount.should.exist.and.eq.BN(0);
+                result.falseStakeAmount.should.exist.and.eq.BN(0);
+                result.stakeAmount.should.exist.and.eq.BN(0);
             });
         });
     });
 
-    describe('openVerificationPhase()', () => {
-        let mockedResolutionEngine;
+    describe('calculatePayout()', () => {
+        describe('if resolution result is null-status', () => {
+            it('should return 0', async () => {
+                const payout = await resolutionEngine.calculatePayout.call(0, Wallet.createRandom().address);
 
-        beforeEach(async () => {
-            mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, testToken.address);
-            bountyFund = await BountyFund.new(mockedResolutionEngine.address);
-
-            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            await mockedResolutionEngine.setBountyFraction(bountyFraction);
-
-            await testToken.mint(bountyFund.address, 100);
-        });
-
-        describe('if verification phase is unopened', () => {
-            it('should successfully open the verification phase', async () => {
-                await mockedResolutionEngine._openVerificationPhase();
-
-                const result = await mockedResolutionEngine.statsByVerificationPhaseNumber(0);
-                result.startBlock.should.exist.and.be.gt.BN(0);
-                result.endBlock.should.exist.and.eq.BN(0);
-                result.numberOfBlocks.should.exist.and.be.gt.BN(0);
-                result.bounty.should.exist.and.be.eq.BN(10);
+                payout.should.eq.BN(0);
             });
         });
 
-        describe('if verification phase is open', () => {
+        // 1st scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
+        describe('if bounty was not awarded', () => {
+            let mockedResolutionEngine;
+
             beforeEach(async () => {
-                await mockedResolutionEngine._openVerificationPhase();
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 1000);
+
+                const bountyFraction = await bountyFund.PARTS_PER.call();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await mockedResolutionEngine._setVerificationStatus(1);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 10);
+                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 10, {from: accounts[2]});
+
+                await testToken.mint(accounts[3], 90);
+                await testToken.approve(oracle.address, 90, {from: accounts[3]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 90, {from: accounts[3]});
+
+                await testToken.mint(accounts[4], 50);
+                await testToken.approve(oracle.address, 50, {from: accounts[4]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 50, {from: accounts[4]});
+
+                await mockedResolutionEngine._closeVerificationPhase();
+            });
+
+            it('should return 0', async () => {
+                const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
+
+                payout.should.eq.BN(5);
+            });
+        });
+
+        // 2nd scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
+        describe('if bounty was awarded', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 1000);
+
+                const bountyFraction = await bountyFund.PARTS_PER.call();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await mockedResolutionEngine._setVerificationStatus(1);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 10);
+                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 10, {from: accounts[2]});
+
+                await testToken.mint(accounts[3], 50);
+                await testToken.approve(oracle.address, 50, {from: accounts[3]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 50, {from: accounts[3]});
+
+                await testToken.mint(accounts[4], 90);
+                await testToken.approve(oracle.address, 90, {from: accounts[4]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 90, {from: accounts[4]});
+
+                await mockedResolutionEngine._closeVerificationPhase();
+            });
+
+            it('should return 0', async () => {
+                const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
+
+                payout.should.eq.BN(105);
+            });
+        });
+    });
+
+    describe('withdrawFromBountyFund()', () => {
+        let mockedResolutionEngine, balanceBefore;
+
+        beforeEach(async () => {
+            bountyFund = await BountyFund.new(testToken.address);
+            await testToken.mint(bountyFund.address, 100);
+
+            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+            mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
+
+            balanceBefore = await testToken.balanceOf.call(mockedResolutionEngine.address);
+        });
+
+        it('should successfully withdraw', async () => {
+            await mockedResolutionEngine._withdrawFromBountyFund();
+
+            (await testToken.balanceOf.call(mockedResolutionEngine.address)).should.eq.BN(balanceBefore.addn(9));
+        });
+    });
+
+    describe('openVerificationPhase()', () => {
+        describe('if verification phase is already opened', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 100);
+
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
             });
 
             it('should revert', async () => {
@@ -241,29 +280,67 @@ contract('ResolutionEngine', (accounts) => {
     });
 
     describe('closeVerificationPhase()', () => {
-        let mockedResolutionEngine;
+        let mockedResolutionEngine, verificationPhaseNumberBefore, bountyBalanceBefore;
 
-        beforeEach(async () => {
-            mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, testToken.address);
-            bountyFund = await BountyFund.new(mockedResolutionEngine.address);
+        describe('if resolution result equals verification status', () => {
+            beforeEach(async () => {
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 100);
 
-            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            await mockedResolutionEngine.setBountyFraction(bountyFraction);
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
-            await testToken.mint(bountyFund.address, 100);
+                verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
+                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
+            });
 
-            await mockedResolutionEngine._openVerificationPhase();
+            it('should successfully close the verification phase without toggling verification status', async () => {
+                await mockedResolutionEngine._closeVerificationPhase();
+
+                const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber(0);
+                result.startBlock.should.exist.and.be.gt.BN(0);
+                result.endBlock.should.exist.and.be.gt.BN(0);
+                result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
+                result.bountyAwarded.should.exist.and.be.false;
+
+                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore);
+
+                (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+            });
         });
 
-        it('should successfully close the verification phase', async () => {
-            await mockedResolutionEngine._closeVerificationPhase();
+        describe('if resolution result differs from verification status', () => {
+            beforeEach(async () => {
+                const oracle = await Oracle.new();
 
-            const result = await mockedResolutionEngine.statsByVerificationPhaseNumber(0);
-            result.startBlock.should.exist.and.be.gt.BN(0);
-            result.endBlock.should.exist.and.be.gt.BN(0);
-            result.numberOfBlocks.should.exist.and.be.gte.BN(0);
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 100);
 
-            (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.gt.BN(0);
+                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 100);
+                await testToken.approve(oracle.address, 100, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[2]});
+
+                verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
+                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
+            });
+
+            it('should successfully close the verification phase and toggle verification status', async () => {
+                await mockedResolutionEngine._closeVerificationPhase();
+
+                const result = await mockedResolutionEngine.metricsByVerificationPhaseNumber.call(0);
+                result.startBlock.should.exist.and.be.gt.BN(0);
+                result.endBlock.should.exist.and.be.gt.BN(0);
+                result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
+                result.bountyAwarded.should.exist.and.be.true;
+
+                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore.subn(9));
+
+                (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+            });
         });
     });
 });

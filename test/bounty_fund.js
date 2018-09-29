@@ -18,16 +18,15 @@ const BountyFund = artifacts.require('BountyFund');
 const TestToken = artifacts.require('TestToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
+const zeroAddress = '0x0000000000000000000000000000000000000000';
+
 contract('BountyFund', (accounts) => {
     let testToken, bountyFund, resolutionEngine;
 
-    before(async () => {
-        const oracle = Wallet.createRandom().address;
+    beforeEach(async () => {
         testToken = await TestToken.new();
 
-        resolutionEngine = await MockedResolutionEngine.new(oracle, testToken.address);
-
-        bountyFund = await BountyFund.new(resolutionEngine.address);
+        bountyFund = await BountyFund.new(testToken.address);
     });
 
     describe('constructor()', () => {
@@ -40,20 +39,48 @@ contract('BountyFund', (accounts) => {
         });
     });
 
-    describe('resolutionEngine()', () => {
+    describe('token()', () => {
         it('should equal the value passed as constructor argument', async () => {
-            (await bountyFund.resolutionEngine.call()).should.equal(resolutionEngine.address);
+            (await bountyFund.token.call()).should.equal(testToken.address);
         });
     });
 
-    describe('token()', () => {
-        it('should equal the value returned by resolution engine\'s token() function', async () => {
-            (await bountyFund.token.call()).should.equal(await resolutionEngine.token.call());
+    describe('setResolutionEngine()', () => {
+        let resolutionEngine;
+
+        describe('when called with zero address', () => {
+            it('should revert', async () => {
+                bountyFund.setResolutionEngine(zeroAddress).should.be.rejected;
+            });
+        });
+
+        describe('when called the first time', () => {
+            beforeEach(() => {
+                resolutionEngine = Wallet.createRandom().address;
+            });
+
+            it('should successfully set the resolution engine', async () => {
+                const result = await bountyFund.setResolutionEngine(resolutionEngine);
+
+                result.logs[0].event.should.equal('ResolutionEngineSet');
+                (await bountyFund.resolutionEngine.call()).should.equal(resolutionEngine);
+            });
+        });
+
+        describe('when called the second time', () => {
+            beforeEach(async () => {
+                resolutionEngine = Wallet.createRandom().address;
+                await bountyFund.setResolutionEngine(resolutionEngine);
+            });
+
+            it('should revert', async () => {
+                bountyFund.setResolutionEngine(resolutionEngine).should.be.rejected;
+            });
         });
     });
 
     describe('depositTokens()', () => {
-        before(async () => {
+        beforeEach(async () => {
             await testToken.mint(accounts[2], 100);
             await testToken.approve(bountyFund.address, 100, {from: accounts[2]});
         });
@@ -69,7 +96,7 @@ contract('BountyFund', (accounts) => {
     describe('withdrawTokens()', () => {
         let partsPer;
 
-        before(async () => {
+        beforeEach(async () => {
             partsPer = await bountyFund.PARTS_PER.call();
         });
 
@@ -80,14 +107,17 @@ contract('BountyFund', (accounts) => {
         });
 
         describe('if done by registered resolution engine', () => {
-            let fraction;
+            let resolutionEngine, fraction;
 
-            before(async () => {
+            beforeEach(async () => {
                 await testToken.mint(bountyFund.address, 100);
+
+                const oracle = Wallet.createRandom().address;
+                resolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, 0.1);
             });
 
             describe('if fraction is too large', () => {
-                before(async () => {
+                beforeEach(async () => {
                     fraction = partsPer.muln(2);
                 });
 
@@ -99,8 +129,8 @@ contract('BountyFund', (accounts) => {
             describe('if fraction is within bounds', () => {
                 let balanceBefore;
 
-                before(async () => {
-                    balanceBefore = await testToken.balanceOf(bountyFund.address);
+                beforeEach(async () => {
+                    balanceBefore = await testToken.balanceOf.call(bountyFund.address);
                     fraction = partsPer.divn(2);
                 });
 
