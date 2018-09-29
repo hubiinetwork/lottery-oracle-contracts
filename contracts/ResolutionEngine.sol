@@ -298,6 +298,7 @@ contract ResolutionEngine is Resolvable, RBACed {
             // Award bounty to this verification phase
             verificationPhaseMap[verificationPhaseNumber].bountyAwarded = true;
 
+
             // Withdraw new bounty
             withdrawFromBountyFund();
         }
@@ -307,6 +308,14 @@ contract ResolutionEngine is Resolvable, RBACed {
 
         // Bump verification phase number
         verificationPhaseNumber++;
+    }
+
+    function withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber)
+    public
+    onlyRoleAccessor(ORACLE_ROLE)
+    {
+
     }
 
     //    function claim(uint256 _lowVerificationPhaseNumber, uint256 _highVerificationPhaseNumber) internal {

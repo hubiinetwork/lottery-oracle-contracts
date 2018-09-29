@@ -60,6 +60,8 @@ contract Oracle is RBACed {
     event ResolutionEngineAdded(address indexed _resolutionEngine);
     event ResolutionEngineRemoved(address indexed _resolutionEngine);
     event TokensStaked(address _resolutionEngine, address _wallet, bool _status, uint256 _amount);
+    event PayoutClaimed(address _resolutionEngine, address _wallet, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber);
 
     ResolutionEnginesLib.ResolutionEngines resolutionEngines;
 
@@ -115,7 +117,7 @@ contract Oracle is RBACed {
         emit ResolutionEngineRemoved(_resolutionEngine);
     }
 
-    /// @notice For the current phase number of the given resolution engine stake the amount of tokens
+    /// @notice For the given resolution engine and verification phase number stake the amount of tokens
     /// at the given status
     /// @dev Client has to do prior approval of the transfer of the given amount
     /// @param _resolutionEngine The concerned resolution engine
@@ -146,5 +148,23 @@ contract Oracle is RBACed {
 
         // Emit event
         emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
+    }
+
+    /// @notice For the given resolution engine and verification phase number claim payout
+    /// @param _resolutionEngine The concerned resolution engine
+    /// @param _firstVerificationPhaseNumber The first verification phase number to claim payout from
+    /// @param _lastVerificationPhaseNumber The last verification phase number to claim payout from
+    function claimPayout(address _resolutionEngine, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber)
+    public
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Withdraw payout from resolution engine
+        resolutionEngine.withdrawPayout(msg.sender, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+
+        // Emit event
+        emit PayoutClaimed(_resolutionEngine, msg.sender, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
     }
 }

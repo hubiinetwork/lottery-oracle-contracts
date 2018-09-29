@@ -13,6 +13,15 @@ import {BountyFund} from "../contracts/BountyFund.sol";
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A mock of resolution engine
 contract MockedResolutionEngine is ResolutionEngine {
+
+    struct Payout {
+        address wallet;
+        uint256 firstVerificationPhaseNumber;
+        uint256 lastVerificationPhaseNumber;
+    }
+
+    Payout[] public payouts;
+
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
     public
     ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
@@ -37,5 +46,10 @@ contract MockedResolutionEngine is ResolutionEngine {
 
     function _setVerificationStatus(VerificationPhaseLib.Status _status) public {
         verificationStatus = _status;
+    }
+
+    function withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber) public {
+        payouts.push(Payout(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber));
     }
 }
