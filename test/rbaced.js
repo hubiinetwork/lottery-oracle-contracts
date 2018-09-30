@@ -25,15 +25,22 @@ contract('RBACed', (accounts) => {
     });
 
     describe('rolesCount()', () => {
-        it('should test successfully', async () => {
+        it('should return initial value', async () => {
             (await rbaced.rolesCount.call()).should.eq.BN(1);
         });
     });
 
     describe('isRole()', () => {
-        it('should test successfully', async () => {
-            (await rbaced.isRole.call(ownerRole)).should.be.true;
-            (await rbaced.isRole.call('SOME_NON_EXISTENT_ROLE')).should.be.false;
+        describe('if role is owner', () => {
+            it('should return true', async () => {
+                (await rbaced.isRole.call(ownerRole)).should.be.true;
+            });
+        });
+
+        describe('if role is not owner', () => {
+            it('should return false', async () => {
+                (await rbaced.isRole.call('SOME_NON_EXISTENT_ROLE')).should.be.false;
+            });
         });
     });
 
@@ -51,7 +58,7 @@ contract('RBACed', (accounts) => {
         });
 
         describe('if called by owner', () => {
-            it('should test successfully', async () => {
+            it('should successfully add role', async () => {
                 const result = await rbaced.addRole(role, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAdded');
                 (await rbaced.isRole.call('SOME_ROLE')).should.be.true;
@@ -60,9 +67,16 @@ contract('RBACed', (accounts) => {
     });
 
     describe('isRoleAccessor()', () => {
-        it('should test successfully', async () => {
-            (await rbaced.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await rbaced.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+        describe('if called with address of owner', () => {
+            it('should return true', async () => {
+                (await rbaced.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
+            });
+        });
+
+        describe('if called with address of non-owner', () => {
+            it('should return false', async () => {
+                (await rbaced.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+            });
         });
     });
 
@@ -80,7 +94,7 @@ contract('RBACed', (accounts) => {
         });
 
         describe('if called by owner', () => {
-            it('should test successfully', async () => {
+            it('should successfully add role accessor', async () => {
                 const result = await rbaced.addRoleAccessor(ownerRole, accessorAddress, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAccessorAdded');
                 (await rbaced.isRoleAccessor.call(ownerRole, accessorAddress)).should.be.true;
@@ -106,7 +120,7 @@ contract('RBACed', (accounts) => {
                 await rbaced.addRoleAccessor(ownerRole, accessorAddress, {from: accounts[0]});
             });
 
-            it('should test successfully', async () => {
+            it('should successfully remove role accessor', async () => {
                 const result = await rbaced.removeRoleAccessor(ownerRole, accessorAddress, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAccessorRemoved');
                 (await rbaced.isRoleAccessor.call(ownerRole, accessorAddress)).should.be.false;
