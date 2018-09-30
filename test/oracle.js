@@ -155,15 +155,35 @@ contract('Oracle', (accounts) => {
                 balanceBefore = await testToken.balanceOf.call(accounts[1]);
             });
 
-            // TODO Solve issue that suggest that test tokens are not transferred to resolution engine through delegate call
             it('should successfully stake tokens', async () => {
-
                 const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
 
                 result.logs[0].event.should.equal('TokensStaked');
 
                 (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
             });
+        });
+    });
+
+    describe('claimPayout()', () => {
+        let mockedResolutionEngine;
+
+        beforeEach(async () => {
+            oracle = await Oracle.new();
+
+            const bountyFund = await BountyFund.new(testToken.address);
+            testToken.mint(bountyFund.address, 100);
+
+            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
+            mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+
+            await oracle.addResolutionEngine(mockedResolutionEngine.address);
+        });
+
+        it('should successfully claim payout', async () => {
+            const result = await oracle.claimPayout(mockedResolutionEngine.address, 0, 10, {from: accounts[1]});
+
+            result.logs[0].event.should.equal('PayoutClaimed');
         });
     });
 });
