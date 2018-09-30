@@ -94,6 +94,7 @@ contract('ResolutionEngine', (accounts) => {
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number', async () => {
                 const result = await resolutionEngine.metricsByVerificationPhaseNumber.call(0);
+
                 result.state.should.exist.and.eq.BN(1);
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
@@ -118,6 +119,7 @@ contract('ResolutionEngine', (accounts) => {
         describe('if verification phase number is within bounds', () => {
             it('should return metrics of verification phase number and wallet', async () => {
                 const result = await resolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, Wallet.createRandom().address);
+
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
                 result.stakeAmount.should.exist.and.eq.BN(0);
@@ -128,6 +130,7 @@ contract('ResolutionEngine', (accounts) => {
     describe('metricsByWallet()', () => {
         it('should return metrics of wallet', async () => {
             const result = await resolutionEngine.metricsByWallet.call(Wallet.createRandom().address);
+
             result.trueStakeAmount.should.exist.and.eq.BN(0);
             result.falseStakeAmount.should.exist.and.eq.BN(0);
             result.stakeAmount.should.exist.and.eq.BN(0);
@@ -150,6 +153,7 @@ contract('ResolutionEngine', (accounts) => {
         describe('if block number is within bounds', () => {
             it('should return metrics of block number', async () => {
                 const result = await resolutionEngine.metricsByBlockNumber.call(0);
+
                 result.trueStakeAmount.should.exist.and.eq.BN(0);
                 result.falseStakeAmount.should.exist.and.eq.BN(0);
                 result.stakeAmount.should.exist.and.eq.BN(0);
@@ -241,7 +245,7 @@ contract('ResolutionEngine', (accounts) => {
         });
     });
 
-    describe('withdrawFromBountyFund()', () => {
+    describe('extractBounty()', () => {
         let mockedResolutionEngine, balanceBefore;
 
         beforeEach(async () => {
@@ -255,7 +259,7 @@ contract('ResolutionEngine', (accounts) => {
         });
 
         it('should successfully withdraw', async () => {
-            await mockedResolutionEngine._withdrawFromBountyFund();
+            await mockedResolutionEngine._extractBounty();
 
             (await testToken.balanceOf.call(mockedResolutionEngine.address)).should.eq.BN(balanceBefore.addn(9));
         });
@@ -340,6 +344,79 @@ contract('ResolutionEngine', (accounts) => {
                 (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore.subn(9));
 
                 (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
+            });
+        });
+    });
+
+    describe('withdrawPayout()', () => {
+        describe('if called by non-oracle', () => {
+            it('should revert', async () => {
+                resolutionEngine.withdrawPayout(accounts[2], 0, 0, {from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called by oracle', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                const oracle = await Oracle.new();
+
+                bountyFund = await BountyFund.new(testToken.address);
+                await testToken.mint(bountyFund.address, 1000);
+
+                const bountyFraction = await bountyFund.PARTS_PER.call();
+                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                await mockedResolutionEngine._setVerificationStatus(1);
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await testToken.mint(accounts[2], 10);
+                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 10, {from: accounts[2]});
+
+                await testToken.mint(accounts[3], 50);
+                await testToken.approve(oracle.address, 50, {from: accounts[3]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 50, {from: accounts[3]});
+
+                await testToken.mint(accounts[4], 90);
+                await testToken.approve(oracle.address, 90, {from: accounts[4]});
+                await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 90, {from: accounts[4]});
+            });
+
+            describe('if called on verification phase that has not closed', () => {
+                it('should withdraw 0', async () => {
+                    await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
+
+                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(0);
+                });
+            });
+
+            describe('if called the first time on verification phase that has closed', () => {
+                beforeEach(async () => {
+                    await mockedResolutionEngine._closeVerificationPhase();
+                });
+
+                it('should successfully withdraw payout', async () => {
+                    await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
+
+                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(105);
+                });
+            });
+
+            describe('if called the second time on verification phase that has closed', () => {
+                let balanceBefore;
+
+                beforeEach(async () => {
+                    await mockedResolutionEngine._closeVerificationPhase();
+                    await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
+
+                    balanceBefore = await testToken.balanceOf.call(accounts[2]);
+                });
+
+                it('should withdraw 0', async () => {
+                    await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
+
+                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBefore);
+                });
             });
         });
     });

@@ -184,11 +184,6 @@ contract('Oracle', (accounts) => {
             const result = await oracle.claimPayout(mockedResolutionEngine.address, 0, 10, {from: accounts[1]});
 
             result.logs[0].event.should.equal('PayoutClaimed');
-
-            const payout = await mockedResolutionEngine.payouts(0);
-            payout.wallet.should.equal(accounts[1]);
-            payout.firstVerificationPhaseNumber.should.eq.BN(0);
-            payout.lastVerificationPhaseNumber.should.eq.BN(10);
         });
     });
 });

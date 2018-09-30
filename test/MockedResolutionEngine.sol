@@ -14,14 +14,6 @@ import {BountyFund} from "../contracts/BountyFund.sol";
 /// @notice A mock of resolution engine
 contract MockedResolutionEngine is ResolutionEngine {
 
-    struct Payout {
-        address wallet;
-        uint256 firstVerificationPhaseNumber;
-        uint256 lastVerificationPhaseNumber;
-    }
-
-    Payout[] public payouts;
-
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
     public
     ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
@@ -32,8 +24,8 @@ contract MockedResolutionEngine is ResolutionEngine {
         bountyFund.withdrawTokens(_fraction);
     }
 
-    function _withdrawFromBountyFund() public {
-        withdrawFromBountyFund();
+    function _extractBounty() public {
+        extractBounty();
     }
 
     function _openVerificationPhase() public {
@@ -48,8 +40,9 @@ contract MockedResolutionEngine is ResolutionEngine {
         verificationStatus = _status;
     }
 
-    function withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+    function _withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber) public {
-        payouts.push(Payout(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber));
+        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
+            withdrawPayout(_wallet, i);
     }
 }
