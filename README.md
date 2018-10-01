@@ -22,3 +22,16 @@ See www.hubii.com for more information.
   We recommend having the current LTS version (v8.x) installed, or
   later, and updating NPM to the latest available version.
 * Truffle Framework - The initial project is based on the upcoming v5 of Truffle Framework, currently in [v5.0.0-beta.0](https://github.com/trufflesuite/truffle/releases/tag/v5.0.0-beta.0).
+
+## Installation
+
+The installation of required third parties is done by running
+
+    npm install
+
+## Run tests
+
+Unit tests as well as end-to-end test may be triggered by running
+
+    npm test
+    
