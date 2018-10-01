@@ -93,9 +93,9 @@ contract ResolutionEngine is Resolvable, RBACed {
     uint256 public bountyAmount;
 
     uint256 public verificationPhaseNumber;
-    mapping(uint256 => VerificationPhaseLib.VerificationPhase) internal verificationPhaseMap;
-    mapping(address => mapping(bool => uint256)) private walletStatusAmountMap;
-    mapping(uint256 => mapping(bool => uint256)) private blockStatusAmountMap;
+    mapping(uint256 => VerificationPhaseLib.VerificationPhase) public verificationPhaseMap;
+    mapping(address => mapping(bool => uint256)) public walletStatusAmountMap;
+    mapping(uint256 => mapping(bool => uint256)) public blockStatusAmountMap;
 
     VerificationPhaseLib.Status public verificationStatus;
 
@@ -143,8 +143,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @notice Update metrics following a stake operation in the oracle
     /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
-    /// @param _verificationPhaseNumber The verification phase number whose metrics will be updated, which can only be
-    /// the current verification phase number
+    /// @param _verificationPhaseNumber The verification phase number whose metrics will be updated, which can only
+    /// be the current verification phase number
     /// @param _status The status staked at
     /// @param _amount The amount staked
     function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
@@ -163,7 +163,12 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     /// @notice Resolve the market if resolution criteria have been met
     /// @dev The function can only be called by oracle.
-    function resolveConditionally() public onlyRoleAccessor(ORACLE_ROLE)
+    /// @param _verificationPhaseNumber The verification phase number that is considered for resolution, which can only
+    /// be the current verification phase number
+    function resolveConditionally(uint256 _verificationPhaseNumber)
+    public
+    onlyRoleAccessor(ORACLE_ROLE)
+    onlyCurrentPhaseNumber(_verificationPhaseNumber)
     {
         if (resolutionCriteriaMet()) {
             closeVerificationPhase();
@@ -266,10 +271,13 @@ contract ResolutionEngine is Resolvable, RBACed {
         if (verificationPhaseMap[_verificationPhaseNumber].bountyAwarded)
             lot = lot.add(verificationPhaseMap[_verificationPhaseNumber].bountyAmount);
 
-        // Return the lot scaled by the fractional contribution that wallet staked on obtained status
+        // Get the amount the wallet staked and total amount staked on the obtained status
         uint256 walletStatusAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][status];
         uint256 statusAmount = verificationPhaseMap[_verificationPhaseNumber].statusAmountMap[status];
-        return lot.mul(walletStatusAmount).div(statusAmount);
+
+        // Return the lot scaled by the fractional contribution that wallet staked on the obtained status and
+        // to this added the wallet's own staked amount
+        return lot.mul(walletStatusAmount).div(statusAmount).add(walletStatusAmount);
     }
 
     /// @notice Withdraw the payout earned by given wallet in the inclusive range of given verification phase numbers
