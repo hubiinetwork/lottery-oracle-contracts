@@ -93,7 +93,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     uint256 public bountyAmount;
 
     uint256 public verificationPhaseNumber;
-    mapping(uint256 => VerificationPhaseLib.VerificationPhase) private verificationPhaseMap;
+    mapping(uint256 => VerificationPhaseLib.VerificationPhase) internal verificationPhaseMap;
     mapping(address => mapping(bool => uint256)) private walletStatusAmountMap;
     mapping(uint256 => mapping(bool => uint256)) private blockStatusAmountMap;
 
