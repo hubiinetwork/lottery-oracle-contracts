@@ -146,6 +146,9 @@ contract Oracle is RBACed {
         // Update metrics post transfer
         resolutionEngine.updateMetrics(msg.sender, _verificationPhaseNumber, _status, _amount);
 
+        // Possibly resolve market if resolution criteria have been met
+        resolutionEngine.resolveConditionally(_verificationPhaseNumber);
+
         // Emit event
         emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
     }

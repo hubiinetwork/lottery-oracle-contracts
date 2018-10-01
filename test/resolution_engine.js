@@ -71,13 +71,13 @@ contract('ResolutionEngine', (accounts) => {
     describe('resolveConditionally()', () => {
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
-                resolutionEngine.resolveConditionally({from: accounts[2]}).should.be.rejected;
+                resolutionEngine.resolveConditionally(0, {from: accounts[2]}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
             it('should successfully complete', async () => {
-                const result = await resolutionEngine.resolveConditionally({from: oracleAddress});
+                const result = await resolutionEngine.resolveConditionally(0, {from: oracleAddress});
 
                 result.logs[0].event.should.equal('ConditionallyResolved');
             });
@@ -203,7 +203,7 @@ contract('ResolutionEngine', (accounts) => {
             it('should return 0', async () => {
                 const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
 
-                payout.should.eq.BN(5);
+                payout.should.eq.BN(15); // Including 10 tokens staked
             });
         });
 
@@ -240,7 +240,7 @@ contract('ResolutionEngine', (accounts) => {
             it('should return 0', async () => {
                 const payout = await mockedResolutionEngine.calculatePayout.call(0, accounts[2]);
 
-                payout.should.eq.BN(105);
+                payout.should.eq.BN(115); // Including 10 tokens staked
             });
         });
     });
@@ -398,7 +398,7 @@ contract('ResolutionEngine', (accounts) => {
                 it('should successfully withdraw payout', async () => {
                     await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
 
-                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(105);
+                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(115);
                 });
             });
 
