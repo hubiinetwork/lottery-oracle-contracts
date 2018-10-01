@@ -41,9 +41,6 @@ contract('*', (accounts) => {
                 await testToken.approve(bountyFund.address, 1000);
                 await bountyFund.depositTokens(1000);
 
-                // Mint tokens for bounty fund (rather than depositing into it)
-                // await testToken.mint(bountyFund.address, 1000);
-
                 // Deploy naïve total resolution engine and register it with oracle
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 naiveTotalResolutionEngine = await NaiveTotalResolutionEngine.new(
