@@ -6,7 +6,7 @@
 
 const utils = require('./utils.js');
 
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 const Oracle = artifacts.require('Oracle');
 const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
@@ -19,12 +19,12 @@ module.exports = async (deployer, network, accounts) => {
     try {
         ownerAccount = await utils.initializeOwnerAccount(network, accounts);
 
-        const testToken = await TestToken.deployed();
+        const stakeToken = await StakeToken.deployed();
 
         await deployer.deploy(Oracle, {from: ownerAccount});
 
-        await deployer.deploy(BountyFund, testToken.address, {from: ownerAccount});
-        await testToken.mint(BountyFund.address, 100, {from: ownerAccount});
+        await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
+        await stakeToken.mint(BountyFund.address, 100, {from: ownerAccount});
 
         const bountyFund = await BountyFund.deployed();
         const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);

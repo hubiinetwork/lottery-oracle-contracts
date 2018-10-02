@@ -15,18 +15,18 @@ chai.use(bnChai(BN));
 chai.should();
 
 const BountyFund = artifacts.require('BountyFund');
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
 const zeroAddress = '0x0000000000000000000000000000000000000000';
 
 contract('BountyFund', (accounts) => {
-    let testToken, bountyFund, resolutionEngine;
+    let stakeToken, bountyFund, resolutionEngine;
 
     beforeEach(async () => {
-        testToken = await TestToken.new();
+        stakeToken = await StakeToken.new();
 
-        bountyFund = await BountyFund.new(testToken.address);
+        bountyFund = await BountyFund.new(stakeToken.address);
     });
 
     describe('constructor()', () => {
@@ -41,7 +41,7 @@ contract('BountyFund', (accounts) => {
 
     describe('token()', () => {
         it('should equal the value passed as constructor argument', async () => {
-            (await bountyFund.token.call()).should.equal(testToken.address);
+            (await bountyFund.token.call()).should.equal(stakeToken.address);
         });
     });
 
@@ -81,15 +81,15 @@ contract('BountyFund', (accounts) => {
 
     describe('depositTokens()', () => {
         beforeEach(async () => {
-            await testToken.mint(accounts[2], 100);
-            await testToken.approve(bountyFund.address, 100, {from: accounts[2]});
+            await stakeToken.mint(accounts[2], 100);
+            await stakeToken.approve(bountyFund.address, 100, {from: accounts[2]});
         });
 
         it('should successfully transfer tokens to bounty fund', async () => {
             const result = await bountyFund.depositTokens(100, {from: accounts[2]});
 
             result.logs[0].event.should.equal('TokensDeposited');
-            (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(100);
+            (await stakeToken.balanceOf.call(bountyFund.address)).should.eq.BN(100);
         });
     });
 
@@ -110,7 +110,7 @@ contract('BountyFund', (accounts) => {
             let resolutionEngine, fraction;
 
             beforeEach(async () => {
-                await testToken.mint(bountyFund.address, 100);
+                await stakeToken.mint(bountyFund.address, 100);
 
                 const oracle = Wallet.createRandom().address;
                 resolutionEngine = await MockedResolutionEngine.new(oracle, bountyFund.address, 0.1);
@@ -130,14 +130,14 @@ contract('BountyFund', (accounts) => {
                 let balanceBefore;
 
                 beforeEach(async () => {
-                    balanceBefore = await testToken.balanceOf.call(bountyFund.address);
+                    balanceBefore = await stakeToken.balanceOf.call(bountyFund.address);
                     fraction = partsPer.divn(2);
                 });
 
                 it('should successfully transfer tokens to bounty fund', async () => {
                     await resolutionEngine._withdrawTokens(fraction);
 
-                    (await testToken.balanceOf.call(resolutionEngine.address)).should.eq.BN(balanceBefore.mul(fraction).div(partsPer));
+                    (await stakeToken.balanceOf.call(resolutionEngine.address)).should.eq.BN(balanceBefore.mul(fraction).div(partsPer));
                 });
             });
         });

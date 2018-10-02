@@ -14,31 +14,31 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 const Oracle = artifacts.require('Oracle');
 const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 
 contract('*', (accounts) => {
-    let testToken, oracle, bountyFund, naiveTotalResolutionEngine, balanceBeforeAccount1, balanceBeforeAccount2;
+    let stakeToken, oracle, bountyFund, naiveTotalResolutionEngine, balanceBeforeAccount1, balanceBeforeAccount2;
 
     describe('NaiveTotalResolutionEngine', () => {
         describe('initialize', () => {
             it('should initialize successfully', async () => {
                 // Deploy test token
-                testToken = await TestToken.new();
+                stakeToken = await StakeToken.new();
 
                 // Mint tokens for default account
-                await testToken.mint(accounts[0], 1000);
+                await stakeToken.mint(accounts[0], 1000);
 
                 // Deploy oracle
                 oracle = await Oracle.new();
 
                 // Deploy bounty fund
-                bountyFund = await BountyFund.new(testToken.address);
+                bountyFund = await BountyFund.new(stakeToken.address);
 
                 // Deposit tokens into bounty fund
-                await testToken.approve(bountyFund.address, 1000);
+                await stakeToken.approve(bountyFund.address, 1000);
                 await bountyFund.depositTokens(1000);
 
                 // Deploy naïve total resolution engine and register it with oracle
@@ -55,8 +55,8 @@ contract('*', (accounts) => {
                 (await oracle.hasResolutionEngine.call(naiveTotalResolutionEngine.address)).should.be.true;
 
                 // Mint tokens for wallets and approve of
-                await testToken.mint(accounts[1], 1000);
-                await testToken.mint(accounts[2], 1000);
+                await stakeToken.mint(accounts[1], 1000);
+                await stakeToken.mint(accounts[2], 1000);
             })
         });
 
@@ -70,12 +70,12 @@ contract('*', (accounts) => {
 
         describe('stake into first verification phase', () => {
             it('should stake successfully', async () => {
-                balanceBeforeAccount1 = await testToken.balanceOf.call(accounts[1]);
-                balanceBeforeAccount2 = await testToken.balanceOf.call(accounts[2]);
+                balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
+                balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
                 // Approve of oracle staking for wallets
-                await testToken.approve(oracle.address, 110, {from: accounts[1]});
-                await testToken.approve(oracle.address, 20, {from: accounts[2]});
+                await stakeToken.approve(oracle.address, 110, {from: accounts[1]});
+                await stakeToken.approve(oracle.address, 20, {from: accounts[2]});
 
                 // Stake below resolution criteria
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 0, true, 10, {from: accounts[1]});
@@ -98,8 +98,8 @@ contract('*', (accounts) => {
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[2]))
                     .falseStakeAmount.should.eq.BN(20);
 
-                (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(110));
-                (await testToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(20));
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(110));
+                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(20));
             });
         });
 
@@ -113,12 +113,12 @@ contract('*', (accounts) => {
 
         describe('stake into second verification phase', () => {
             it('should stake successfully', async () => {
-                balanceBeforeAccount1 = await testToken.balanceOf.call(accounts[1]);
-                balanceBeforeAccount2 = await testToken.balanceOf.call(accounts[2]);
+                balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
+                balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
                 // Approve of oracle staking for wallets
-                await testToken.approve(oracle.address, 10, {from: accounts[1]});
-                await testToken.approve(oracle.address, 120, {from: accounts[2]});
+                await stakeToken.approve(oracle.address, 10, {from: accounts[1]});
+                await stakeToken.approve(oracle.address, 120, {from: accounts[2]});
 
                 // Stake above resolution criteria on the false status, thus close the second verification phase
                 // and change resolution engine's verification status
@@ -130,8 +130,8 @@ contract('*', (accounts) => {
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, accounts[2]))
                     .falseStakeAmount.should.eq.BN(120);
 
-                (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(10));
-                (await testToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(120));
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(10));
+                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(120));
             });
         });
 
@@ -145,8 +145,8 @@ contract('*', (accounts) => {
 
         describe('claim payout', () => {
             it('should claim payout successfully', async () => {
-                balanceBeforeAccount1 = await testToken.balanceOf.call(accounts[1]);
-                balanceBeforeAccount2 = await testToken.balanceOf.call(accounts[2]);
+                balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
+                balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber.call(0)).bountyAwarded.should.be.true;
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber.call(1)).bountyAwarded.should.be.true;
@@ -157,12 +157,12 @@ contract('*', (accounts) => {
                 // Payout claimed for account[1]:
                 // phase1: 100% * (bounty of 100 + opposite stake of 20) + own stake of 110
                 // phase2: 0
-                (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.addn(100 + 20 + 110));
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.addn(100 + 20 + 110));
 
                 // Payout claimed for account[2]:
                 // phase1: 0
                 // phase2: 100% * (bounty of 90 + opposite stake of 10) + own stake of 120
-                (await testToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.addn(90 + 10 + 120));
+                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.addn(90 + 10 + 120));
             });
         });
     });

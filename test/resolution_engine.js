@@ -18,17 +18,17 @@ const Oracle = artifacts.require('Oracle');
 const ResolutionEngine = artifacts.require('ResolutionEngine');
 const BountyFund = artifacts.require('BountyFund');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 
 contract('ResolutionEngine', (accounts) => {
-    let oracleAddress, testToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
+    let oracleAddress, stakeToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
 
     beforeEach(async () => {
         oracleAddress = accounts[1];
-        testToken = await TestToken.new();
+        stakeToken = await StakeToken.new();
 
-        bountyFund = await BountyFund.new(testToken.address);
-        await testToken.mint(bountyFund.address, 100);
+        bountyFund = await BountyFund.new(stakeToken.address);
+        await stakeToken.mint(bountyFund.address, 100);
 
         const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
         resolutionEngine = await ResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
@@ -177,24 +177,24 @@ contract('ResolutionEngine', (accounts) => {
             beforeEach(async () => {
                 const oracle = await Oracle.new();
 
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 1000);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 1000);
 
                 const bountyFraction = await bountyFund.PARTS_PER.call();
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
                 await mockedResolutionEngine._setVerificationStatus(1);
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
-                await testToken.mint(accounts[2], 10);
-                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await stakeToken.mint(accounts[2], 10);
+                await stakeToken.approve(oracle.address, 10, {from: accounts[2]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 10, {from: accounts[2]});
 
-                await testToken.mint(accounts[3], 90);
-                await testToken.approve(oracle.address, 90, {from: accounts[3]});
+                await stakeToken.mint(accounts[3], 90);
+                await stakeToken.approve(oracle.address, 90, {from: accounts[3]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 90, {from: accounts[3]});
 
-                await testToken.mint(accounts[4], 50);
-                await testToken.approve(oracle.address, 50, {from: accounts[4]});
+                await stakeToken.mint(accounts[4], 50);
+                await stakeToken.approve(oracle.address, 50, {from: accounts[4]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 50, {from: accounts[4]});
 
                 await mockedResolutionEngine._closeVerificationPhase();
@@ -214,24 +214,24 @@ contract('ResolutionEngine', (accounts) => {
             beforeEach(async () => {
                 const oracle = await Oracle.new();
 
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 1000);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 1000);
 
                 const bountyFraction = await bountyFund.PARTS_PER.call();
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
                 await mockedResolutionEngine._setVerificationStatus(1);
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
-                await testToken.mint(accounts[2], 10);
-                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await stakeToken.mint(accounts[2], 10);
+                await stakeToken.approve(oracle.address, 10, {from: accounts[2]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 10, {from: accounts[2]});
 
-                await testToken.mint(accounts[3], 50);
-                await testToken.approve(oracle.address, 50, {from: accounts[3]});
+                await stakeToken.mint(accounts[3], 50);
+                await stakeToken.approve(oracle.address, 50, {from: accounts[3]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 50, {from: accounts[3]});
 
-                await testToken.mint(accounts[4], 90);
-                await testToken.approve(oracle.address, 90, {from: accounts[4]});
+                await stakeToken.mint(accounts[4], 90);
+                await stakeToken.approve(oracle.address, 90, {from: accounts[4]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 90, {from: accounts[4]});
 
                 await mockedResolutionEngine._closeVerificationPhase();
@@ -249,19 +249,19 @@ contract('ResolutionEngine', (accounts) => {
         let mockedResolutionEngine, balanceBefore;
 
         beforeEach(async () => {
-            bountyFund = await BountyFund.new(testToken.address);
-            await testToken.mint(bountyFund.address, 100);
+            bountyFund = await BountyFund.new(stakeToken.address);
+            await stakeToken.mint(bountyFund.address, 100);
 
             const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
             mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
-            balanceBefore = await testToken.balanceOf.call(mockedResolutionEngine.address);
+            balanceBefore = await stakeToken.balanceOf.call(mockedResolutionEngine.address);
         });
 
         it('should successfully withdraw', async () => {
             await mockedResolutionEngine._extractBounty();
 
-            (await testToken.balanceOf.call(mockedResolutionEngine.address)).should.eq.BN(balanceBefore.addn(9));
+            (await stakeToken.balanceOf.call(mockedResolutionEngine.address)).should.eq.BN(balanceBefore.addn(9));
         });
     });
 
@@ -270,8 +270,8 @@ contract('ResolutionEngine', (accounts) => {
             let mockedResolutionEngine;
 
             beforeEach(async () => {
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 100);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
@@ -288,14 +288,14 @@ contract('ResolutionEngine', (accounts) => {
 
         describe('if resolution result equals verification status', () => {
             beforeEach(async () => {
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 100);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction);
 
                 verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
-                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
+                bountyBalanceBefore = await stakeToken.balanceOf.call(bountyFund.address);
             });
 
             it('should successfully close the verification phase without toggling verification status', async () => {
@@ -307,7 +307,7 @@ contract('ResolutionEngine', (accounts) => {
                 result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
                 result.bountyAwarded.should.exist.and.be.false;
 
-                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore);
+                (await stakeToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore);
 
                 (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
             });
@@ -317,19 +317,19 @@ contract('ResolutionEngine', (accounts) => {
             beforeEach(async () => {
                 const oracle = await Oracle.new();
 
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 100);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
-                await testToken.mint(accounts[2], 100);
-                await testToken.approve(oracle.address, 100, {from: accounts[2]});
+                await stakeToken.mint(accounts[2], 100);
+                await stakeToken.approve(oracle.address, 100, {from: accounts[2]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[2]});
 
                 verificationPhaseNumberBefore = await mockedResolutionEngine.verificationPhaseNumber.call();
-                bountyBalanceBefore = await testToken.balanceOf.call(bountyFund.address);
+                bountyBalanceBefore = await stakeToken.balanceOf.call(bountyFund.address);
             });
 
             it('should successfully close the verification phase and toggle verification status', async () => {
@@ -341,7 +341,7 @@ contract('ResolutionEngine', (accounts) => {
                 result.numberOfBlocks.should.exist.and.be.eq.BN(result.endBlock.sub(result.startBlock));
                 result.bountyAwarded.should.exist.and.be.true;
 
-                (await testToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore.subn(9));
+                (await stakeToken.balanceOf.call(bountyFund.address)).should.eq.BN(bountyBalanceBefore.subn(9));
 
                 (await mockedResolutionEngine.verificationPhaseNumber.call()).should.be.eq.BN(verificationPhaseNumberBefore.addn(1));
             });
@@ -361,24 +361,24 @@ contract('ResolutionEngine', (accounts) => {
             beforeEach(async () => {
                 const oracle = await Oracle.new();
 
-                bountyFund = await BountyFund.new(testToken.address);
-                await testToken.mint(bountyFund.address, 1000);
+                bountyFund = await BountyFund.new(stakeToken.address);
+                await stakeToken.mint(bountyFund.address, 1000);
 
                 const bountyFraction = await bountyFund.PARTS_PER.call();
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
                 await mockedResolutionEngine._setVerificationStatus(1);
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
-                await testToken.mint(accounts[2], 10);
-                await testToken.approve(oracle.address, 10, {from: accounts[2]});
+                await stakeToken.mint(accounts[2], 10);
+                await stakeToken.approve(oracle.address, 10, {from: accounts[2]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 10, {from: accounts[2]});
 
-                await testToken.mint(accounts[3], 50);
-                await testToken.approve(oracle.address, 50, {from: accounts[3]});
+                await stakeToken.mint(accounts[3], 50);
+                await stakeToken.approve(oracle.address, 50, {from: accounts[3]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 50, {from: accounts[3]});
 
-                await testToken.mint(accounts[4], 90);
-                await testToken.approve(oracle.address, 90, {from: accounts[4]});
+                await stakeToken.mint(accounts[4], 90);
+                await stakeToken.approve(oracle.address, 90, {from: accounts[4]});
                 await oracle.stakeTokens(mockedResolutionEngine.address, 0, false, 90, {from: accounts[4]});
             });
 
@@ -386,7 +386,7 @@ contract('ResolutionEngine', (accounts) => {
                 it('should withdraw 0', async () => {
                     await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
 
-                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(0);
+                    (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(0);
                 });
             });
 
@@ -398,7 +398,7 @@ contract('ResolutionEngine', (accounts) => {
                 it('should successfully withdraw payout', async () => {
                     await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
 
-                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(115);
+                    (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(115);
                 });
             });
 
@@ -409,13 +409,13 @@ contract('ResolutionEngine', (accounts) => {
                     await mockedResolutionEngine._closeVerificationPhase();
                     await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
 
-                    balanceBefore = await testToken.balanceOf.call(accounts[2]);
+                    balanceBefore = await stakeToken.balanceOf.call(accounts[2]);
                 });
 
                 it('should withdraw 0', async () => {
                     await mockedResolutionEngine._withdrawPayout(accounts[2], 0, 0);
 
-                    (await testToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBefore);
+                    (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBefore);
                 });
             });
         });
