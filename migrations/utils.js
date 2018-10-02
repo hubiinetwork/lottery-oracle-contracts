@@ -11,8 +11,8 @@ const isTestNetwork = (network) => {
     return network.includes('develop') || network.includes('test') || network.includes('ganache');
 };
 
-const getCredentialsFromEnvironment = () => {
-    return {wallet: process.env.MIGRATE_WALLET, password: process.env.MIGRATE_PASSWORD};
+const getNetworkCredentials = () => {
+    return {wallet: process.env.ETH_TESTNET_ACCOUNT, password: process.env.ETH_TESTNET_SECRET};
 };
 
 const unlockOwnerAccount = async (account, password) => {
@@ -25,7 +25,7 @@ exports.initializeOwnerAccount = async (network, accounts) => {
     if (isTestNetwork(network))
         ownerAccount = accounts[0];
     else {
-        const credentials = getCredentialsFromEnvironment();
+        const credentials = getNetworkCredentials();
         await unlockOwnerAccount(credentials.wallet, credentials.password);
         ownerAccount = credentials.wallet;
     }
