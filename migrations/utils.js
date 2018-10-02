@@ -37,7 +37,7 @@ exports.finalizeAccount = async (account) => {
         await web3.eth.personal.lockAccount(account);
 };
 
-exports.getBountyDivisor = () => {
+exports.getNaiveTotalBountyDivisor = () => {
     return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR == 'undefined' ?
         10 :
         Number.parseInt(process.env.NAIVE_TOTAL_BOUNTY_DIVISOR);
