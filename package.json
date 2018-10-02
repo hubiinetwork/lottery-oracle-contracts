@@ -9,7 +9,7 @@
   "scripts": {
     "build": "truffle compile",
     "deploy": "truffle migrate",
-    "test": "concurrently -s first --kill-others 'ganache-cli >/dev/null' 'truffle test'",
+    "test": "concurrently -s first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version:compiler": "truffle version"
   },
   "repository": {
