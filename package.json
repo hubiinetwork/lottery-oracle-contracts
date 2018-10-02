@@ -8,7 +8,9 @@
   },
   "scripts": {
     "build": "truffle compile",
-    "test": "truffle compile && truffle test",
+    "clean": "truffle networks --clean",
+    "deploy": "truffle migrate",
+    "test": "concurrently -s first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version:compiler": "truffle version"
   },
   "repository": {
@@ -32,14 +34,16 @@
   "dependencies": {
     "mocha-teamcity-reporter": "^2.5.0",
     "openzeppelin-solidity": "^2.0.0-rc.2",
-    "truffle": "^5.0.0-beta.0",
+    "truffle": "^5.0.0-beta.1",
     "truffle-hdwallet-provider": "^1.0.0-web3one.0"
   },
   "devDependencies": {
     "bn-chai": "^1.0.1",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
+    "concurrently": "^4.0.1",
     "ethers": "^3.0.29",
+    "ganache-cli": "^6.1.8",
     "sinon": "^6.3.3",
     "sinon-chai": "^3.2.0",
     "solhint": "^1.2.1"

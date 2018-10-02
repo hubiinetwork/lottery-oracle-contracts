@@ -7,14 +7,17 @@
 const utils = require('./utils.js');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
-const Migrations = artifacts.require('./Migrations.sol');
+const StakeToken = artifacts.require('./StakeToken');
 
 module.exports = async (deployer, network, accounts) => {
+    if ('mainnet' === network)
+        return;
+
     let ownerAccount;
     try {
         ownerAccount = await utils.initializeOwnerAccount(network, accounts);
 
-        await deployer.deploy(Migrations, {from: ownerAccount});
+        await deployer.deploy(StakeToken, 'hubiit', 'HBT', 15, {from: ownerAccount});
     } finally {
         await utils.finalizeAccount(ownerAccount);
     }

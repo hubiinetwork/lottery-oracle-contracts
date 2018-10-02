@@ -14,19 +14,19 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 
 contract('NaiveTotalResolutionEngine', (accounts) => {
-    let oracleAddress, testToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
+    let oracleAddress, stakeToken, resolutionEngine, ownerRole, oracleRole, bountyFund;
 
     beforeEach(async () => {
         oracleAddress = accounts[1];
-        testToken = await TestToken.new();
+        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
-        bountyFund = await BountyFund.new(testToken.address);
-        await testToken.mint(bountyFund.address, 100);
+        bountyFund = await BountyFund.new(stakeToken.address);
+        await stakeToken.mint(bountyFund.address, 100);
 
         const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
         resolutionEngine = await NaiveTotalResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction, 100);

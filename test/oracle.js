@@ -16,15 +16,15 @@ chai.should();
 
 const Oracle = artifacts.require('Oracle');
 const BountyFund = artifacts.require('BountyFund');
-const TestToken = artifacts.require('TestToken');
+const StakeToken = artifacts.require('StakeToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
 contract('Oracle', (accounts) => {
-    let oracle, testToken;
+    let oracle, stakeToken;
 
     beforeEach(async () => {
-        oracle = await Oracle.deployed();
-        testToken = await TestToken.new();
+        oracle = await Oracle.new();
+        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
     });
 
     describe('constructor()', () => {
@@ -141,18 +141,18 @@ contract('Oracle', (accounts) => {
             beforeEach(async () => {
                 oracle = await Oracle.new();
 
-                const bountyFund = await BountyFund.new(testToken.address);
-                testToken.mint(bountyFund.address, 100);
+                const bountyFund = await BountyFund.new(stakeToken.address);
+                stakeToken.mint(bountyFund.address, 100);
 
                 const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
                 mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
 
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
-                await testToken.mint(accounts[1], 100);
-                await testToken.approve(oracle.address, 100, {from: accounts[1]});
+                await stakeToken.mint(accounts[1], 100);
+                await stakeToken.approve(oracle.address, 100, {from: accounts[1]});
 
-                balanceBefore = await testToken.balanceOf.call(accounts[1]);
+                balanceBefore = await stakeToken.balanceOf.call(accounts[1]);
             });
 
             it('should successfully stake tokens', async () => {
@@ -160,7 +160,7 @@ contract('Oracle', (accounts) => {
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await testToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
             });
         });
     });
@@ -171,8 +171,8 @@ contract('Oracle', (accounts) => {
         beforeEach(async () => {
             oracle = await Oracle.new();
 
-            const bountyFund = await BountyFund.new(testToken.address);
-            testToken.mint(bountyFund.address, 100);
+            const bountyFund = await BountyFund.new(stakeToken.address);
+            stakeToken.mint(bountyFund.address, 100);
 
             const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
             mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
