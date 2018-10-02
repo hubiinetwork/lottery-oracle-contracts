@@ -6,7 +6,8 @@
 
 const utils = require('./utils.js');
 
-const Migrations = artifacts.require('Migrations');
+// Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
+const Migrations = artifacts.require('./Migrations.sol');
 
 module.exports = async (deployer, network, accounts) => {
     let ownerAccount;

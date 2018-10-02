@@ -36,3 +36,13 @@ exports.finalizeAccount = async (account) => {
     if (unlockedMap.get(account))
         await web3.eth.personal.lockAccount(account);
 };
+
+exports.getBountyDivisor = () => {
+    return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR == 'undefined' ?
+        10 :
+        Number.parseInt(process.env.NAIVE_TOTAL_BOUNTY_DIVISOR);
+};
+
+exports.getNaiveTotalCriterionAmountStaked = () => {
+    return process.env.NAIVE_TOTAL_CRITERION_AMOUNT_STAKED || 1000;
+};

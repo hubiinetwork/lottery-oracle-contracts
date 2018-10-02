@@ -23,7 +23,7 @@ contract('Oracle', (accounts) => {
     let oracle, stakeToken;
 
     beforeEach(async () => {
-        oracle = await Oracle.deployed();
+        oracle = await Oracle.new();
         stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
     });
 

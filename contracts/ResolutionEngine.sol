@@ -105,6 +105,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction) public {
         // Initialize oracle
         oracle = Oracle(_oracle);
+
+        // Add oracle role and add oracle as accessor to it
         addRoleInternal(ORACLE_ROLE);
         addRoleAccessorInternal(ORACLE_ROLE, _oracle);
 
