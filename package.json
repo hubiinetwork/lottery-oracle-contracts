@@ -33,7 +33,7 @@
   "dependencies": {
     "mocha-teamcity-reporter": "^2.5.0",
     "openzeppelin-solidity": "^2.0.0-rc.2",
-    "truffle": "^5.0.0-beta.0",
+    "truffle": "^5.0.0-beta.1",
     "truffle-hdwallet-provider": "^1.0.0-web3one.0"
   },
   "devDependencies": {
