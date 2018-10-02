@@ -13,7 +13,7 @@ module.exports = async (deployer, network, accounts) => {
     try {
         ownerAccount = await utils.initializeOwnerAccount(network, accounts);
 
-        await deployer.deploy(Migrations, {from: ownerAccount});
+        await deployer.deploy(Migrations, {from: ownerAccount, overwrite: false});
     } finally {
         await utils.finalizeAccount(ownerAccount);
     }
