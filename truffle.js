@@ -8,6 +8,12 @@ module.exports = {
             network_id: '*',
             gas: 6000000
         },
+        develop: {
+            host: "localhost",
+            port: 9545,
+            network_id: "*",
+            gas: 6000000
+        },
         ropsten: {
             host: 'geth-ropsten.ethereum',
             port: 80,
