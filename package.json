@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "truffle compile",
+    "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
     "test": "concurrently -s first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version:compiler": "truffle version"
