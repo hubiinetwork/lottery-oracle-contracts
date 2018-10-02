@@ -24,7 +24,7 @@ contract('BountyFund', (accounts) => {
     let stakeToken, bountyFund, resolutionEngine;
 
     beforeEach(async () => {
-        stakeToken = await StakeToken.new();
+        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
         bountyFund = await BountyFund.new(stakeToken.address);
     });

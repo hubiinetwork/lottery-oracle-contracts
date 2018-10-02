@@ -23,7 +23,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
     beforeEach(async () => {
         oracleAddress = accounts[1];
-        stakeToken = await StakeToken.new();
+        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
         bountyFund = await BountyFund.new(stakeToken.address);
         await stakeToken.mint(bountyFund.address, 100);

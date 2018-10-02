@@ -26,7 +26,7 @@ contract('*', (accounts) => {
         describe('initialize', () => {
             it('should initialize successfully', async () => {
                 // Deploy test token
-                stakeToken = await StakeToken.new();
+                stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
                 // Mint tokens for default account
                 await stakeToken.mint(accounts[0], 1000);

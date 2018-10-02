@@ -15,7 +15,6 @@ const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine
 
 module.exports = async (deployer, network, accounts) => {
     let ownerAccount;
-
     try {
         ownerAccount = await utils.initializeOwnerAccount(network, accounts);
 
