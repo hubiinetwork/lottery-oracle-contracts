@@ -26,6 +26,12 @@ module.exports = {
             network_id: '3',
             gas: 6000000
         },
+        rinkeby: {
+            host: "geth-rinkeby.ethereum",
+            port: 80,
+            network_id: "*",
+            gas: 6000000
+        },
         mainnet: {
             host: 'ethereum.hubii.com',
             port: 8545,
