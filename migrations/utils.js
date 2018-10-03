@@ -5,44 +5,64 @@
  */
 
 const unlockedMap = new Map();
-const unlockTimeInSeconds = 7200;
+const unlockTimeInSeconds = typeof process.env.ETH_UNLOCK_SECONDS === 'undefined' ?
+    7200 :
+    Number.parseInt(process.env.ETH_UNLOCK_SECONDS);
 
 const isTestNetwork = (network) => {
     return network.includes('develop') || network.includes('test') || network.includes('ganache');
 };
 
 const getNetworkCredentials = () => {
-    return {wallet: process.env.ETH_TESTNET_ACCOUNT, password: process.env.ETH_TESTNET_SECRET};
+    return {account: process.env.ETH_TESTNET_ACCOUNT, secret: process.env.ETH_TESTNET_SECRET};
 };
 
-const unlockOwnerAccount = async (account, password) => {
-    await web3.eth.personal.unlockAccount(account, password, unlockTimeInSeconds);
-    unlockedMap.set(account, true);
+const unlockAccount = async (web3, account, password) => {
+    if (!unlockedMap.get(account)) {
+        unlockedMap.set(account, true);
+
+        console.log(`Unlocking account ${account}...`);
+        await web3.eth.personal.unlockAccount(account, password, unlockTimeInSeconds);
+
+        await timeout(3000);
+    }
+
+    const lockAccount = async () => {
+        if (unlockedMap.get(account)) {
+            unlockedMap.set(account, false);
+
+            console.log(`Locking account ${account}...`);
+            await web3.eth.personal.lockAccount(account);
+        }
+    };
+
+    ['exit', 'SIGINT', 'SIGTERM'].forEach((eventType) => {
+        process.on(eventType, lockAccount);
+    })
 };
 
-exports.initializeOwnerAccount = async (network, accounts) => {
+exports.initializeOwnerAccount = async (web3, network, accounts) => {
     let ownerAccount;
     if (isTestNetwork(network))
         ownerAccount = accounts[0];
     else {
-        const credentials = getNetworkCredentials();
-        await unlockOwnerAccount(credentials.wallet, credentials.password);
-        ownerAccount = credentials.wallet;
+        const {account, secret} = getNetworkCredentials();
+        await unlockAccount(web3, account, secret);
+        ownerAccount = account;
     }
     return ownerAccount;
 };
 
-exports.finalizeAccount = async (account) => {
-    if (unlockedMap.get(account))
-        await web3.eth.personal.lockAccount(account);
-};
-
 exports.getNaiveTotalBountyDivisor = () => {
-    return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR == 'undefined' ?
+    return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR === 'undefined' ?
         10 :
         Number.parseInt(process.env.NAIVE_TOTAL_BOUNTY_DIVISOR);
 };
 
 exports.getNaiveTotalCriterionAmountStaked = () => {
     return process.env.NAIVE_TOTAL_CRITERION_AMOUNT_STAKED || 1000;
+};
+
+const timeout = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
 };
