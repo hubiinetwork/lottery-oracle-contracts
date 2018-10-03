@@ -10,34 +10,35 @@ module.exports = {
             websockets: true // To take advantage of the confirmations listener and to hear Events using .on or .once
         },
         develop: {
-            host: "localhost",
+            host: 'localhost',
             port: 9545,
-            network_id: "*",
+            network_id: '*',
             gas: 6000000,
             websockets: true
         },
         ganache: {
-            host: "localhost",
+            host: 'localhost',
             port: 7545,
-            network_id: "*",
+            network_id: '*',
             gas: 6000000,
             websockets: true
         },
         ropsten: {
             host: 'geth-ropsten.ethereum',
             port: 80,
-            network_id: '3',
+            network_id: '*',
             gas: 6000000,
+            skipDryRun: true           // default: false for public nets
             // gasPrice: 10000000000,  // default: 20 gwei
             // confirmations: 2,       // default: 0
             // timeoutBlocks: 200,     // minimum/default: 50
-            skipDryRun: true           // default: false for public nets
         },
         rinkeby: {
-            host: "geth-rinkeby.ethereum",
+            host: 'geth-rinkeby.ethereum',
             port: 80,
-            network_id: "4",
-            gas: 6000000
+            network_id: '*',
+            gas: 6000000,
+            skipDryRun: true
         },
         mainnet: {
             host: 'ethereum.hubii.com',

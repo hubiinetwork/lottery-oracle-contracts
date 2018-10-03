@@ -12,12 +12,7 @@ const Oracle = artifacts.require('./Oracle.sol');
 // TODO Update to require deployed verification token (HBT) rather than deploying separate test token
 
 module.exports = async (deployer, network, accounts) => {
-    let ownerAccount;
-    try {
-        ownerAccount = await utils.initializeOwnerAccount(network, accounts);
+    let ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-        await deployer.deploy(Oracle, {from: ownerAccount});
-    } finally {
-        await utils.finalizeAccount(ownerAccount);
-    }
+    await deployer.deploy(Oracle, {from: ownerAccount});
 };

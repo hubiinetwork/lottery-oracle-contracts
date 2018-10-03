@@ -13,12 +13,7 @@ module.exports = async (deployer, network, accounts) => {
     if ('mainnet' === network)
         return;
 
-    let ownerAccount;
-    try {
-        ownerAccount = await utils.initializeOwnerAccount(network, accounts);
+    let ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-        await deployer.deploy(StakeToken, 'hubiit', 'HBT', 15, {from: ownerAccount});
-    } finally {
-        await utils.finalizeAccount(ownerAccount);
-    }
+    await deployer.deploy(StakeToken, 'hubiit', 'HBT', 15, {from: ownerAccount});
 };
