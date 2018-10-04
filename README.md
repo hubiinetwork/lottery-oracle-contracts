@@ -21,7 +21,7 @@ See www.hubii.com for more information.
 * To use this software you need a modern version of **NodeJS** and **NPM**.
   We recommend having the current LTS version (v8.x) installed, or
   later, and updating NPM to the latest available version.
-* Truffle Framework - The initial project is based on the upcoming v5 of Truffle Framework, currently in [v5.0.0-beta.0](https://github.com/trufflesuite/truffle/releases/tag/v5.0.0-beta.0).
+* Truffle Framework - The initial project is based on the upcoming v5 of Truffle Framework, currently in [beta release](https://github.com/trufflesuite/truffle/releases).
 
 ## Installation
 
