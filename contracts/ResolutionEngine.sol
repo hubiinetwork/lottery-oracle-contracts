@@ -207,7 +207,7 @@ contract ResolutionEngine is Resolvable, RBACed {
         bountyAwarded = verificationPhaseMap[_verificationPhaseNumber].bountyAwarded;
         startBlock = verificationPhaseMap[_verificationPhaseNumber].startBlock;
         endBlock = verificationPhaseMap[_verificationPhaseNumber].endBlock;
-        numberOfBlocks = (endBlock == 0 ? block.number : endBlock) - startBlock;
+        numberOfBlocks = (endBlock == 0 ? block.number : endBlock).sub(startBlock);
     }
 
     /// @notice Get the metrics for the given verification phase number and wallet
