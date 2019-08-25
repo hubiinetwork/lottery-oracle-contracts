@@ -104,7 +104,7 @@ contract('ResolutionEngine', (accounts) => {
                 result.bountyAwarded.should.exist.and.be.false;
                 result.startBlock.should.exist.and.be.gt.BN(0);
                 result.endBlock.should.exist.and.eq.BN(0);
-                result.numberOfBlocks.should.exist.and.be.gt.BN(0);
+                result.numberOfBlocks.should.exist.and.eq.BN(0);
             });
         });
     });

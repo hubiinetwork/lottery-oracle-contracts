@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
@@ -141,7 +141,7 @@ contract Oracle is RBACed {
         token.transferFrom(msg.sender, _resolutionEngine, _amount);
 
         // Approve of resolution transferring
-        token.approve(resolutionEngine, _amount);
+        token.approve(address(resolutionEngine), _amount);
 
         // Update metrics post transfer
         resolutionEngine.updateMetrics(msg.sender, _verificationPhaseNumber, _status, _amount);

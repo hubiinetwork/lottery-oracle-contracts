@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {VerificationPhaseLib, ResolutionEngine} from "../contracts/ResolutionEngine.sol";
 import {BountyFund} from "../contracts/BountyFund.sol";
@@ -20,8 +20,8 @@ contract MockedResolutionEngine is ResolutionEngine {
     {
     }
 
-    function _withdrawTokens(uint256 _fraction) public {
-        bountyFund.withdrawTokens(_fraction);
+    function _withdrawTokens(uint256 _bountyFraction) public {
+        bountyFund.withdrawTokens(_bountyFraction);
     }
 
     function _extractBounty() public {
@@ -41,7 +41,9 @@ contract MockedResolutionEngine is ResolutionEngine {
     }
 
     function _withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
-        uint256 _lastVerificationPhaseNumber) public {
+        uint256 _lastVerificationPhaseNumber)
+    public
+    {
         for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
             withdrawPayout(_wallet, i);
     }
