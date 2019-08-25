@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {RBACed} from "../contracts/RBACed.sol";
 

@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {Roles} from "openzeppelin-solidity/contracts/access/Roles.sol";
 
@@ -33,7 +33,7 @@ contract RBACed {
         addRoleAccessorInternal(OWNER_ROLE, msg.sender);
     }
 
-    modifier onlyRoleAccessor(string _role) {
+    modifier onlyRoleAccessor(string memory _role) {
         require(isRoleAccessor(_role, msg.sender));
         _;
     }
@@ -47,13 +47,13 @@ contract RBACed {
     /// @notice Gauge whether a role is set
     /// @param _role The concerned role
     /// @return true if role has been set, else false
-    function isRole(string _role) public view returns (bool) {
+    function isRole(string memory _role) public view returns (bool) {
         return 0 != roleIndexMap[role2Key(_role)];
     }
 
     /// @notice Add role
     /// @param _role The concerned role
-    function addRole(string _role) public onlyRoleAccessor(OWNER_ROLE) {
+    function addRole(string memory _role) public onlyRoleAccessor(OWNER_ROLE) {
         // Add role
         addRoleInternal(_role);
 
@@ -65,14 +65,14 @@ contract RBACed {
     /// @param _role The concerned role
     /// @param _address The concerned address
     /// @return true if address is the one of a registered accessor of role, else false
-    function isRoleAccessor(string _role, address _address) public view returns (bool) {
+    function isRoleAccessor(string memory _role, address _address) public view returns (bool) {
         return roleAccessorsMap[role2Key(_role)].has(_address);
     }
 
     /// @notice Register an address as accessor of a role
     /// @param _role The concerned role
     /// @param _address The concerned address
-    function addRoleAccessor(string _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+    function addRoleAccessor(string memory _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
         // Add role accessor
         addRoleAccessorInternal(_role, _address);
 
@@ -83,7 +83,7 @@ contract RBACed {
     /// @notice Deregister an address as accessor of a role
     /// @param _role The concerned role
     /// @param _address The concerned address
-    function removeRoleAccessor(string _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+    function removeRoleAccessor(string memory _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
         // Remove role accessor
         roleAccessorsMap[role2Key(_role)].remove(_address);
 
@@ -91,18 +91,18 @@ contract RBACed {
         emit RoleAccessorRemoved(_role, _address);
     }
 
-    function addRoleInternal(string _role) internal {
+    function addRoleInternal(string memory _role) internal {
         if (0 == roleIndexMap[role2Key(_role)]) {
             roles.push(_role);
             roleIndexMap[role2Key(_role)] = roles.length;
         }
     }
 
-    function addRoleAccessorInternal(string _role, address _address) internal {
+    function addRoleAccessorInternal(string memory _role, address _address) internal {
         roleAccessorsMap[role2Key(_role)].add(_address);
     }
 
-    function role2Key(string _role) internal pure returns (bytes32) {
+    function role2Key(string memory _role) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_role));
     }
 }

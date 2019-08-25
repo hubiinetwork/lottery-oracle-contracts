@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {Resolvable} from "./Resolvable.sol";
 import {RBACed} from "./RBACed.sol";
@@ -112,7 +112,7 @@ contract ResolutionEngine is Resolvable, RBACed {
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
-        bountyFund.setResolutionEngine(this);
+        bountyFund.setResolutionEngine(address(this));
 
         // Initialize token to the one of bounty fund
         token = ERC20(bountyFund.token());

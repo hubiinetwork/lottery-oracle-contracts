@@ -1,10 +1,10 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
@@ -58,10 +58,10 @@ contract BountyFund is RBACed {
     public
     {
         // Transfer tokens to this
-        token.transferFrom(msg.sender, this, _amount);
+        token.transferFrom(msg.sender, address(this), _amount);
 
         // Emit event
-        emit TokensDeposited(msg.sender, _amount, token.balanceOf(this));
+        emit TokensDeposited(msg.sender, _amount, token.balanceOf(address(this)));
     }
 
     /// @notice Transfer the fraction of balance of token to msg.sender
@@ -73,13 +73,13 @@ contract BountyFund is RBACed {
     returns (uint256)
     {
         // Calculate amount to transfer
-        uint256 amount = token.balanceOf(this).mul(_fraction).div(PARTS_PER);
+        uint256 amount = token.balanceOf(address(this)).mul(_fraction).div(PARTS_PER);
 
         // Transfer tokens to sender
         token.transfer(msg.sender, amount);
 
         // Emit event
-        emit TokensWithdrawn(msg.sender, amount, token.balanceOf(this));
+        emit TokensWithdrawn(msg.sender, amount, token.balanceOf(address(this)));
 
         // Return calculated amount
         return amount;
