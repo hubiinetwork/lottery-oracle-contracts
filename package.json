@@ -11,7 +11,7 @@
     "build:all": "truffle compile --all",
     "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
-    "test": "concurrently --success first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
+    "test": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version:compiler": "truffle version"
   },
   "repository": {
