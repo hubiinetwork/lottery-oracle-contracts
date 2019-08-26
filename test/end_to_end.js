@@ -54,76 +54,111 @@ contract('*', (accounts) => {
 
                 (await oracle.hasResolutionEngine.call(naiveTotalResolutionEngine.address)).should.be.true;
 
-                // Mint tokens for wallets and approve of
+                // Mint tokens for wallets and approve of oracle transferring
                 await stakeToken.mint(accounts[1], 1000);
+                await stakeToken.approve(oracle.address, 1000, {from: accounts[1]});
                 await stakeToken.mint(accounts[2], 1000);
+                await stakeToken.approve(oracle.address, 1000, {from: accounts[2]});
             })
         });
 
-        describe('start of first verification phase', () => {
-            it('should be properly initialized', async () => {
-                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN();
-                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(0);
-                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(100);
-            });
-        });
-
-        describe('stake into first verification phase', () => {
-            it('should stake successfully', async () => {
+        describe('stake into first verification phase below resolution criteria', () => {
+            before(async () => {
                 balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
                 balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
-                // Approve of oracle staking for wallets
-                await stakeToken.approve(oracle.address, 110, {from: accounts[1]});
-                await stakeToken.approve(oracle.address, 20, {from: accounts[2]});
+                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(0);
+                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(0);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(100);
 
-                // Stake below resolution criteria
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[1]))
+                    .trueStakeAmount.should.eq.BN(0);
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[2]))
+                    .falseStakeAmount.should.eq.BN(0);
+            });
+
+            it('should stake successfully', async () => {
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 0, true, 10, {from: accounts[1]});
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 0, false, 20, {from: accounts[2]});
+            });
+
+            after(async () => {
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(10));
+                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(20));
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(0);
                 (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(0);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(100);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[2]))
                     .falseStakeAmount.should.eq.BN(20);
+            });
+        });
 
+        describe('stake into first verification phase and surpass resolution criteria', () => {
+            before(async () => {
+                balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
+                balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
+
+                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(0);
+                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(0);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(100);
+
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[1]))
+                    .trueStakeAmount.should.eq.BN(10);
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[2]))
+                    .falseStakeAmount.should.eq.BN(20);
+            });
+
+            it('should stake successfully', async () => {
                 // Stake above resolution criteria on the true status, thus close first verification phase
                 // and change resolution engine's verification status
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 0, true, 100, {from: accounts[1]});
+            });
+
+            after(async () => {
+                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(1);
+                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(1);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(90);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[1]))
                     .trueStakeAmount.should.eq.BN(110);
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(0, accounts[2]))
                     .falseStakeAmount.should.eq.BN(20);
 
-                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(110));
-                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2.subn(20));
+                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBeforeAccount1.subn(100));
+                (await stakeToken.balanceOf.call(accounts[2])).should.eq.BN(balanceBeforeAccount2);
             });
         });
 
-        describe('start of second verification phase', () => {
-            it('should be properly initialized', async () => {
-                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(1);
-                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(1);
-                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(90);
-            });
-        });
-
-        describe('stake into second verification phase', () => {
-            it('should stake successfully', async () => {
+        describe('stake into second verification phase and surpass resolution criteria', () => {
+            before(async () => {
                 balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
                 balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
-                // Approve of oracle staking for wallets
-                await stakeToken.approve(oracle.address, 10, {from: accounts[1]});
-                await stakeToken.approve(oracle.address, 120, {from: accounts[2]});
+                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(1);
+                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(1);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(90);
 
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, accounts[1]))
+                    .trueStakeAmount.should.eq.BN(0);
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, accounts[2]))
+                    .falseStakeAmount.should.eq.BN(0);
+            });
+
+            it('should stake successfully', async () => {
                 // Stake above resolution criteria on the false status, thus close the second verification phase
                 // and change resolution engine's verification status
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 1, true, 10, {from: accounts[1]});
                 await oracle.stakeTokens(naiveTotalResolutionEngine.address, 1, false, 120, {from: accounts[2]});
+            });
+
+            after(async () => {
+                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(2);
+                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(2);
+                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(81);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet.call(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
@@ -135,25 +170,21 @@ contract('*', (accounts) => {
             });
         });
 
-        describe('start of third verification phase', () => {
-            it('should be properly initialized', async () => {
-                (await naiveTotalResolutionEngine.verificationPhaseNumber.call()).should.eq.BN(2);
-                (await naiveTotalResolutionEngine.verificationStatus.call()).should.eq.BN(2);
-                (await naiveTotalResolutionEngine.bountyAmount.call()).should.eq.BN(81);
-            });
-        });
-
         describe('claim payout', () => {
-            it('should claim payout successfully', async () => {
+            before(async () => {
                 balanceBeforeAccount1 = await stakeToken.balanceOf.call(accounts[1]);
                 balanceBeforeAccount2 = await stakeToken.balanceOf.call(accounts[2]);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber.call(0)).bountyAwarded.should.be.true;
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber.call(1)).bountyAwarded.should.be.true;
+            });
 
+            it('should claim payout successfully', async () => {
                 (await oracle.claimPayout(naiveTotalResolutionEngine.address, 0, 1, {from: accounts[1]}));
                 (await oracle.claimPayout(naiveTotalResolutionEngine.address, 0, 1, {from: accounts[2]}));
+            });
 
+            after(async () => {
                 // Payout claimed for account[1]:
                 // phase1: 100% * (bounty of 100 + opposite stake of 20) + own stake of 110
                 // phase2: 0

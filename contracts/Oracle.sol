@@ -140,7 +140,7 @@ contract Oracle is RBACed {
         // Transfer from msg.sender to this oracle
         token.transferFrom(msg.sender, _resolutionEngine, _amount);
 
-        // Approve of resolution transferring
+        // Approve of resolution transfer
         token.approve(address(resolutionEngine), _amount);
 
         // Update metrics post transfer
