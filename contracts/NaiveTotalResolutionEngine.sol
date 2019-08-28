@@ -24,6 +24,18 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
         criterionAmountStaked = _criterionAmountStaked;
     }
 
+    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @param _status The concerned status
+    /// @return the amount needed to obtain to resolve the market
+    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status) public view returns (uint256)
+    {
+        if (_verificationPhaseNumber < verificationPhaseNumber)
+            return 0;
+        else
+            return criterionAmountStaked.sub(verificationPhaseMap[verificationPhaseNumber].statusAmountMap[_status]);
+    }
+
     /// @notice Gauge whether the resolution criteria have been met
     /// @return true if resolution criteria have been met, else false
     function resolutionCriteriaMet() public view returns (bool) {
