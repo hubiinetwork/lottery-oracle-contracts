@@ -7,6 +7,7 @@
 pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
+import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
@@ -55,18 +56,24 @@ library ResolutionEnginesLib {
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A lottery oracle
 contract Oracle is RBACed {
+    using SafeMath for uint256;
     using ResolutionEnginesLib for ResolutionEnginesLib.ResolutionEngines;
 
     event ResolutionEngineAdded(address indexed _resolutionEngine);
     event ResolutionEngineRemoved(address indexed _resolutionEngine);
-    event TokensStaked(address _resolutionEngine, address _wallet, bool _status, uint256 _amount);
-    event PayoutClaimed(address _resolutionEngine, address _wallet, uint256 _firstVerificationPhaseNumber,
-        uint256 _lastVerificationPhaseNumber);
+    event TokensStaked(address indexed _wallet, address indexed _resolutionEngine,
+        bool _status, uint256 _amount);
+    event PayoutStaged(address indexed _wallet, address indexed _resolutionEngine,
+        uint256 _firstVerificationPhaseNumber, uint256 _lastVerificationPhaseNumber);
+    event Withdrawn(address indexed _wallet, address indexed _resolutionEngine,
+        uint256 _amount);
 
     ResolutionEnginesLib.ResolutionEngines resolutionEngines;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor() public {
+    constructor()
+    public
+    {
     }
 
     modifier onlyRegisteredResolutionEngine(address _resolutionEngine) {
@@ -77,7 +84,12 @@ contract Oracle is RBACed {
     /// @notice Gauge whether an address is the one of a registered resolution engine
     /// @param _resolutionEngine The concerned address
     /// @return true if address is the one of a registered resolution engine, else false
-    function hasResolutionEngine(address _resolutionEngine) public view returns (bool) {
+    function hasResolutionEngine(address _resolutionEngine)
+    public
+    view
+    returns
+    (bool)
+    {
         return resolutionEngines.has(_resolutionEngine);
     }
 
@@ -124,7 +136,7 @@ contract Oracle is RBACed {
     /// @param _verificationPhaseNumber The verification phase number to stake into
     /// @param _amount The amount staked
     /// @param _status The status staked at
-    function stakeTokens(address _resolutionEngine, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
+    function stake(address _resolutionEngine, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
     public
     onlyRegisteredResolutionEngine(_resolutionEngine)
     {
@@ -134,30 +146,37 @@ contract Oracle is RBACed {
         // Require that stake targets current verification phase number
         require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber);
 
+        // Calculate the amount overshooting the resolution delta amount
+        uint256 refundAmount = _amount > resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status) ?
+        _amount.sub(resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status)) :
+        0;
+
         // Initialize token
         ERC20 token = ERC20(resolutionEngine.token());
 
-        // Transfer from msg.sender to this oracle
+        // TODO Consider allowing the RE to transfer itself and hence just approve of RE to transfer _amount
+        // Transfer from msg.sender to this resolution engine
         token.transferFrom(msg.sender, _resolutionEngine, _amount);
 
-        // Approve of resolution transfer
-        token.approve(address(resolutionEngine), _amount);
+        // Stage for refund the amount overshooting the resolution delta amount
+        if (refundAmount > 0)
+            resolutionEngine.stage(msg.sender, refundAmount);
 
-        // Update metrics post transfer
-        resolutionEngine.updateMetrics(msg.sender, _verificationPhaseNumber, _status, _amount);
+        // Update the current verification phase metrics post transfer
+        resolutionEngine.updateMetrics(msg.sender, _status, _amount.sub(refundAmount));
 
-        // Possibly resolve market if resolution criteria have been met
-        resolutionEngine.resolveConditionally(_verificationPhaseNumber);
+        // Possibly resolve market in the current verification phase if resolution criteria have been met
+        resolutionEngine.resolveIfCriteriaMet();
 
         // Emit event
-        emit TokensStaked(_resolutionEngine, msg.sender, _status, _amount);
+        emit TokensStaked(msg.sender, _resolutionEngine, _status, _amount);
     }
 
-    /// @notice For the given resolution engine and verification phase number claim payout
+    /// @notice For the given resolution engine and inclusive verification phase number range stage payout
     /// @param _resolutionEngine The concerned resolution engine
-    /// @param _firstVerificationPhaseNumber The first verification phase number to claim payout from
-    /// @param _lastVerificationPhaseNumber The last verification phase number to claim payout from
-    function claimPayout(address _resolutionEngine, uint256 _firstVerificationPhaseNumber,
+    /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
+    /// @param _lastVerificationPhaseNumber The last verification phase number to stage payout from
+    function stagePayout(address _resolutionEngine, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
     {
@@ -165,9 +184,25 @@ contract Oracle is RBACed {
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
         // Withdraw payout from resolution engine
-        resolutionEngine.withdrawPayout(msg.sender, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+        resolutionEngine.stagePayout(msg.sender, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
 
         // Emit event
-        emit PayoutClaimed(_resolutionEngine, msg.sender, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+        emit PayoutStaged(msg.sender, _resolutionEngine, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+    }
+
+    /// @notice For the given resolution engine withdraw the given amount
+    /// @param _resolutionEngine The concerned resolution engine
+    /// @param _amount The amount to be withdrawn
+    function withdraw(address _resolutionEngine, uint256 _amount)
+    public
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Withdraw payout from resolution engine
+        resolutionEngine.withdraw(msg.sender, _amount);
+
+        // Emit event
+        emit Withdrawn(msg.sender, _resolutionEngine, _amount);
     }
 }
