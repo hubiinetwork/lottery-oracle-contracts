@@ -77,32 +77,47 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
-    event ConditionallyResolved(uint256 indexed _verificationPhaseNumber);
+    event Resolved(uint256 indexed _verificationPhaseNumber);
     event BountyExtracted(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
         uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
-    event PayoutWithdrawn(address indexed _wallet, uint256 indexed _verificationPhaseNumber, uint256 _payout);
+    event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
+        uint256 indexed _lastVerificationPhaseNumber, uint256 _payout);
+    event Staged(address indexed _wallet, uint _amount);
+    event Withdrawn(address indexed _wallet, uint _amount);
 
     string constant public ORACLE_ROLE = "ORACLE";
 
     Oracle public oracle;
+
     ERC20 public token;
+
     BountyFund public bountyFund;
+
     uint256 public bountyFraction;
+
     uint256 public bountyAmount;
 
     uint256 public verificationPhaseNumber;
+
+    // TODO Rename maps, "...ByWallet", "...ByBlock"
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) public verificationPhaseMap;
+
     mapping(address => mapping(bool => uint256)) public walletStatusAmountMap;
+
     mapping(uint256 => mapping(bool => uint256)) public blockStatusAmountMap;
 
     VerificationPhaseLib.Status public verificationStatus;
 
     mapping(address => mapping(uint256 => bool)) public walletPhasePayoutMap;
 
+    mapping(address => uint256) public walletStagedAmountMap;
+
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction) public {
+    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
+    public
+    {
         // Initialize oracle
         oracle = Oracle(_oracle);
 
@@ -121,38 +136,20 @@ contract ResolutionEngine is Resolvable, RBACed {
         bountyFraction = _bountyFraction;
 
         // Withdraw bounty
-        extractBounty();
+        _extractBounty();
 
         // Open verification phase
-        openVerificationPhase();
-    }
-
-    modifier onlyCurrentPhaseNumber(uint256 _verificationPhaseNumber) {
-        require(verificationPhaseNumber == _verificationPhaseNumber);
-        _;
-    }
-
-    modifier onlyCurrentOrEarlierPhaseNumber(uint256 _verificationPhaseNumber) {
-        require(verificationPhaseNumber >= _verificationPhaseNumber);
-        _;
-    }
-
-    modifier onlyCurrentOrEarlierBlockNumber(uint256 _blockNumber) {
-        require(block.number >= _blockNumber);
-        _;
+        _openVerificationPhase();
     }
 
     /// @notice Update metrics following a stake operation in the oracle
     /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
-    /// @param _verificationPhaseNumber The verification phase number whose metrics will be updated, which can only
-    /// be the current verification phase number
     /// @param _status The status staked at
     /// @param _amount The amount staked
-    function updateMetrics(address _wallet, uint256 _verificationPhaseNumber, bool _status, uint256 _amount)
+    function updateMetrics(address _wallet, bool _status, uint256 _amount)
     public
     onlyRoleAccessor(ORACLE_ROLE)
-    onlyCurrentPhaseNumber(_verificationPhaseNumber)
     {
         // Update metrics
         walletStatusAmountMap[_wallet][_status] = walletStatusAmountMap[_wallet][_status].add(_amount);
@@ -160,40 +157,45 @@ contract ResolutionEngine is Resolvable, RBACed {
         verificationPhaseMap[verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
 
         // Emit event
-        emit MetricsUpdated(_wallet, _verificationPhaseNumber, _status, _amount);
+        emit MetricsUpdated(_wallet, verificationPhaseNumber, _status, _amount);
     }
 
-    /// @notice Resolve the market if resolution criteria have been met
+    /// @notice Resolve the market in the current verification phase if resolution criteria have been met
     /// @dev The function can only be called by oracle.
-    /// @param _verificationPhaseNumber The verification phase number that is considered for resolution, which can only
     /// be the current verification phase number
-    function resolveConditionally(uint256 _verificationPhaseNumber)
+    function resolveIfCriteriaMet()
     public
     onlyRoleAccessor(ORACLE_ROLE)
-    onlyCurrentPhaseNumber(_verificationPhaseNumber)
     {
+        // If resolution criteria are met...
         if (resolutionCriteriaMet()) {
-            closeVerificationPhase();
-            openVerificationPhase();
-        }
+            // Close existing verification phase
+            _closeVerificationPhase();
 
-        // Emit event
-        emit ConditionallyResolved(verificationPhaseNumber);
+            // Emit event
+            emit Resolved(verificationPhaseNumber);
+
+            // Open new verification phase
+            _openVerificationPhase();
+        }
     }
+
+    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @param _status The concerned status
+    /// @return the amount needed to obtain to resolve the market
+    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status) public view returns (uint256);
 
     /// @notice Gauge whether the resolution criteria have been met
     /// @return true if resolution criteria have been met, else false
-    function resolutionCriteriaMet() public view returns (bool) {
-        return false;
-    }
+    function resolutionCriteriaMet() public view returns (bool);
 
     /// @notice Get the metrics for the given verification phase number
-    /// @dev Reverts if provided verification phase number is higher than current verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @return the metrics
     function metricsByVerificationPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view
-    onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
     returns (VerificationPhaseLib.State state, uint256 trueStakeAmount, uint256 falseStakeAmount,
         uint256 stakeAmount, uint256 numberOfWallets, uint256 bountyAmount, bool bountyAwarded,
         uint256 startBlock, uint256 endBlock, uint256 numberOfBlocks)
@@ -207,17 +209,17 @@ contract ResolutionEngine is Resolvable, RBACed {
         bountyAwarded = verificationPhaseMap[_verificationPhaseNumber].bountyAwarded;
         startBlock = verificationPhaseMap[_verificationPhaseNumber].startBlock;
         endBlock = verificationPhaseMap[_verificationPhaseNumber].endBlock;
-        numberOfBlocks = (endBlock == 0 ? block.number : endBlock).sub(startBlock);
+        numberOfBlocks = (startBlock > 0 && endBlock == 0 ? block.number : endBlock).sub(startBlock);
     }
 
     /// @notice Get the metrics for the given verification phase number and wallet
     /// @dev Reverts if provided verification phase number is higher than current verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _wallet The address of the concerned wallet
+    /// @return the metrics
     function metricsByVerificationPhaseNumberAndWallet(uint256 _verificationPhaseNumber, address _wallet)
     public
     view
-    onlyCurrentOrEarlierPhaseNumber(_verificationPhaseNumber)
     returns (uint256 trueStakeAmount, uint256 falseStakeAmount, uint256 stakeAmount)
     {
         trueStakeAmount = verificationPhaseMap[_verificationPhaseNumber].walletStatusAmountMap[_wallet][true];
@@ -227,6 +229,7 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     /// @notice Get the metrics for the wallet
     /// @param _wallet The address of the concerned wallet
+    /// @return the metrics
     function metricsByWallet(address _wallet)
     public
     view
@@ -240,10 +243,10 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @notice Get the metrics for the block
     /// @dev Reverts if provided block number is higher than current block number
     /// @param _blockNumber The concerned block number
+    /// @return the metrics
     function metricsByBlockNumber(uint256 _blockNumber)
     public
     view
-    onlyCurrentOrEarlierBlockNumber(_blockNumber)
     returns (uint256 trueStakeAmount, uint256 falseStakeAmount, uint256 stakeAmount)
     {
         trueStakeAmount = blockStatusAmountMap[_blockNumber][true];
@@ -254,6 +257,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @notice Calculate the payout of the given wallet at the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _wallet The address of the concerned wallet
+    /// @return the payout
     function calculatePayout(uint256 _verificationPhaseNumber, address _wallet)
     public
     view
@@ -282,23 +286,59 @@ contract ResolutionEngine is Resolvable, RBACed {
         return lot.mul(walletStatusAmount).div(statusAmount).add(walletStatusAmount);
     }
 
-    /// @notice Withdraw the payout earned by given wallet in the inclusive range of given verification phase numbers
+    /// @notice Stage the payout earned by given wallet in the inclusive range of given verification phase numbers
     /// @dev The function can only be called by oracle.
     /// @param _wallet The address of the concerned wallet
     /// @param _firstVerificationPhaseNumber The first verification phase number to withdraw payout from
     /// @param _lastVerificationPhaseNumber The last verification phase number to withdraw payout from
-    function withdrawPayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+    function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
     onlyRoleAccessor(ORACLE_ROLE)
     {
         // For each verification phase number in the inclusive range withdraw payout
+        uint256 payout = 0;
         for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-            withdrawPayout(_wallet, i);
+            payout = payout.add(_stagePayout(_wallet, i));
+
+        // Emit event
+        emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
+    }
+
+    /// @notice Stage the given amount
+    /// @dev The function can only be called by oracle.
+    /// @param _wallet The address of the concerned wallet
+    /// @param _amount The amount to be staged
+    function stage(address _wallet, uint256 _amount)
+    public
+    onlyRoleAccessor(ORACLE_ROLE)
+    {
+        // Stage the amount
+        _stage(_wallet, _amount);
+
+        // Emit event
+        emit Staged(_wallet, _amount);
+    }
+
+    /// @notice Withdraw the given amount
+    /// @dev The function can only be called by oracle.
+    /// @param _wallet The address of the concerned wallet
+    /// @param _amount The amount to be withdrawn
+    function withdraw(address _wallet, uint256 _amount)
+    public
+    onlyRoleAccessor(ORACLE_ROLE)
+    {
+        // Withdraw the amount
+        _withdraw(_wallet, _amount);
+
+        // Emit event
+        emit Withdrawn(_wallet, _amount);
     }
 
     /// @notice Extract from bounty fund
-    function extractBounty() internal {
+    function _extractBounty()
+    internal
+    {
         // Withdraw from bounty fund
         bountyAmount = bountyFund.withdrawTokens(bountyFraction);
 
@@ -307,9 +347,14 @@ contract ResolutionEngine is Resolvable, RBACed {
     }
 
     /// @notice Open verification phase
-    function openVerificationPhase() internal {
+    function _openVerificationPhase()
+    internal
+    {
         // Require that verification phase is not open
-        require(verificationPhaseMap[verificationPhaseNumber].state == VerificationPhaseLib.State.Unopened);
+        require(verificationPhaseMap[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened);
+
+        // Bump verification phase number
+        verificationPhaseNumber++;
 
         // Open the verification phase
         verificationPhaseMap[verificationPhaseNumber].open(bountyAmount);
@@ -319,7 +364,9 @@ contract ResolutionEngine is Resolvable, RBACed {
     }
 
     /// @notice Close verification phase
-    function closeVerificationPhase() internal {
+    function _closeVerificationPhase()
+    internal
+    {
         // Require that verification phase is open
         require(verificationPhaseMap[verificationPhaseNumber].state == VerificationPhaseLib.State.Opened);
 
@@ -335,27 +382,25 @@ contract ResolutionEngine is Resolvable, RBACed {
             verificationPhaseMap[verificationPhaseNumber].bountyAwarded = true;
 
             // Extract new bounty
-            extractBounty();
+            _extractBounty();
         }
 
         // Emit event
         emit VerificationPhaseClosed(verificationPhaseNumber);
-
-        // Bump verification phase number
-        verificationPhaseNumber++;
     }
 
-    /// @notice Withdraw payout of given wallet and verification phase number
-    /// @param _wallet The address of the concerned wallet
-    /// @param _verificationPhaseNumber The concerned verification phase number
-    function withdrawPayout(address _wallet, uint256 _verificationPhaseNumber) internal {
+    /// @notice Stage payout of given wallet and verification phase number
+    function _stagePayout(address _wallet, uint256 _verificationPhaseNumber)
+    internal
+    returns (uint256)
+    {
         // Return if the verification phase has not been closed
         if (VerificationPhaseLib.State.Closed != verificationPhaseMap[_verificationPhaseNumber].state)
-            return;
+            return 0;
 
-        // Return if the wallet has been payed out for this verification phase number already
+        // Return wallet payout has already been staged for this verification phase number
         if (walletPhasePayoutMap[_wallet][_verificationPhaseNumber])
-            return;
+            return 0;
 
         // Calculate payout
         uint256 payout = calculatePayout(_verificationPhaseNumber, _wallet);
@@ -363,10 +408,31 @@ contract ResolutionEngine is Resolvable, RBACed {
         // Register payout of wallet and verification phase number
         walletPhasePayoutMap[_wallet][_verificationPhaseNumber] = true;
 
-        // Transfer payout
-        token.transfer(_wallet, payout);
+        // Stage the payout
+        _stage(_wallet, payout);
 
-        // Emit event
-        emit PayoutWithdrawn(_wallet, _verificationPhaseNumber, payout);
+        // Return payout amount
+        return payout;
+    }
+
+    /// @notice Stage the given amount for the given wallet
+    function _stage(address _wallet, uint256 _amount)
+    internal
+    {
+        walletStagedAmountMap[_wallet] = walletStagedAmountMap[_wallet].add(_amount);
+    }
+
+    /// @notice Stage the given amount for the given wallet
+    function _withdraw(address _wallet, uint256 _amount)
+    internal
+    {
+        // Require that the withdrawal amount is smaller than the wallet's staged amount
+        require(_amount <= walletStagedAmountMap[_wallet]);
+
+        // Unstage the amount
+        walletStagedAmountMap[_wallet] = walletStagedAmountMap[_wallet].sub(_amount);
+
+        // Transfer the amount
+        token.transfer(_wallet, _amount);
     }
 }
