@@ -154,7 +154,6 @@ contract Oracle is RBACed {
         // Initialize token
         ERC20 token = ERC20(resolutionEngine.token());
 
-        // TODO Consider allowing the RE to transfer itself and hence just approve of RE to transfer _amount
         // Transfer from msg.sender to this resolution engine
         token.transferFrom(msg.sender, _resolutionEngine, _amount);
 
