@@ -33,13 +33,13 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
         if (_verificationPhaseNumber < verificationPhaseNumber)
             return 0;
         else
-            return criterionAmountStaked.sub(verificationPhaseMap[verificationPhaseNumber].statusAmountMap[_status]);
+            return criterionAmountStaked.sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[_status]);
     }
 
     /// @notice Gauge whether the resolution criteria have been met
     /// @return true if resolution criteria have been met, else false
     function resolutionCriteriaMet() public view returns (bool) {
-        return verificationPhaseMap[verificationPhaseNumber].statusAmountMap[true] >= criterionAmountStaked ||
-        verificationPhaseMap[verificationPhaseNumber].statusAmountMap[false] >= criterionAmountStaked;
+        return verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[true] >= criterionAmountStaked ||
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[false] >= criterionAmountStaked;
     }
 }

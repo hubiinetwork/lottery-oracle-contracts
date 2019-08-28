@@ -21,8 +21,8 @@ contract RBACed {
     string constant public OWNER_ROLE = "OWNER";
 
     string[] public roles;
-    mapping(bytes32 => uint256) roleIndexMap;
-    mapping(bytes32 => Roles.Role) private roleAccessorsMap;
+    mapping(bytes32 => uint256) roleIndexByName;
+    mapping(bytes32 => Roles.Role) private roleByName;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor() public {
@@ -48,7 +48,7 @@ contract RBACed {
     /// @param _role The concerned role
     /// @return true if role has been set, else false
     function isRole(string memory _role) public view returns (bool) {
-        return 0 != roleIndexMap[role2Key(_role)];
+        return 0 != roleIndexByName[role2Key(_role)];
     }
 
     /// @notice Add role
@@ -66,7 +66,7 @@ contract RBACed {
     /// @param _address The concerned address
     /// @return true if address is the one of a registered accessor of role, else false
     function isRoleAccessor(string memory _role, address _address) public view returns (bool) {
-        return roleAccessorsMap[role2Key(_role)].has(_address);
+        return roleByName[role2Key(_role)].has(_address);
     }
 
     /// @notice Register an address as accessor of a role
@@ -85,21 +85,21 @@ contract RBACed {
     /// @param _address The concerned address
     function removeRoleAccessor(string memory _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
         // Remove role accessor
-        roleAccessorsMap[role2Key(_role)].remove(_address);
+        roleByName[role2Key(_role)].remove(_address);
 
         // Emit event
         emit RoleAccessorRemoved(_role, _address);
     }
 
     function addRoleInternal(string memory _role) internal {
-        if (0 == roleIndexMap[role2Key(_role)]) {
+        if (0 == roleIndexByName[role2Key(_role)]) {
             roles.push(_role);
-            roleIndexMap[role2Key(_role)] = roles.length;
+            roleIndexByName[role2Key(_role)] = roles.length;
         }
     }
 
     function addRoleAccessorInternal(string memory _role, address _address) internal {
-        roleAccessorsMap[role2Key(_role)].add(_address);
+        roleByName[role2Key(_role)].add(_address);
     }
 
     function role2Key(string memory _role) internal pure returns (bytes32) {

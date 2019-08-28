@@ -316,7 +316,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
                 it('should stage 0', async () => {
                     await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
 
-                    (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(0);
+                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(0);
                 });
             });
 
@@ -328,7 +328,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
                 it('should successfully withdraw payout', async () => {
                     await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
 
-                    (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(16);
+                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
                 });
             });
 
@@ -342,7 +342,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
                 it('should withdraw 0', async () => {
                     await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
 
-                    (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(16);
+                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
                 });
             });
         });
@@ -359,7 +359,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             it('should successfully stage', async () => {
                 const result = await resolutionEngine.stage(accounts[2], 100, {from: oracleAddress});
                 result.logs[0].event.should.equal('Staged');
-                (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(100);
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(100);
             });
         });
     });
@@ -373,7 +373,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if called with amount greater than staged amount', () => {
             it('should revert', async () => {
-                (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(0);
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(0);
 
                 resolutionEngine.withdraw(accounts[2], 100, {from: oracleAddress}).should.be.rejected;
             });
@@ -390,7 +390,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
                 const result = await resolutionEngine.withdraw(accounts[2], 40, {from: oracleAddress});
                 result.logs[0].event.should.equal('Withdrawn');
 
-                (await resolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(60);
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(60);
 
                 (await stakeToken.balanceOf(accounts[2])).should.eq.BN(40);
             });

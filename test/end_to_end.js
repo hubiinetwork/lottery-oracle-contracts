@@ -185,12 +185,12 @@ contract('*', (accounts) => {
                 // Payout staged for account[1]:
                 // phase1: 100% * (bounty of 100 + opposite stake of 20) + own stake of 110
                 // phase2: 0
-                (await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[1])).should.eq.BN(100 + 20 + 110);
+                (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[1])).should.eq.BN(100 + 20 + 110);
 
                 // Payout staged for account[2]:
                 // phase1: 0
                 // phase2: 100% * (bounty of 90 + opposite stake of 10) + own stake of 120
-                (await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(90 + 10 + 120);
+                (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(90 + 10 + 120);
             });
         });
 
@@ -201,8 +201,8 @@ contract('*', (accounts) => {
                 balanceBeforeAccount1 = await stakeToken.balanceOf(accounts[1]);
                 balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
 
-                stagedAmountBeforeAccount1 = await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[1]);
-                stagedAmountBeforeAccount2 = await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[2]);
+                stagedAmountBeforeAccount1 = await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[1]);
+                stagedAmountBeforeAccount2 = await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2]);
             });
 
             it('should stage payout successfully', async () => {
@@ -211,10 +211,10 @@ contract('*', (accounts) => {
             });
 
             after(async () => {
-                (await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[1])).should.eq.BN(stagedAmountBeforeAccount1.subn(100));
+                (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[1])).should.eq.BN(stagedAmountBeforeAccount1.subn(100));
                 (await stakeToken.balanceOf(accounts[1])).should.eq.BN(balanceBeforeAccount1.addn(100));
 
-                (await naiveTotalResolutionEngine.walletStagedAmountMap(accounts[2])).should.eq.BN(stagedAmountBeforeAccount2.subn(100));
+                (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(stagedAmountBeforeAccount2.subn(100));
                 (await stakeToken.balanceOf(accounts[2])).should.eq.BN(balanceBeforeAccount2.addn(100));
             });
         });
