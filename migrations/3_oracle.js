@@ -4,7 +4,7 @@
  * Copyright (C) 2017-2018 Hubii AS
  */
 
-const utils = require('./utils.js');
+const utils = require('../script/common/utils.js');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const Oracle = artifacts.require('./Oracle.sol');
