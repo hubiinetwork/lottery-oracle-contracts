@@ -21,25 +21,25 @@ contract('RBACed', (accounts) => {
 
     beforeEach(async () => {
         rbaced = await RBACed.new();
-        ownerRole = await rbaced.OWNER_ROLE.call();
+        ownerRole = await rbaced.OWNER_ROLE();
     });
 
     describe('rolesCount()', () => {
         it('should return initial value', async () => {
-            (await rbaced.rolesCount.call()).should.eq.BN(1);
+            (await rbaced.rolesCount()).should.eq.BN(1);
         });
     });
 
     describe('isRole()', () => {
         describe('if role is owner', () => {
             it('should return true', async () => {
-                (await rbaced.isRole.call(ownerRole)).should.be.true;
+                (await rbaced.isRole(ownerRole)).should.be.true;
             });
         });
 
         describe('if role is not owner', () => {
             it('should return false', async () => {
-                (await rbaced.isRole.call('SOME_NON_EXISTENT_ROLE')).should.be.false;
+                (await rbaced.isRole('SOME_NON_EXISTENT_ROLE')).should.be.false;
             });
         });
     });
@@ -61,7 +61,7 @@ contract('RBACed', (accounts) => {
             it('should successfully add role', async () => {
                 const result = await rbaced.addRole(role, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAdded');
-                (await rbaced.isRole.call('SOME_ROLE')).should.be.true;
+                (await rbaced.isRole('SOME_ROLE')).should.be.true;
             });
         });
     });
@@ -69,13 +69,13 @@ contract('RBACed', (accounts) => {
     describe('isRoleAccessor()', () => {
         describe('if called with address of owner', () => {
             it('should return true', async () => {
-                (await rbaced.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
+                (await rbaced.isRoleAccessor(ownerRole, accounts[0])).should.be.true;
             });
         });
 
         describe('if called with address of non-owner', () => {
             it('should return false', async () => {
-                (await rbaced.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+                (await rbaced.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
             });
         });
     });
@@ -97,7 +97,7 @@ contract('RBACed', (accounts) => {
             it('should successfully add role accessor', async () => {
                 const result = await rbaced.addRoleAccessor(ownerRole, accessorAddress, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAccessorAdded');
-                (await rbaced.isRoleAccessor.call(ownerRole, accessorAddress)).should.be.true;
+                (await rbaced.isRoleAccessor(ownerRole, accessorAddress)).should.be.true;
             });
         });
     });
@@ -123,7 +123,7 @@ contract('RBACed', (accounts) => {
             it('should successfully remove role accessor', async () => {
                 const result = await rbaced.removeRoleAccessor(ownerRole, accessorAddress, {from: accounts[0]});
                 result.logs[0].event.should.equal('RoleAccessorRemoved');
-                (await rbaced.isRoleAccessor.call(ownerRole, accessorAddress)).should.be.false;
+                (await rbaced.isRoleAccessor(ownerRole, accessorAddress)).should.be.false;
             });
         });
     });

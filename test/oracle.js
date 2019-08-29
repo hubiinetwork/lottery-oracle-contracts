@@ -8,7 +8,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet} = require('ethers');
+const {Wallet, constants} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
@@ -30,21 +30,21 @@ contract('Oracle', (accounts) => {
     describe('constructor()', () => {
         it('should successfully initialize', async () => {
             oracle.address.should.have.lengthOf(42);
-            const ownerRole = await oracle.OWNER_ROLE.call();
-            (await oracle.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await oracle.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+            const ownerRole = await oracle.OWNER_ROLE();
+            (await oracle.isRoleAccessor(ownerRole, accounts[0])).should.be.true;
+            (await oracle.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
         });
     });
 
     describe('hasResolutionEngine()', () => {
         it('should successfully return initial value', async () => {
-            (await oracle.hasResolutionEngine.call(Wallet.createRandom().address)).should.be.false;
+            (await oracle.hasResolutionEngine(Wallet.createRandom().address)).should.be.false;
         });
     });
 
     describe('resolutionEnginesCount()', () => {
         it('should successfully return initial value', async () => {
-            (await oracle.resolutionEnginesCount.call()).should.eq.BN(0);
+            (await oracle.resolutionEnginesCount()).should.eq.BN(0);
         });
     });
 
@@ -65,8 +65,8 @@ contract('Oracle', (accounts) => {
             it('should successfully add resolution engine', async () => {
                 const result = await oracle.addResolutionEngine(engineAddress);
                 result.logs[0].event.should.equal('ResolutionEngineAdded');
-                (await oracle.hasResolutionEngine.call(engineAddress)).should.be.true;
-                (await oracle.resolutionEnginesCount.call()).should.eq.BN(1);
+                (await oracle.hasResolutionEngine(engineAddress)).should.be.true;
+                (await oracle.resolutionEnginesCount()).should.eq.BN(1);
             });
         });
     });
@@ -90,14 +90,14 @@ contract('Oracle', (accounts) => {
             describe('if removing the last address stored', () => {
                 beforeEach(async () => {
                     await oracle.addResolutionEngine(engineAddress1);
-                    resolutionEnginesCount = await oracle.resolutionEnginesCount.call();
+                    resolutionEnginesCount = await oracle.resolutionEnginesCount();
                 });
 
                 it('should successfully remove resolution engine', async () => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
-                    (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
-                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.subn(1));
+                    (await oracle.hasResolutionEngine(engineAddress1)).should.be.false;
+                    (await oracle.resolutionEnginesCount()).should.eq.BN(resolutionEnginesCount.subn(1));
                 });
             });
 
@@ -109,81 +109,147 @@ contract('Oracle', (accounts) => {
 
                     await oracle.addResolutionEngine(engineAddress1);
                     await oracle.addResolutionEngine(engineAddress2);
-                    resolutionEnginesCount = await oracle.resolutionEnginesCount.call();
+                    resolutionEnginesCount = await oracle.resolutionEnginesCount();
                 });
 
                 it('should successfully remove resolution engine', async () => {
                     const result = await oracle.removeResolutionEngine(engineAddress1);
                     result.logs[0].event.should.equal('ResolutionEngineRemoved');
-                    (await oracle.hasResolutionEngine.call(engineAddress1)).should.be.false;
-                    (await oracle.resolutionEnginesCount.call()).should.eq.BN(resolutionEnginesCount.subn(1));
+                    (await oracle.hasResolutionEngine(engineAddress1)).should.be.false;
+                    (await oracle.resolutionEnginesCount()).should.eq.BN(resolutionEnginesCount.subn(1));
                 });
             });
         });
     });
 
-    describe('stakeTokens()', () => {
+    describe('stake()', () => {
         describe('if called on non-registered resolution engine', () => {
-            let resolutionEngine;
-
-            beforeEach(() => {
-                resolutionEngine = Wallet.createRandom().address;
-            });
-
             it('should revert', async () => {
-                oracle.stakeTokens(resolutionEngine, 0, true, 100).should.be.rejected;
+                oracle.stake(Wallet.createRandom().address, 1, true, 100, {from: accounts[1]}).should.be.rejected;
             });
         });
 
-        describe('if called on registered resolution engine', () => {
-            let mockedResolutionEngine, balanceBefore;
+        describe('if called with amount greater than resolution delta amount', () => {
+            let mockedResolutionEngine;
 
             beforeEach(async () => {
-                oracle = await Oracle.new();
-
                 const bountyFund = await BountyFund.new(stakeToken.address);
                 stakeToken.mint(bountyFund.address, 100);
 
-                const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-                mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+                mockedResolutionEngine = await MockedResolutionEngine.new(
+                    oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
+                );
 
                 await oracle.addResolutionEngine(mockedResolutionEngine.address);
 
                 await stakeToken.mint(accounts[1], 100);
                 await stakeToken.approve(oracle.address, 100, {from: accounts[1]});
 
-                balanceBefore = await stakeToken.balanceOf.call(accounts[1]);
+                await mockedResolutionEngine._setResolutionDeltaAmount(60);
             });
 
-            it('should successfully stake tokens', async () => {
-                const result = await oracle.stakeTokens(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
+            it('should successfully stake tokens and stage refund', async () => {
+                const result = await oracle.stake(mockedResolutionEngine.address, 1, true, 100, {from: accounts[1]});
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await stakeToken.balanceOf.call(accounts[1])).should.eq.BN(balanceBefore.subn(100));
+                (await mockedResolutionEngine.stageCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(40);
+
+                (await mockedResolutionEngine.updateMetricsCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine.updateMetricsCall()).status.should.be.true;
+                (await mockedResolutionEngine.updateMetricsCall()).amount.should.eq.BN(60);
+
+                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+
+                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(110); // Stake + bounty
+            });
+        });
+
+        describe('if called with amount smaller than resolution delta amount', () => {
+            let mockedResolutionEngine;
+
+            beforeEach(async () => {
+                const bountyFund = await BountyFund.new(stakeToken.address);
+                stakeToken.mint(bountyFund.address, 100);
+
+                mockedResolutionEngine = await MockedResolutionEngine.new(
+                    oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
+                );
+
+                await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+                await stakeToken.mint(accounts[1], 100);
+                await stakeToken.approve(oracle.address, 100, {from: accounts[1]});
+
+                await mockedResolutionEngine._setResolutionDeltaAmount(110);
+            });
+
+            it('should successfully stake tokens and not stage refund', async () => {
+                const result = await oracle.stake(mockedResolutionEngine.address, 1, true, 100, {from: accounts[1]});
+
+                result.logs[0].event.should.equal('TokensStaked');
+
+                (await mockedResolutionEngine.stageCall()).wallet.should.equal(constants.AddressZero);
+                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(0);
+
+                (await mockedResolutionEngine.updateMetricsCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine.updateMetricsCall()).status.should.be.true;
+                (await mockedResolutionEngine.updateMetricsCall()).amount.should.eq.BN(100);
+
+                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+
+                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(110); // Stake + bounty
             });
         });
     });
 
-    describe('claimPayout()', () => {
+    describe('stagePayout()', () => {
         let mockedResolutionEngine;
 
         beforeEach(async () => {
-            oracle = await Oracle.new();
-
             const bountyFund = await BountyFund.new(stakeToken.address);
             stakeToken.mint(bountyFund.address, 100);
 
-            const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(10);
-            mockedResolutionEngine = await MockedResolutionEngine.new(oracle.address, bountyFund.address, bountyFraction);
+            mockedResolutionEngine = await MockedResolutionEngine.new(
+                oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
+            );
 
             await oracle.addResolutionEngine(mockedResolutionEngine.address);
         });
 
-        it('should successfully claim payout', async () => {
-            const result = await oracle.claimPayout(mockedResolutionEngine.address, 0, 10, {from: accounts[1]});
+        it('should successfully stage payout', async () => {
+            const result = await oracle.stagePayout(mockedResolutionEngine.address, 0, 10, {from: accounts[1]});
 
-            result.logs[0].event.should.equal('PayoutClaimed');
+            result.logs[0].event.should.equal('PayoutStaged');
+
+            (await mockedResolutionEngine.stagePayoutCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine.stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
+            (await mockedResolutionEngine.stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
+        });
+    });
+
+    describe('withdraw()', () => {
+        let mockedResolutionEngine;
+
+        beforeEach(async () => {
+            const bountyFund = await BountyFund.new(stakeToken.address);
+            stakeToken.mint(bountyFund.address, 100);
+
+            mockedResolutionEngine = await MockedResolutionEngine.new(
+                oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
+            );
+
+            await oracle.addResolutionEngine(mockedResolutionEngine.address);
+        });
+
+        it('should successfully withdraw', async () => {
+            const result = await oracle.withdraw(mockedResolutionEngine.address, 10, {from: accounts[1]});
+
+            result.logs[0].event.should.equal('Withdrawn');
+
+            (await mockedResolutionEngine.withdrawCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine.withdrawCall()).amount.should.eq.BN(10);
         });
     });
 });

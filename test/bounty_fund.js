@@ -31,15 +31,15 @@ contract('BountyFund', (accounts) => {
         it('initialize successfully', async () => {
             bountyFund.address.should.have.lengthOf(42);
 
-            const ownerRole = await bountyFund.OWNER_ROLE.call();
-            (await bountyFund.isRoleAccessor.call(ownerRole, accounts[0])).should.be.true;
-            (await bountyFund.isRoleAccessor.call(ownerRole, accounts[1])).should.be.false;
+            const ownerRole = await bountyFund.OWNER_ROLE();
+            (await bountyFund.isRoleAccessor(ownerRole, accounts[0])).should.be.true;
+            (await bountyFund.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
         });
     });
 
     describe('token()', () => {
         it('should equal the value passed as constructor argument', async () => {
-            (await bountyFund.token.call()).should.equal(stakeToken.address);
+            (await bountyFund.token()).should.equal(stakeToken.address);
         });
     });
 
@@ -61,7 +61,7 @@ contract('BountyFund', (accounts) => {
                 const result = await bountyFund.setResolutionEngine(resolutionEngine);
 
                 result.logs[0].event.should.equal('ResolutionEngineSet');
-                (await bountyFund.resolutionEngine.call()).should.equal(resolutionEngine);
+                (await bountyFund.resolutionEngine()).should.equal(resolutionEngine);
             });
         });
 
@@ -87,7 +87,7 @@ contract('BountyFund', (accounts) => {
             const result = await bountyFund.depositTokens(100, {from: accounts[2]});
 
             result.logs[0].event.should.equal('TokensDeposited');
-            (await stakeToken.balanceOf.call(bountyFund.address)).should.eq.BN(100);
+            (await stakeToken.balanceOf(bountyFund.address)).should.eq.BN(100);
         });
     });
 
@@ -95,7 +95,7 @@ contract('BountyFund', (accounts) => {
         let partsPer;
 
         beforeEach(async () => {
-            partsPer = await bountyFund.PARTS_PER.call();
+            partsPer = await bountyFund.PARTS_PER();
         });
 
         describe('if done by agent not registered as resolution engine', () => {
@@ -125,7 +125,7 @@ contract('BountyFund', (accounts) => {
                 let balanceBefore, bountyFraction;
 
                 beforeEach(async () => {
-                    balanceBefore = await stakeToken.balanceOf.call(bountyFund.address);
+                    balanceBefore = await stakeToken.balanceOf(bountyFund.address);
 
                     bountyFraction = partsPer.divn(2);
                 });
@@ -133,7 +133,7 @@ contract('BountyFund', (accounts) => {
                 it('should successfully transfer tokens to bounty fund', async () => {
                     await resolutionEngine._withdrawTokens(bountyFraction);
 
-                    (await stakeToken.balanceOf.call(resolutionEngine.address))
+                    (await stakeToken.balanceOf(resolutionEngine.address))
                         .should.eq.BN(balanceBefore.mul(bountyFraction).div(partsPer));
                 });
             });
