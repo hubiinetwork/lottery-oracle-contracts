@@ -73,7 +73,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(0);
-                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accouents[2]))
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[2]))
                     .falseStakeAmount.should.eq.BN(0);
             });
 

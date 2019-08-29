@@ -24,13 +24,13 @@ contract MockedResolutionEngine is ResolutionEngine {
 
     StageCall public stageCall;
 
-    struct UpdateMetricsCall {
+    struct UpdateStakeMetricsCall {
         address wallet;
         bool status;
         uint256 amount;
     }
 
-    UpdateMetricsCall public updateMetricsCall;
+    UpdateStakeMetricsCall public updateStakeMetricsCall;
 
     bool public resolveIfCriteriaMetCalled;
 
@@ -93,10 +93,10 @@ contract MockedResolutionEngine is ResolutionEngine {
         stageCall = StageCall(_wallet, _amount);
     }
 
-    function updateMetrics(address _wallet, bool _status, uint256 _amount)
+    function updateStakeMetrics(address _wallet, bool _status, uint256 _amount)
     public
     {
-        updateMetricsCall = UpdateMetricsCall(_wallet, _status, _amount);
+        updateStakeMetricsCall = UpdateStakeMetricsCall(_wallet, _status, _amount);
     }
 
     function resolveIfCriteriaMet()

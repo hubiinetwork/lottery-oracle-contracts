@@ -53,7 +53,7 @@ library VerificationPhaseLib {
             _phase.result = Status.False;
     }
 
-    function updateMetrics(VerificationPhase storage _phase, address _wallet,
+    function updateStakeMetrics(VerificationPhase storage _phase, address _wallet,
         bool _status, uint256 _amount) internal {
 
         _phase.amountByStatus[_status] = _phase.amountByStatus[_status].add(_amount);
@@ -75,7 +75,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
-    event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
+    event StakeMetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
     event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
@@ -89,6 +89,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     event Withdrawn(address indexed _wallet, uint _amount);
 
     string constant public ORACLE_ROLE = "ORACLE";
+    string constant public OPERATOR_ROLE = "OPERATOR";
 
     Oracle public oracle;
 
@@ -152,22 +153,37 @@ contract ResolutionEngine is Resolvable, RBACed {
         _;
     }
 
+    modifier onlyEnabled() {
+        require(!disabled);
+        _;
+    }
+
+    /// @notice Disable this resolution engine
+    /// @dev This operation can not be reversed
+    function disable()
+    public
+    onlyRoleAccessor(OPERATOR_ROLE)
+    {
+        disabled = true;
+    }
+
     /// @notice Update metrics following a stake operation in the oracle
     /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
     /// @param _status The status staked at
     /// @param _amount The amount staked
-    function updateMetrics(address _wallet, bool _status, uint256 _amount)
+    function updateStakeMetrics(address _wallet, bool _status, uint256 _amount)
     public
     onlyRoleAccessor(ORACLE_ROLE)
+    onlyEnabled
     {
         // Update metrics
         stakedAmountByWalletStatus[_wallet][_status] = stakedAmountByWalletStatus[_wallet][_status].add(_amount);
         stakedAmountByBlockStatus[block.number][_status] = stakedAmountByBlockStatus[block.number][_status].add(_amount);
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].updateStakeMetrics(_wallet, _status, _amount);
 
         // Emit event
-        emit MetricsUpdated(_wallet, verificationPhaseNumber, _status, _amount);
+        emit StakeMetricsUpdated(_wallet, verificationPhaseNumber, _status, _amount);
     }
 
     /// @notice Resolve the market in the current verification phase if resolution criteria have been met
@@ -176,6 +192,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     function resolveIfCriteriaMet()
     public
     onlyRoleAccessor(ORACLE_ROLE)
+    onlyEnabled // TODO Consider if only the opening of verification phase should be subject to disablement
     {
         // If resolution criteria are met...
         if (resolutionCriteriaMet()) {

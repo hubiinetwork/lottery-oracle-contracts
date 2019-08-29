@@ -54,17 +54,23 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         });
     });
 
-    describe('updateMetrics()', () => {
+    describe('updateStakeMetrics()', () => {
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
-                resolutionEngine.updateMetrics(accounts[2], true, 100, {from: accounts[2]}).should.be.rejected;
+                resolutionEngine.updateStakeMetrics(accounts[2], true, 100, {from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe.skip('if resolution engine is disabled', () => {
+            it('should revert', async () => {
+                resolutionEngine.updateStakeMetrics(accounts[2], true, 100, {from: oracleAddress}).should.be.rejected;
             });
         });
 
         describe('if called by oracle', () => {
             it('should successfully update metrics', async () => {
-                const result = await resolutionEngine.updateMetrics(accounts[2], true, 100, {from: oracleAddress});
-                result.logs[0].event.should.equal('MetricsUpdated');
+                const result = await resolutionEngine.updateStakeMetrics(accounts[2], true, 100, {from: oracleAddress});
+                result.logs[0].event.should.equal('StakeMetricsUpdated');
             });
         });
     });
@@ -72,8 +78,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     describe('resolutionCriteriaMet()', () => {
         describe('if resolution criteria have not been met', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], false, 20, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], false, 20, {from: oracleAddress});
             });
 
             it('should return false', async () => {
@@ -83,8 +89,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if resolution criteria have been met on true status', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 110, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], false, 20, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 110, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], false, 20, {from: oracleAddress});
             });
 
             it('should return true', async () => {
@@ -94,8 +100,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if resolution criteria have been met on false status', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], false, 120, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], false, 120, {from: oracleAddress});
             });
 
             it('should return true', async () => {
@@ -107,8 +113,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     describe('metricsByVerificationPhaseNumber()', () => {
         describe('if verification phase has opened', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], false, 20, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], false, 20, {from: oracleAddress});
             });
 
             it('should return metrics of started verification phase', async () => {
@@ -148,8 +154,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     describe('metricsByVerificationPhaseNumberAndWallet()', () => {
         describe('if verification phase has opened', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[2], false, 20, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], false, 20, {from: oracleAddress});
             });
 
             it('should return metrics of started verification phase', async () => {
@@ -174,8 +180,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
     describe('metricsByWallet()', () => {
         beforeEach(async () => {
-            await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-            await resolutionEngine.updateMetrics(accounts[2], false, 20, {from: oracleAddress});
+            await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+            await resolutionEngine.updateStakeMetrics(accounts[2], false, 20, {from: oracleAddress});
         });
 
         it('should return metrics of wallet', async () => {
@@ -191,8 +197,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         let blockNumber;
 
         beforeEach(async () => {
-            await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-            await resolutionEngine.updateMetrics(accounts[2], false, 20, {from: oracleAddress});
+            await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+            await resolutionEngine.updateStakeMetrics(accounts[2], false, 20, {from: oracleAddress});
 
             blockNumber = await provider.getBlockNumber();
         });
@@ -219,6 +225,12 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
 
+        describe.skip('if resolution engine is disabled', () => {
+            it('should revert', async () => {
+                resolutionEngine.resolveIfCriteriaMet({from: oracleAddress}).should.be.rejected;
+            });
+        });
+
         describe('if called when resolution criteria are not met', () => {
             it('should not resolve', async () => {
                 const result = await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
@@ -234,8 +246,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if called when resolution criteria are met', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 110, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], false, 20, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 110, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], false, 20, {from: oracleAddress});
             });
 
             it('should successfully resolve', async () => {
@@ -264,9 +276,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         // 2nd scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
         describe('if bounty was awarded', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], true, 90, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[4], false, 50, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], true, 90, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[4], false, 50, {from: oracleAddress});
 
                 await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
             });
@@ -280,13 +292,13 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         // 1st scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
         describe('if bounty was not awarded', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 100, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 100, {from: oracleAddress});
 
                 await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
 
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], true, 90, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[4], false, 50, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], true, 90, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[4], false, 50, {from: oracleAddress});
 
                 await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
             });
@@ -307,9 +319,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if called by oracle', () => {
             beforeEach(async () => {
-                await resolutionEngine.updateMetrics(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[3], true, 90, {from: oracleAddress});
-                await resolutionEngine.updateMetrics(accounts[4], false, 50, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[2], true, 10, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[3], true, 90, {from: oracleAddress});
+                await resolutionEngine.updateStakeMetrics(accounts[4], false, 50, {from: oracleAddress});
             });
 
             describe('if called on verification phase that has not closed', () => {
