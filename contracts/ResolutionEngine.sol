@@ -95,9 +95,12 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     BountyFund public bountyFund;
 
-    uint256 public bountyFraction;
+    struct Bounty {
+        uint256 fraction;
+        uint256 amount;
+    }
 
-    uint256 public bountyAmount;
+    Bounty public bounty;
 
     uint256 public verificationPhaseNumber;
 
@@ -132,7 +135,7 @@ contract ResolutionEngine is Resolvable, RBACed {
         token = ERC20(bountyFund.token());
 
         // Initialize bounty fraction
-        bountyFraction = _bountyFraction;
+        bounty.fraction = _bountyFraction;
 
         // Withdraw bounty
         _extractBounty();
@@ -329,10 +332,10 @@ contract ResolutionEngine is Resolvable, RBACed {
     internal
     {
         // Withdraw from bounty fund
-        bountyAmount = bountyFund.withdrawTokens(bountyFraction);
+        bounty.amount = bountyFund.withdrawTokens(bounty.fraction);
 
         // Emit event
-        emit BountyExtracted(verificationPhaseNumber, bountyFraction, bountyAmount);
+        emit BountyExtracted(verificationPhaseNumber, bounty.fraction, bounty.amount);
     }
 
     /// @notice Open verification phase
@@ -346,7 +349,7 @@ contract ResolutionEngine is Resolvable, RBACed {
         verificationPhaseNumber++;
 
         // Open the verification phase
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bountyAmount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bounty.amount);
 
         // Emit event
         emit VerificationPhaseOpened(verificationPhaseNumber);

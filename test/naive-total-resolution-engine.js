@@ -45,8 +45,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             (await resolutionEngine.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
             (await resolutionEngine.isRoleAccessor(oracleRole, accounts[0])).should.be.false;
             (await resolutionEngine.isRoleAccessor(oracleRole, accounts[1])).should.be.true;
-            (await resolutionEngine.bountyFraction()).should.be.eq.BN(bountyFraction);
-            (await resolutionEngine.bountyAmount()).should.be.eq.BN(10);
+            (await resolutionEngine.bounty()).fraction.should.be.eq.BN(bountyFraction);
+            (await resolutionEngine.bounty()).amount.should.be.eq.BN(10);
             (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
 
             (await stakeToken.balanceOf(resolutionEngine.address))

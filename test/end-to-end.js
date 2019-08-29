@@ -50,7 +50,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.oracle()).should.equal(oracle.address);
                 (await naiveTotalResolutionEngine.bountyFund()).should.equal(bountyFund.address);
-                (await naiveTotalResolutionEngine.bountyFraction()).should.eq.BN(bountyFraction);
+                (await naiveTotalResolutionEngine.bounty()).fraction.should.eq.BN(bountyFraction);
 
                 (await oracle.hasResolutionEngine(naiveTotalResolutionEngine.address)).should.be.true;
 
@@ -69,11 +69,11 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(1);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(0);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(100);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(100);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(0);
-                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[2]))
+                (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accouents[2]))
                     .falseStakeAmount.should.eq.BN(0);
             });
 
@@ -88,7 +88,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(1);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(0);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(100);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(100);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
@@ -104,7 +104,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(1);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(0);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(100);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(100);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
@@ -121,7 +121,7 @@ contract('*', (accounts) => {
             after(async () => {
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(2);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(1);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(90);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(90);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(100);
@@ -140,7 +140,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(2);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(1);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(90);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(90);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(2, accounts[1]))
                     .trueStakeAmount.should.eq.BN(0);
@@ -158,7 +158,7 @@ contract('*', (accounts) => {
             after(async () => {
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(3);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(2);
-                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(81);
+                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(81);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(2, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
