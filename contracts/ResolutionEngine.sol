@@ -124,8 +124,8 @@ contract ResolutionEngine is Resolvable, RBACed {
         oracle = Oracle(_oracle);
 
         // Add oracle role and add oracle as accessor to it
-        addRoleInternal(ORACLE_ROLE);
-        addRoleAccessorInternal(ORACLE_ROLE, _oracle);
+        _addRole(ORACLE_ROLE);
+        _addRoleAccessor(ORACLE_ROLE, _oracle);
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);

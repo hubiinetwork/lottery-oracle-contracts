@@ -27,7 +27,9 @@ contract BountyFund is RBACed {
     ResolutionEngine public resolutionEngine;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _token) public {
+    constructor(address _token)
+    public
+    {
         // Initialize token
         token = ERC20(_token);
     }
@@ -40,7 +42,9 @@ contract BountyFund is RBACed {
     /// @notice Set the resolution engine of this bounty fund
     /// @dev This function can only be called once
     /// @param _resolutionEngine The address of the concerned resolution engine
-    function setResolutionEngine(address _resolutionEngine) public {
+    function setResolutionEngine(address _resolutionEngine)
+    public
+    {
         require(address(0) != _resolutionEngine);
         require(address(0) == address(resolutionEngine));
 
