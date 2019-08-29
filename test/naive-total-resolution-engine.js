@@ -396,4 +396,8 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
     });
+
+    describe('stageBounty()', () => {
+        it('should successfully stage the bounty');
+    });
 });

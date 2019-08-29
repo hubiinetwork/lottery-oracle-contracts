@@ -78,8 +78,9 @@ contract ResolutionEngine is Resolvable, RBACed {
     event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
-    event BountyExtracted(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
+    event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
         uint256 _bountyAmount);
+    event BountyStage(address indexed _wallet, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
     event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
@@ -116,6 +117,8 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     mapping(address => uint256) public stagedAmountByWallet;
 
+    bool disabled;
+
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
     public
@@ -138,10 +141,15 @@ contract ResolutionEngine is Resolvable, RBACed {
         bounty.fraction = _bountyFraction;
 
         // Withdraw bounty
-        _extractBounty();
+        _importBounty();
 
         // Open verification phase
         _openVerificationPhase();
+    }
+
+    modifier onlyDisabled() {
+        require(disabled);
+        _;
     }
 
     /// @notice Update metrics following a stake operation in the oracle
@@ -327,15 +335,29 @@ contract ResolutionEngine is Resolvable, RBACed {
         emit Withdrawn(_wallet, _amount);
     }
 
-    /// @notice Extract from bounty fund
-    function _extractBounty()
+    /// @notice Export the bounty to the given address
+    /// @param _wallet The recipient address of the bounty transfer
+    function stageBounty(address _wallet)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyDisabled
+    {
+        // Increment the wallets staged amount
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
+
+        // Emit event
+        emit BountyStage(_wallet, bounty.amount);
+    }
+
+    /// @notice Import from bounty fund
+    function _importBounty()
     internal
     {
         // Withdraw from bounty fund
         bounty.amount = bountyFund.withdrawTokens(bounty.fraction);
 
         // Emit event
-        emit BountyExtracted(verificationPhaseNumber, bounty.fraction, bounty.amount);
+        emit BountyImported(verificationPhaseNumber, bounty.fraction, bounty.amount);
     }
 
     /// @notice Open verification phase
@@ -374,7 +396,7 @@ contract ResolutionEngine is Resolvable, RBACed {
             verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAwarded = true;
 
             // Extract new bounty
-            _extractBounty();
+            _importBounty();
         }
 
         // Emit event
