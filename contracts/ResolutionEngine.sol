@@ -179,16 +179,6 @@ contract ResolutionEngine is Resolvable, RBACed {
         }
     }
 
-    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
-    /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @param _status The concerned status
-    /// @return the amount needed to obtain to resolve the market
-    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status) public view returns (uint256);
-
-    /// @notice Gauge whether the resolution criteria have been met
-    /// @return true if resolution criteria have been met, else false
-    function resolutionCriteriaMet() public view returns (bool);
-
     /// @notice Get the metrics for the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @return the metrics
