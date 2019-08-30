@@ -53,7 +53,7 @@ library VerificationPhaseLib {
             _phase.result = Status.False;
     }
 
-    function updateStakeMetrics(VerificationPhase storage _phase, address _wallet,
+    function stake(VerificationPhase storage _phase, address _wallet,
         bool _status, uint256 _amount) internal {
 
         _phase.amountByStatus[_status] = _phase.amountByStatus[_status].add(_amount);
@@ -77,7 +77,7 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     event Disabled(string action);
     event Enabled(string action);
-    event StakeMetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
+    event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
     event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
@@ -193,12 +193,12 @@ contract ResolutionEngine is Resolvable, RBACed {
         emit Enabled(_action);
     }
 
-    /// @notice Update metrics following a stake operation in the oracle
+    /// @notice Stake by updating metrics
     /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
     /// @param _status The status staked at
     /// @param _amount The amount staked
-    function updateStakeMetrics(address _wallet, bool _status, uint256 _amount)
+    function stake(address _wallet, bool _status, uint256 _amount)
     public
     onlyRoleAccessor(ORACLE_ROLE)
     {
@@ -208,10 +208,10 @@ contract ResolutionEngine is Resolvable, RBACed {
         // Update metrics
         stakedAmountByWalletStatus[_wallet][_status] = stakedAmountByWalletStatus[_wallet][_status].add(_amount);
         stakedAmountByBlockStatus[block.number][_status] = stakedAmountByBlockStatus[block.number][_status].add(_amount);
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].updateStakeMetrics(_wallet, _status, _amount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stake(_wallet, _status, _amount);
 
         // Emit event
-        emit StakeMetricsUpdated(_wallet, verificationPhaseNumber, _status, _amount);
+        emit Staked(_wallet, verificationPhaseNumber, _status, _amount);
     }
 
     /// @notice Resolve the market in the current verification phase if resolution criteria have been met

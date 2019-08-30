@@ -159,9 +159,9 @@ contract('Oracle', (accounts) => {
                 (await mockedResolutionEngine.stageCall()).wallet.should.equal(accounts[1]);
                 (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(40);
 
-                (await mockedResolutionEngine.updateStakeMetricsCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.updateStakeMetricsCall()).status.should.be.true;
-                (await mockedResolutionEngine.updateStakeMetricsCall()).amount.should.eq.BN(60);
+                (await mockedResolutionEngine.stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine.stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine.stakeCall()).amount.should.eq.BN(60);
 
                 (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
 
@@ -186,9 +186,9 @@ contract('Oracle', (accounts) => {
                 (await mockedResolutionEngine.stageCall()).wallet.should.equal(AddressZero);
                 (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(0);
 
-                (await mockedResolutionEngine.updateStakeMetricsCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.updateStakeMetricsCall()).status.should.be.true;
-                (await mockedResolutionEngine.updateStakeMetricsCall()).amount.should.eq.BN(100);
+                (await mockedResolutionEngine.stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine.stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine.stakeCall()).amount.should.eq.BN(100);
 
                 (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
 

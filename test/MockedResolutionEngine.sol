@@ -31,13 +31,13 @@ contract MockedResolutionEngine is Resolvable {
 
     StageCall public stageCall;
 
-    struct UpdateStakeMetricsCall {
+    struct StakeCall {
         address wallet;
         bool status;
         uint256 amount;
     }
 
-    UpdateStakeMetricsCall public updateStakeMetricsCall;
+    StakeCall public stakeCall;
 
     bool public resolveIfCriteriaMetCalled;
 
@@ -146,10 +146,10 @@ contract MockedResolutionEngine is Resolvable {
         stageCall = StageCall(_wallet, _amount);
     }
 
-    function updateStakeMetrics(address _wallet, bool _status, uint256 _amount)
+    function stake(address _wallet, bool _status, uint256 _amount)
     public
     {
-        updateStakeMetricsCall = UpdateStakeMetricsCall(_wallet, _status, _amount);
+        stakeCall = StakeCall(_wallet, _status, _amount);
     }
 
     function resolveIfCriteriaMet()

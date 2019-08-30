@@ -162,7 +162,7 @@ contract Oracle is RBACed {
             resolutionEngine.stage(msg.sender, refundAmount);
 
         // Update the current verification phase metrics post transfer
-        resolutionEngine.updateStakeMetrics(msg.sender, _status, _amount.sub(refundAmount));
+        resolutionEngine.stake(msg.sender, _status, _amount.sub(refundAmount));
 
         // Possibly resolve market in the current verification phase if resolution criteria have been met
         resolutionEngine.resolveIfCriteriaMet();
