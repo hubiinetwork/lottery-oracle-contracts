@@ -8,7 +8,6 @@ pragma solidity ^0.5.11;
 
 import {Resolvable} from "./Resolvable.sol";
 import {RBACed} from "./RBACed.sol";
-import {Oracle} from "./Oracle.sol";
 import {BountyFund} from "./BountyFund.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -98,12 +97,13 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     bool public disabled;
 
-    Oracle public oracle;
-
-    ERC20 public token;
+    address public oracle;
+    address public operator;
 
     BountyFund public bountyFund;
-
+    
+    ERC20 public token;
+    
     struct Bounty {
         uint256 fraction;
         uint256 amount;
@@ -127,22 +127,13 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     mapping(string => bool) public disabledByAction;
 
-    // TODO Add _operator as param
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
+    constructor(address _oracle, address _operator, address _bountyFund, uint256 _bountyFraction)
     public
     {
-        // Initialize oracle
-        oracle = Oracle(_oracle);
-
-        // Add oracle role and add oracle as accessor to it
-        _addRole(ORACLE_ROLE);
-        _addRoleAccessor(ORACLE_ROLE, _oracle);
-
-        // Add operator role
-        _addRole(OPERATOR_ROLE);
-        // TODO Add _operator as accessor
-        //        _addRoleAccessor(OPERATOR_ROLE, _operator);
+        // Initialize oracle and operator
+        oracle = _oracle;
+        operator = _operator;
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
@@ -160,12 +151,22 @@ contract ResolutionEngine is Resolvable, RBACed {
         // Open verification phase
         _openVerificationPhase();
     }
+    
+    modifier onlyOracle() {
+        require(msg.sender == oracle);
+        _;
+    }
+    
+    modifier onlyOperator() {
+        require(msg.sender == operator);
+        _;
+    }
 
     /// @notice Disable the given action
     /// @param _action The action to disable
     function disable(string memory _action)
     public
-    onlyRoleAccessor(OPERATOR_ROLE)
+    onlyOperator
     {
         // Require that the action is enabled
         require(!disabledByAction[_action]);
@@ -181,7 +182,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @param _action The action to enable
     function enable(string memory _action)
     public
-    onlyRoleAccessor(OPERATOR_ROLE)
+    onlyOperator
     {
         // Require that the action is disabled
         require(disabledByAction[_action]);
@@ -200,7 +201,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @param _amount The amount staked
     function stake(address _wallet, bool _status, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Require that stake action has not been disabled
         require(!disabledByAction[STAKE_ACTION]);
@@ -219,7 +220,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// be the current verification phase number
     function resolveIfCriteriaMet()
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Require that resolve action has not been disabled
         require(!disabledByAction[RESOLVE_ACTION]);
@@ -341,7 +342,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // For each verification phase number in the inclusive range withdraw payout
         uint256 payout = 0;
@@ -358,7 +359,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @param _amount The amount to be staged
     function stage(address _wallet, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Stage the amount
         _stage(_wallet, _amount);
@@ -373,7 +374,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @param _amount The amount to be withdrawn
     function withdraw(address _wallet, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Withdraw the amount
         _withdraw(_wallet, _amount);
