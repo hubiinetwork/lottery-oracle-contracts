@@ -76,6 +76,9 @@ contract BountyFund is RBACed {
     onlyRegisteredResolutionEngine
     returns (uint256)
     {
+        // Require that fraction is less than the entirety
+        require(_fraction <= PARTS_PER);
+
         // Calculate amount to transfer
         uint256 amount = token.balanceOf(address(this)).mul(_fraction).div(PARTS_PER);
 

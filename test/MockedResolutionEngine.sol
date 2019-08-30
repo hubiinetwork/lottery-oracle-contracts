@@ -6,16 +6,20 @@
 
 pragma solidity ^0.5.11;
 
-import {VerificationPhaseLib, ResolutionEngine} from "../contracts/ResolutionEngine.sol";
+import {Resolvable} from "../contracts/Resolvable.sol";
+import {VerificationPhaseLib} from "../contracts/ResolutionEngine.sol";
 import {BountyFund} from "../contracts/BountyFund.sol";
 
 /// @title MockedResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A mock of resolution engine
-contract MockedResolutionEngine /*is ResolutionEngine*/ {
+contract MockedResolutionEngine is Resolvable {
 
+    uint256 public _verificationPhaseNumber;
     uint256 public _resolutionDeltaAmount;
     bool public _resolutionCriteriaMet;
+
+    address public _token;
 
     struct StageCall {
         address wallet;
@@ -53,12 +57,20 @@ contract MockedResolutionEngine /*is ResolutionEngine*/ {
 
     VerificationPhaseLib.Status public verificationStatus;
 
+    function verificationPhaseNumber() public view returns (uint256) {
+        return _verificationPhaseNumber;
+    }
 
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
-    public
-        //    ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
-    {
+    function _setVerificationPhaseNumber(uint256 number) public {
+        _verificationPhaseNumber = number;
+    }
 
+    function token() public view returns (address) {
+        return _token;
+    }
+
+    function _setToken(address tkn) public {
+        _token = tkn;
     }
 
     function resolutionDeltaAmount(uint256, bool) public view returns (uint256) {

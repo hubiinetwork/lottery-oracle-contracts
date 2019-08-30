@@ -8,7 +8,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, constants} = require('ethers');
+const {Wallet, constants: {AddressZero}} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
@@ -16,7 +16,6 @@ chai.should();
 
 const BountyFund = artifacts.require('BountyFund');
 const StakeToken = artifacts.require('StakeToken');
-const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
 contract('BountyFund', (accounts) => {
     let stakeToken, bountyFund;
@@ -48,7 +47,7 @@ contract('BountyFund', (accounts) => {
 
         describe('when called with zero address', () => {
             it('should revert', async () => {
-                bountyFund.setResolutionEngine(constants.AddressZero).should.be.rejected;
+                bountyFund.setResolutionEngine(AddressZero).should.be.rejected;
             });
         });
 
@@ -61,6 +60,7 @@ contract('BountyFund', (accounts) => {
                 const result = await bountyFund.setResolutionEngine(resolutionEngine);
 
                 result.logs[0].event.should.equal('ResolutionEngineSet');
+
                 (await bountyFund.resolutionEngine()).should.equal(resolutionEngine);
             });
         });
@@ -87,6 +87,7 @@ contract('BountyFund', (accounts) => {
             const result = await bountyFund.depositTokens(100, {from: accounts[2]});
 
             result.logs[0].event.should.equal('TokensDeposited');
+
             (await stakeToken.balanceOf(bountyFund.address)).should.eq.BN(100);
         });
     });
@@ -98,44 +99,42 @@ contract('BountyFund', (accounts) => {
             partsPer = await bountyFund.PARTS_PER();
         });
 
-        describe('if done by agent not registered as resolution engine', () => {
+        describe('if called by agent not registered as resolution engine', () => {
             it('should revert', async () => {
                 bountyFund.withdrawTokens(partsPer.divn(10)).should.be.rejected;
             });
         });
 
-        describe('if done by registered resolution engine', () => {
-            let resolutionEngine;
+        describe('if bounty fraction is too large', () => {
+            beforeEach(async () => {
+                await bountyFund.setResolutionEngine(accounts[0]);
+            });
+
+            it('should revert', async () => {
+                bountyFund.withdrawTokens(partsPer.muln(2)).should.be.rejected;
+            });
+        });
+
+        describe('if called by registered resolution engine and bounty is within bounds', () => {
+            let balanceBefore, bountyFraction;
 
             beforeEach(async () => {
                 await stakeToken.mint(bountyFund.address, 100);
 
-                resolutionEngine = await MockedResolutionEngine.new(
-                    Wallet.createRandom().address, bountyFund.address, 0
-                );
+                await bountyFund.setResolutionEngine(accounts[0]);
+
+                balanceBefore = await stakeToken.balanceOf(bountyFund.address);
+
+                bountyFraction = partsPer.divn(2);
             });
 
-            describe('if bounty fraction is too large', () => {
-                it('should revert', async () => {
-                    resolutionEngine._withdrawTokens(partsPer.muln(2)).should.be.rejected;
-                });
-            });
+            it('should successfully transfer tokens to bounty fund', async () => {
+                const result = await bountyFund.withdrawTokens(bountyFraction);
 
-            describe('if bounty fraction is within bounds', () => {
-                let balanceBefore, bountyFraction;
+                result.logs[0].event.should.equal('TokensWithdrawn');
 
-                beforeEach(async () => {
-                    balanceBefore = await stakeToken.balanceOf(bountyFund.address);
-
-                    bountyFraction = partsPer.divn(2);
-                });
-
-                it('should successfully transfer tokens to bounty fund', async () => {
-                    await resolutionEngine._withdrawTokens(bountyFraction);
-
-                    (await stakeToken.balanceOf(resolutionEngine.address))
-                        .should.eq.BN(balanceBefore.mul(bountyFraction).div(partsPer));
-                });
+                (await stakeToken.balanceOf(bountyFund.address))
+                    .should.eq.BN(balanceBefore.mul(bountyFraction).div(partsPer));
             });
         });
     });

@@ -24,9 +24,7 @@ contract('ResolutionEngineOperator', (accounts) => {
         provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(accounts[0]).provider;
 
         operator = await ResolutionEngineOperator.new(2);
-        mockedResolutionEngine = await MockedResolutionEngine.new(
-            Wallet.createRandom().address, Wallet.createRandom().address, 10
-        );
+        mockedResolutionEngine = await MockedResolutionEngine.new();
     });
 
     describe('constructor()', () => {
