@@ -15,6 +15,9 @@ import {BountyFund} from "../contracts/BountyFund.sol";
 /// @notice A mock of resolution engine
 contract MockedResolutionEngine is Resolvable {
 
+    string constant public STAKE_ACTION = "STAKE";
+    string constant public RESOLVE_ACTION = "RESOLVE";
+
     uint256 public _verificationPhaseNumber;
     uint256 public _resolutionDeltaAmount;
     bool public _resolutionCriteriaMet;
@@ -58,6 +61,8 @@ contract MockedResolutionEngine is Resolvable {
     VerificationPhaseLib.Status public verificationStatus;
 
     bool public _disabled;
+    string public _disabledAction;
+    string public _enabledAction;
 
     function verificationPhaseNumber()
     public
@@ -168,7 +173,7 @@ contract MockedResolutionEngine is Resolvable {
         withdrawCall = WithdrawCall(_wallet, _amount);
     }
 
-    function disabled()
+    function disabled(string memory)
     public
     view
     returns (bool)
@@ -176,9 +181,21 @@ contract MockedResolutionEngine is Resolvable {
         return _disabled;
     }
 
-    function disable()
+    function _setDisabled(bool _dsbld)
     public
     {
-        _disabled = true;
+        _disabled = _dsbld;
+    }
+
+    function disable(string memory _action)
+    public
+    {
+        _disabledAction = _action;
+    }
+
+    function enable(string memory _action)
+    public
+    {
+        _enabledAction = _action;
     }
 }

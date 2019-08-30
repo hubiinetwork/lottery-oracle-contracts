@@ -20,6 +20,7 @@ contract ResolutionEngineOperator is RBACed {
     mapping(address => uint256) public disablementTimeoutByResolutionEngine;
 
     event DisablementTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
+    event DisablementTimerStopped(address indexed _resolutionEngine);
     event Disabled(address indexed _resolutionEngine);
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -43,10 +44,35 @@ contract ResolutionEngineOperator is RBACed {
         // Set the timeout
         disablementTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
 
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Disable staking in the resolution engine
+        resolutionEngine.disable(resolutionEngine.STAKE_ACTION());
+
         // Emit event
         emit DisablementTimerStarted(
             _resolutionEngine, disablementTimeoutByResolutionEngine[_resolutionEngine]
         );
+    }
+
+    /// @notice Stop the disablement timer for the given resolution engine
+    /// @param _resolutionEngine The address of the concerned resolution engine
+    function stopDisablementTimer(address _resolutionEngine)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        // Set the timeout
+        disablementTimeoutByResolutionEngine[_resolutionEngine] = 0;
+
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Enable staking in the resolution engine
+        resolutionEngine.enable(resolutionEngine.STAKE_ACTION());
+
+        // Emit event
+        emit DisablementTimerStopped(_resolutionEngine);
     }
 
     /// @notice Gauge whether the disablement timer of the given resolution engine is expired
@@ -72,11 +98,8 @@ contract ResolutionEngineOperator is RBACed {
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
-        // Require that the resolution engine has not already been disabled
-        require(!resolutionEngine.disabled());
-
-        // Disable the resolution engine
-        resolutionEngine.disable();
+        // Disable resolution in the resolution engine
+        resolutionEngine.disable(resolutionEngine.RESOLVE_ACTION());
 
         // Emit event
         emit Disabled(_resolutionEngine);

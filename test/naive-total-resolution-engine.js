@@ -67,73 +67,61 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('disable()', () => {
-        let resolveAction;
-
-        beforeEach(async () => {
-            resolveAction = await resolutionEngine.RESOLVE_ACTION();
-        });
-
         describe('if called by non-operator', () => {
             it('should revert', async () => {
-                resolutionEngine.disable(resolveAction, {from: oracleAddress}).should.be.rejected;
+                resolutionEngine.disable('some action', {from: oracleAddress}).should.be.rejected;
             });
         });
 
-        describe('if called by operator on enabled resolution engine', () => {
+        describe('if called by operator on resolution engine with action enabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
             });
 
             it('should successfully disable the resolution engine', async () => {
-                const result = await resolutionEngine.disable(resolveAction);
+                const result = await resolutionEngine.disable('some action');
                 result.logs[0].event.should.equal('Disabled');
             });
         });
 
-        describe('if called on disabled resolution engine', () => {
+        describe('if called by operator on resolution engine with action disabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable(resolveAction);
+                await resolutionEngine.disable('some action');
             });
 
             it('should revert', async () => {
-                resolutionEngine.disable(resolveAction).should.be.rejected;
+                resolutionEngine.disable('some action').should.be.rejected;
             });
         });
     });
 
     describe('enable()', () => {
-        let resolveAction;
-
-        beforeEach(async () => {
-            resolveAction = await resolutionEngine.RESOLVE_ACTION();
-        });
-
         describe('if called by non-operator', () => {
             it('should revert', async () => {
-                resolutionEngine.enable(resolveAction, {from: oracleAddress}).should.be.rejected;
+                resolutionEngine.enable('some action', {from: oracleAddress}).should.be.rejected;
             });
         });
 
-        describe('if called by operator on disabled resolution engine', () => {
+        describe('if called by operator on resolution engine with action disabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable(resolveAction);
+                await resolutionEngine.disable('some action');
             });
 
             it('should successfully enable the resolution engine', async () => {
-                const result = await resolutionEngine.enable(resolveAction);
+                const result = await resolutionEngine.enable('some action');
                 result.logs[0].event.should.equal('Enabled');
             });
         });
 
-        describe('if called on disabled resolution engine', () => {
+        describe('if called by operator on resolution engine with action enabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
             });
 
             it('should revert', async () => {
-                resolutionEngine.enable(resolveAction).should.be.rejected;
+                resolutionEngine.enable('some action').should.be.rejected;
             });
         });
     });
@@ -145,10 +133,10 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
 
-        describe('if resolution engine is disabled', () => {
+        describe('if stake action disabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable();
+                await resolutionEngine.disable(await resolutionEngine.STAKE_ACTION());
             });
 
             it('should revert', async () => {
@@ -314,10 +302,10 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
 
-        describe('if resolution engine is disabled', () => {
+        describe('if resolve action is disabled', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable();
+                await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
 
             it('should revert', async () => {
@@ -526,7 +514,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
                 bountyAmount = (await resolutionEngine.bounty()).amount;
 
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable();
+                await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
 
             it('should successfully stage the bounty', async () => {
