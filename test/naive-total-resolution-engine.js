@@ -19,12 +19,17 @@ const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 
 contract('NaiveTotalResolutionEngine', (accounts) => {
-    let provider, oracleAddress, stakeToken, resolutionEngine, ownerRole, oracleRole, bountyFund, bountyFraction;
+    let ownerAddress, oracleAddress;
+    let provider;
+    let stakeToken, resolutionEngine, bountyFund, bountyFraction;
+    let ownerRole, oracleRole, operatorRole;
 
     beforeEach(async () => {
-        provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(accounts[0]).provider;
-
+        ownerAddress = accounts[0];
         oracleAddress = accounts[1];
+
+        provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(ownerAddress).provider;
+
         stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
         bountyFund = await BountyFund.new(stakeToken.address);
@@ -35,22 +40,61 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         ownerRole = await resolutionEngine.OWNER_ROLE();
         oracleRole = await resolutionEngine.ORACLE_ROLE();
+        operatorRole = await resolutionEngine.OPERATOR_ROLE();
     });
 
     describe('constructor()', () => {
         it('should successfully initialize', async () => {
             // TODO Add tests on events emitted at construction time
 
-            (await resolutionEngine.isRoleAccessor(ownerRole, accounts[0])).should.be.true;
-            (await resolutionEngine.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
-            (await resolutionEngine.isRoleAccessor(oracleRole, accounts[0])).should.be.false;
-            (await resolutionEngine.isRoleAccessor(oracleRole, accounts[1])).should.be.true;
+            (await resolutionEngine.isRole(ownerRole)).should.be.true;
+            (await resolutionEngine.isRoleAccessor(ownerRole, ownerAddress)).should.be.true;
+            (await resolutionEngine.isRoleAccessor(ownerRole, oracleAddress)).should.be.false;
+
+            (await resolutionEngine.isRole(oracleRole)).should.be.true;
+            (await resolutionEngine.isRoleAccessor(oracleRole, ownerAddress)).should.be.false;
+            (await resolutionEngine.isRoleAccessor(oracleRole, oracleAddress)).should.be.true;
+
+            (await resolutionEngine.isRole(operatorRole)).should.be.true;
+
             (await resolutionEngine.bounty()).fraction.should.be.eq.BN(bountyFraction);
             (await resolutionEngine.bounty()).amount.should.be.eq.BN(10);
             (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
 
             (await stakeToken.balanceOf(resolutionEngine.address))
                 .should.eq.BN(10);
+        });
+    });
+
+    describe('disable()', () => {
+        describe('if called by non-operator', () => {
+            it('should revert', async () => {
+                resolutionEngine.disable({from: oracleAddress}).should.be.rejected;
+            });
+        });
+
+        describe('if called by operator on enabled resolution engine', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+            });
+
+            it('should successfully disable the resolution engine', async () => {
+                const result = await resolutionEngine.disable();
+                result.logs[0].event.should.equal('Disabled');
+            });
+        });
+
+        describe('if called on disabled resolution engine', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+                await resolutionEngine.disable();
+            });
+
+            it('should successfully disable the resolution engine', async () => {
+                it('should revert', async () => {
+                    resolutionEngine.disable().should.be.rejected;
+                });
+            });
         });
     });
 
@@ -61,7 +105,12 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
 
-        describe.skip('if resolution engine is disabled', () => {
+        describe('if resolution engine is disabled', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+                await resolutionEngine.disable();
+            });
+
             it('should revert', async () => {
                 resolutionEngine.updateStakeMetrics(accounts[2], true, 100, {from: oracleAddress}).should.be.rejected;
             });
@@ -225,7 +274,12 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
         });
 
-        describe.skip('if resolution engine is disabled', () => {
+        describe('if resolution engine is disabled', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+                await resolutionEngine.disable();
+            });
+
             it('should revert', async () => {
                 resolutionEngine.resolveIfCriteriaMet({from: oracleAddress}).should.be.rejected;
             });
@@ -370,7 +424,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         describe('if called by oracle', () => {
             it('should successfully stage', async () => {
                 const result = await resolutionEngine.stage(accounts[2], 100, {from: oracleAddress});
+
                 result.logs[0].event.should.equal('Staged');
+
                 (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(100);
             });
         });
@@ -400,6 +456,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
             it('should successfully withdraw', async () => {
                 const result = await resolutionEngine.withdraw(accounts[2], 40, {from: oracleAddress});
+
                 result.logs[0].event.should.equal('Withdrawn');
 
                 (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(60);
@@ -410,6 +467,33 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('stageBounty()', () => {
-        it('should successfully stage the bounty');
+        describe('if called by non-owner', () => {
+            it('should revert', async () => {
+                resolutionEngine.stageBounty(accounts[2], {from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called on enabled resolution engine', () => {
+            it('should revert', async () => {
+                resolutionEngine.stageBounty(accounts[2]).should.be.rejected;
+            });
+        });
+
+        describe('if called by owner on disabled resolution engine', () => {
+            let bountyAmount;
+
+            beforeEach(async () => {
+                bountyAmount = (await resolutionEngine.bounty()).amount;
+
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+                await resolutionEngine.disable();
+            });
+
+            it('should successfully stage the bounty', async () => {
+                const result = await resolutionEngine.stageBounty(accounts[2]);
+                result.logs[0].event.should.equal('BountyStaged');
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(bountyAmount);
+            });
+        });
     });
 });

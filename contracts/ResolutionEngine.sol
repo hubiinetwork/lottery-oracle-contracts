@@ -75,12 +75,13 @@ contract ResolutionEngine is Resolvable, RBACed {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
+    event Disabled();
     event StakeMetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
     event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
         uint256 _bountyAmount);
-    event BountyStage(address indexed _wallet, uint256 _bountyAmount);
+    event BountyStaged(address indexed _wallet, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
     event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
@@ -90,6 +91,8 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     string constant public ORACLE_ROLE = "ORACLE";
     string constant public OPERATOR_ROLE = "OPERATOR";
+
+    bool public disabled;
 
     Oracle public oracle;
 
@@ -114,11 +117,9 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     VerificationPhaseLib.Status public verificationStatus;
 
-    mapping(address => mapping(uint256 => bool)) public payedOutByWalletPhase;
+    mapping(address => mapping(uint256 => bool)) public payoutStagedByWalletPhase;
 
     mapping(address => uint256) public stagedAmountByWallet;
-
-    bool public disabled;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
@@ -130,6 +131,9 @@ contract ResolutionEngine is Resolvable, RBACed {
         // Add oracle role and add oracle as accessor to it
         _addRole(ORACLE_ROLE);
         _addRoleAccessor(ORACLE_ROLE, _oracle);
+
+        // Add operator role
+        _addRole(OPERATOR_ROLE);
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
@@ -163,8 +167,13 @@ contract ResolutionEngine is Resolvable, RBACed {
     function disable()
     public
     onlyRoleAccessor(OPERATOR_ROLE)
+    onlyEnabled
     {
+        // Disable
         disabled = true;
+
+        // Emit event
+        emit Disabled();
     }
 
     /// @notice Update metrics following a stake operation in the oracle
@@ -363,7 +372,7 @@ contract ResolutionEngine is Resolvable, RBACed {
         stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
 
         // Emit event
-        emit BountyStage(_wallet, bounty.amount);
+        emit BountyStaged(_wallet, bounty.amount);
     }
 
     /// @notice Import from bounty fund
@@ -430,14 +439,14 @@ contract ResolutionEngine is Resolvable, RBACed {
             return 0;
 
         // Return wallet payout has already been staged for this verification phase number
-        if (payedOutByWalletPhase[_wallet][_verificationPhaseNumber])
+        if (payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber])
             return 0;
 
         // Calculate payout
         uint256 payout = calculatePayout(_verificationPhaseNumber, _wallet);
 
         // Register payout of wallet and verification phase number
-        payedOutByWalletPhase[_wallet][_verificationPhaseNumber] = true;
+        payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber] = true;
 
         // Stage the payout
         _stage(_wallet, payout);

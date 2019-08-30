@@ -119,21 +119,7 @@ contract('ResolutionEngineOperator', (accounts) => {
             });
         });
 
-        describe('if called on already disabled resolution engine', () => {
-            beforeEach(async () => {
-                // TODO Factor this fast forward out into separate function in ./helpers.js
-                await provider.send('evm_increaseTime', [3]);
-                await provider.send('evm_mine');
-
-                await mockedResolutionEngine.disable();
-            });
-
-            it('should revert', async () => {
-                operator.disable(mockedResolutionEngine.address).should.be.rejected;
-            });
-        });
-
-        describe('if called after disablement timer has expired on enabled resolution engine', () => {
+        describe('if called after disablement timer has expired', () => {
             beforeEach(async () => {
                 // TODO Factor this fast forward out into separate function in ./helpers.js
                 await provider.send('evm_increaseTime', [3]);
