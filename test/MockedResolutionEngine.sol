@@ -57,53 +57,83 @@ contract MockedResolutionEngine is Resolvable {
 
     VerificationPhaseLib.Status public verificationStatus;
 
-    function verificationPhaseNumber() public view returns (uint256) {
+    bool public _disabled;
+
+    function verificationPhaseNumber()
+    public
+    view
+    returns (uint256)
+    {
         return _verificationPhaseNumber;
     }
 
-    function _setVerificationPhaseNumber(uint256 number) public {
+    function _setVerificationPhaseNumber(uint256 number)
+    public
+    {
         _verificationPhaseNumber = number;
     }
 
-    function token() public view returns (address) {
+    function token()
+    public
+    view
+    returns (address)
+    {
         return _token;
     }
 
-    function _setToken(address tkn) public {
+    function _setToken(address tkn)
+    public
+    {
         _token = tkn;
     }
 
-    function resolutionDeltaAmount(uint256, bool) public view returns (uint256) {
+    function resolutionDeltaAmount(uint256, bool)
+    public
+    view
+    returns (uint256)
+    {
         return _resolutionDeltaAmount;
     }
 
-    function _setResolutionDeltaAmount(uint256 amount) public {
+    function _setResolutionDeltaAmount(uint256 amount)
+    public
+    {
         _resolutionDeltaAmount = amount;
     }
 
-    function resolutionCriteriaMet() public view returns (bool) {
+    function resolutionCriteriaMet()
+    public
+    view
+    returns (bool)
+    {
         return _resolutionCriteriaMet;
     }
 
-    function _setResolutionCriteria(bool met) public {
+    function _setResolutionCriteria(bool met)
+    public
+    {
         _resolutionCriteriaMet = met;
     }
 
-    function _withdrawTokens(uint256 _bountyFraction) public {
+    function _withdrawTokens(uint256 _bountyFraction)
+    public
+    {
         bountyFund.withdrawTokens(_bountyFraction);
     }
 
-    function _setVerificationStatus(VerificationPhaseLib.Status _status) public {
+    function _setVerificationStatus(VerificationPhaseLib.Status _status)
+    public
+    {
         verificationStatus = _status;
     }
 
-    function _stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
-        uint256 _lastVerificationPhaseNumber)
-    public
-    {
-        //        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-        //            super._stagePayout(_wallet, i);
-    }
+    //    function _stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+    //        uint256 _lastVerificationPhaseNumber)
+    //    public
+    //    {
+    //                for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
+    //                    super._stagePayout(_wallet, i);
+    //    }
 
     function stage(address _wallet, uint256 _amount)
     public
@@ -127,12 +157,28 @@ contract MockedResolutionEngine is Resolvable {
         uint256 _lastVerificationPhaseNumber)
     public
     {
-        stagePayoutCall = StagePayoutCall(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+        stagePayoutCall = StagePayoutCall(
+            _wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber
+        );
     }
 
     function withdraw(address _wallet, uint256 _amount)
     public
     {
         withdrawCall = WithdrawCall(_wallet, _amount);
+    }
+
+    function disabled()
+    public
+    view
+    returns (bool)
+    {
+        return _disabled;
+    }
+
+    function disable()
+    public
+    {
+        _disabled = true;
     }
 }

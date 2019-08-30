@@ -118,7 +118,7 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     mapping(address => uint256) public stagedAmountByWallet;
 
-    bool disabled;
+    bool public disabled;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)

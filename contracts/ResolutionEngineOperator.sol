@@ -29,11 +29,6 @@ contract ResolutionEngineOperator is RBACed {
         minimumTimeout = _minimumTimeout;
     }
 
-    modifier onlyGreaterOrEqual(uint256 a, uint256 b) {
-        require(a >= b);
-        _;
-    }
-
     /// @notice Start the teardown timer for the given resolution engine
     /// @dev The timeout can only be greater than or equal to the defined minimum timeout
     /// @param _resolutionEngine The address of the concerned resolution engine
@@ -41,8 +36,10 @@ contract ResolutionEngineOperator is RBACed {
     function startTeardownTimer(address _resolutionEngine, uint256 _timeout)
     public
     onlyRoleAccessor(OWNER_ROLE)
-    onlyGreaterOrEqual(_timeout, minimumTimeout)
     {
+        // Require that the given timeout beyond the minimum
+        require(_timeout >= minimumTimeout);
+
         // Set the timeout
         teardownTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
 
@@ -67,10 +64,16 @@ contract ResolutionEngineOperator is RBACed {
     /// @param _resolutionEngine The address of the concerned resolution engine
     function tearDown(address _resolutionEngine)
     public
-    onlyGreaterOrEqual(block.timestamp, teardownTimeoutByResolutionEngine[_resolutionEngine])
+    onlyRoleAccessor(OWNER_ROLE)
     {
+        // Require that the teardown timer has expired
+        require(isTeardownTimerExpired(_resolutionEngine));
+
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Require that the resolution engine has not already been disabled
+        require(!resolutionEngine.disabled());
 
         // Disable the resolution engine
         resolutionEngine.disable();

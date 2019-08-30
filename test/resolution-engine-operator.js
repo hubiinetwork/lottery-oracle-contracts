@@ -101,4 +101,48 @@ contract('ResolutionEngineOperator', (accounts) => {
             });
         });
     });
+
+    describe('tearDown()', () => {
+        beforeEach(async () => {
+            await operator.startTeardownTimer(mockedResolutionEngine.address, 2);
+        });
+
+        describe('if called by non-owner', () => {
+            it('should revert', async () => {
+                operator.tearDown(mockedResolutionEngine.address, {from: accounts[1]}).should.be.rejected;
+            });
+        });
+
+        describe('if called before teardown timer has expired', () => {
+            it('should revert', async () => {
+                operator.tearDown(mockedResolutionEngine.address).should.be.rejected;
+            });
+        });
+
+        describe('if called on already disabled resolution engine', () => {
+            beforeEach(async () => {
+                // TODO Factor this fast forward out into separate function in ./helpers.js
+                await provider.send('evm_increaseTime', [3]);
+                await provider.send('evm_mine');
+
+                await mockedResolutionEngine.disable();
+            });
+
+            it('should revert', async () => {
+                operator.tearDown(mockedResolutionEngine.address).should.be.rejected;
+            });
+        });
+
+        describe('if called after teardown timer has expired on enabled resolution engine', () => {
+            beforeEach(async () => {
+                // TODO Factor this fast forward out into separate function in ./helpers.js
+                await provider.send('evm_increaseTime', [3]);
+                await provider.send('evm_mine');
+            });
+
+            it('should successfully tear down the resolution engine', async () => {
+                const result = await operator.tearDown(mockedResolutionEngine.address);
+            });
+        });
+    });
 });
