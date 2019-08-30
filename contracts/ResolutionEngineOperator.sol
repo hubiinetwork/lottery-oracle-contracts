@@ -17,10 +17,10 @@ contract ResolutionEngineOperator is RBACed {
     using SafeMath for uint256;
 
     uint256 public minimumTimeout;
-    mapping(address => uint256) public teardownTimeoutByResolutionEngine;
+    mapping(address => uint256) public disablementTimeoutByResolutionEngine;
 
-    event TeardownTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
-    event TornDown(address indexed _resolutionEngine);
+    event DisablementTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
+    event Disabled(address indexed _resolutionEngine);
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(uint256 _minimumTimeout)
@@ -29,11 +29,11 @@ contract ResolutionEngineOperator is RBACed {
         minimumTimeout = _minimumTimeout;
     }
 
-    /// @notice Start the teardown timer for the given resolution engine
+    /// @notice Start the disablement timer for the given resolution engine
     /// @dev The timeout can only be greater than or equal to the defined minimum timeout
     /// @param _resolutionEngine The address of the concerned resolution engine
     /// @param _timeout The duration of the timer
-    function startTeardownTimer(address _resolutionEngine, uint256 _timeout)
+    function startDisablementTimer(address _resolutionEngine, uint256 _timeout)
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
@@ -41,33 +41,33 @@ contract ResolutionEngineOperator is RBACed {
         require(_timeout >= minimumTimeout);
 
         // Set the timeout
-        teardownTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
+        disablementTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
 
         // Emit event
-        emit TeardownTimerStarted(
-            _resolutionEngine, teardownTimeoutByResolutionEngine[_resolutionEngine]
+        emit DisablementTimerStarted(
+            _resolutionEngine, disablementTimeoutByResolutionEngine[_resolutionEngine]
         );
     }
 
-    /// @notice Gauge whether the teardown timer of the given resolution engine is expired
+    /// @notice Gauge whether the disablement timer of the given resolution engine is expired
     /// @param _resolutionEngine The address of the concerned resolution engine
-    /// @return true if the resolution engine's teardown timer is expired, else false
-    function isTeardownTimerExpired(address _resolutionEngine)
+    /// @return true if the resolution engine's disablement timer is expired, else false
+    function isDisablementTimerExpired(address _resolutionEngine)
     public
     view
     returns (bool)
     {
-        return block.timestamp >= teardownTimeoutByResolutionEngine[_resolutionEngine];
+        return block.timestamp >= disablementTimeoutByResolutionEngine[_resolutionEngine];
     }
 
-    /// @notice Tear down the given resolution engine
+    /// @notice Disable the given resolution engine
     /// @param _resolutionEngine The address of the concerned resolution engine
-    function tearDown(address _resolutionEngine)
+    function disable(address _resolutionEngine)
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
-        // Require that the teardown timer has expired
-        require(isTeardownTimerExpired(_resolutionEngine));
+        // Require that the disablement timer has expired
+        require(isDisablementTimerExpired(_resolutionEngine));
 
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
@@ -79,6 +79,6 @@ contract ResolutionEngineOperator is RBACed {
         resolutionEngine.disable();
 
         // Emit event
-        emit TornDown(_resolutionEngine);
+        emit Disabled(_resolutionEngine);
     }
 }

@@ -36,10 +36,10 @@ contract('ResolutionEngineOperator', (accounts) => {
         });
     });
 
-    describe('startTeardownTimer()', () => {
+    describe('startDisablementTimer()', () => {
         describe('if called by non-owner', () => {
             it('should revert', async () => {
-                operator.startTeardownTimer(
+                operator.startDisablementTimer(
                     Wallet.createRandom().address, 10, {from: accounts[1]}
                 ).should.be.rejected;
             });
@@ -47,7 +47,7 @@ contract('ResolutionEngineOperator', (accounts) => {
 
         describe('if called by with timeout param less than the minimum', () => {
             it('should revert', async () => {
-                operator.startTeardownTimer(
+                operator.startDisablementTimer(
                     Wallet.createRandom().address, 1, {from: accounts[0]}
                 ).should.be.rejected;
             });
@@ -60,36 +60,36 @@ contract('ResolutionEngineOperator', (accounts) => {
                resolutionEngine = Wallet.createRandom().address;
             });
 
-            it('should successfully start the teardown timer', async () => {
-                const result = await operator.startTeardownTimer(
+            it('should successfully start the disablement timer', async () => {
+                const result = await operator.startDisablementTimer(
                     resolutionEngine, 2
                 );
 
-                result.logs[0].event.should.equal('TeardownTimerStarted');
+                result.logs[0].event.should.equal('DisablementTimerStarted');
 
                 const blockTimestamp = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
-                (await operator.teardownTimeoutByResolutionEngine(
+                (await operator.disablementTimeoutByResolutionEngine(
                     resolutionEngine
                 )).should.eq.BN(blockTimestamp + 2);
             });
         });
     });
 
-    describe('isTeardownTimerExpired()', () => {
+    describe('isDisablementTimerExpired()', () => {
         let resolutionEngine;
 
         beforeEach(async () => {
             resolutionEngine = Wallet.createRandom().address;
-            await operator.startTeardownTimer(resolutionEngine, 2);
+            await operator.startDisablementTimer(resolutionEngine, 2);
         });
 
-        describe('if called before teardown timer has expired', () => {
+        describe('if called before disablement timer has expired', () => {
             it('should return false', async () => {
-                (await operator.isTeardownTimerExpired(resolutionEngine)).should.be.false;
+                (await operator.isDisablementTimerExpired(resolutionEngine)).should.be.false;
             });
         });
 
-        describe('if called after teardown timer has expired', () => {
+        describe('if called after disablement timer has expired', () => {
             beforeEach(async () => {
                 // TODO Factor this fast forward out into separate function in ./helpers.js
                 await provider.send('evm_increaseTime', [3]);
@@ -97,25 +97,25 @@ contract('ResolutionEngineOperator', (accounts) => {
             });
 
             it('should return true', async () => {
-                (await operator.isTeardownTimerExpired(resolutionEngine)).should.be.true;
+                (await operator.isDisablementTimerExpired(resolutionEngine)).should.be.true;
             });
         });
     });
 
-    describe('tearDown()', () => {
+    describe('disable()', () => {
         beforeEach(async () => {
-            await operator.startTeardownTimer(mockedResolutionEngine.address, 2);
+            await operator.startDisablementTimer(mockedResolutionEngine.address, 2);
         });
 
         describe('if called by non-owner', () => {
             it('should revert', async () => {
-                operator.tearDown(mockedResolutionEngine.address, {from: accounts[1]}).should.be.rejected;
+                operator.disable(mockedResolutionEngine.address, {from: accounts[1]}).should.be.rejected;
             });
         });
 
-        describe('if called before teardown timer has expired', () => {
+        describe('if called before disablement timer has expired', () => {
             it('should revert', async () => {
-                operator.tearDown(mockedResolutionEngine.address).should.be.rejected;
+                operator.disable(mockedResolutionEngine.address).should.be.rejected;
             });
         });
 
@@ -129,11 +129,11 @@ contract('ResolutionEngineOperator', (accounts) => {
             });
 
             it('should revert', async () => {
-                operator.tearDown(mockedResolutionEngine.address).should.be.rejected;
+                operator.disable(mockedResolutionEngine.address).should.be.rejected;
             });
         });
 
-        describe('if called after teardown timer has expired on enabled resolution engine', () => {
+        describe('if called after disablement timer has expired on enabled resolution engine', () => {
             beforeEach(async () => {
                 // TODO Factor this fast forward out into separate function in ./helpers.js
                 await provider.send('evm_increaseTime', [3]);
@@ -141,7 +141,7 @@ contract('ResolutionEngineOperator', (accounts) => {
             });
 
             it('should successfully tear down the resolution engine', async () => {
-                const result = await operator.tearDown(mockedResolutionEngine.address);
+                const result = await operator.disable(mockedResolutionEngine.address);
             });
         });
     });
