@@ -12,7 +12,7 @@ import {BountyFund} from "../contracts/BountyFund.sol";
 /// @title MockedResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A mock of resolution engine
-contract MockedResolutionEngine is ResolutionEngine {
+contract MockedResolutionEngine /*is ResolutionEngine*/ {
 
     uint256 public _resolutionDeltaAmount;
     bool public _resolutionCriteriaMet;
@@ -49,10 +49,16 @@ contract MockedResolutionEngine is ResolutionEngine {
 
     WithdrawCall public withdrawCall;
 
+    BountyFund public bountyFund;
+
+    VerificationPhaseLib.Status public verificationStatus;
+
+
     constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
     public
-    ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
+        //    ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
     {
+
     }
 
     function resolutionDeltaAmount(uint256, bool) public view returns (uint256) {
@@ -83,8 +89,8 @@ contract MockedResolutionEngine is ResolutionEngine {
         uint256 _lastVerificationPhaseNumber)
     public
     {
-        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-            super._stagePayout(_wallet, i);
+        //        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
+        //            super._stagePayout(_wallet, i);
     }
 
     function stage(address _wallet, uint256 _amount)
