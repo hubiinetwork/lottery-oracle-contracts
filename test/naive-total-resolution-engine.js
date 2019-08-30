@@ -67,9 +67,15 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('disable()', () => {
+        let resolveAction;
+
+        beforeEach(async () => {
+            resolveAction = await resolutionEngine.RESOLVE_ACTION();
+        });
+
         describe('if called by non-operator', () => {
             it('should revert', async () => {
-                resolutionEngine.disable({from: oracleAddress}).should.be.rejected;
+                resolutionEngine.disable(resolveAction, {from: oracleAddress}).should.be.rejected;
             });
         });
 
@@ -79,7 +85,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             });
 
             it('should successfully disable the resolution engine', async () => {
-                const result = await resolutionEngine.disable();
+                const result = await resolutionEngine.disable(resolveAction);
                 result.logs[0].event.should.equal('Disabled');
             });
         });
@@ -87,13 +93,47 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         describe('if called on disabled resolution engine', () => {
             beforeEach(async () => {
                 await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-                await resolutionEngine.disable();
+                await resolutionEngine.disable(resolveAction);
             });
 
-            it('should successfully disable the resolution engine', async () => {
-                it('should revert', async () => {
-                    resolutionEngine.disable().should.be.rejected;
-                });
+            it('should revert', async () => {
+                resolutionEngine.disable(resolveAction).should.be.rejected;
+            });
+        });
+    });
+
+    describe('enable()', () => {
+        let resolveAction;
+
+        beforeEach(async () => {
+            resolveAction = await resolutionEngine.RESOLVE_ACTION();
+        });
+
+        describe('if called by non-operator', () => {
+            it('should revert', async () => {
+                resolutionEngine.enable(resolveAction, {from: oracleAddress}).should.be.rejected;
+            });
+        });
+
+        describe('if called by operator on disabled resolution engine', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+                await resolutionEngine.disable(resolveAction);
+            });
+
+            it('should successfully enable the resolution engine', async () => {
+                const result = await resolutionEngine.enable(resolveAction);
+                result.logs[0].event.should.equal('Enabled');
+            });
+        });
+
+        describe('if called on disabled resolution engine', () => {
+            beforeEach(async () => {
+                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
+            });
+
+            it('should revert', async () => {
+                resolutionEngine.enable(resolveAction).should.be.rejected;
             });
         });
     });
