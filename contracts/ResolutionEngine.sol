@@ -8,6 +8,7 @@ pragma solidity ^0.5.11;
 
 import {Resolvable} from "./Resolvable.sol";
 import {RBACed} from "./RBACed.sol";
+import {Able} from "./Able.sol";
 import {BountyFund} from "./BountyFund.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -70,12 +71,12 @@ library VerificationPhaseLib {
 /// @title ResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A resolution engine base contract
-contract ResolutionEngine is Resolvable, RBACed {
+contract ResolutionEngine is Resolvable, RBACed, Able {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
-    event Disabled(string action);
-    event Enabled(string action);
+    //    event Disabled(string action);
+    //    event Enabled(string action);
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
@@ -95,15 +96,13 @@ contract ResolutionEngine is Resolvable, RBACed {
     string constant public STAKE_ACTION = "STAKE";
     string constant public RESOLVE_ACTION = "RESOLVE";
 
-    bool public disabled;
-
     address public oracle;
     address public operator;
 
     BountyFund public bountyFund;
-    
+
     ERC20 public token;
-    
+
     struct Bounty {
         uint256 fraction;
         uint256 amount;
@@ -124,8 +123,6 @@ contract ResolutionEngine is Resolvable, RBACed {
     mapping(address => mapping(uint256 => bool)) public payoutStagedByWalletPhase;
 
     mapping(address => uint256) public stagedAmountByWallet;
-
-    mapping(string => bool) public disabledByAction;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _operator, address _bountyFund, uint256 _bountyFraction)
@@ -151,12 +148,12 @@ contract ResolutionEngine is Resolvable, RBACed {
         // Open verification phase
         _openVerificationPhase();
     }
-    
+
     modifier onlyOracle() {
         require(msg.sender == oracle);
         _;
     }
-    
+
     modifier onlyOperator() {
         require(msg.sender == operator);
         _;
@@ -168,14 +165,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     public
     onlyOperator
     {
-        // Require that the action is enabled
-        require(!disabledByAction[_action]);
-
-        // Disable action
-        disabledByAction[_action] = true;
-
-        // Emit event
-        emit Disabled(_action);
+        // Disable
+        super.disable(_action);
     }
 
     /// @notice Enable the given action
@@ -184,14 +175,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     public
     onlyOperator
     {
-        // Require that the action is disabled
-        require(disabledByAction[_action]);
-
-        // Enable action
-        disabledByAction[_action] = false;
-
-        // Emit event
-        emit Enabled(_action);
+        // Enable
+        super.enable(_action);
     }
 
     /// @notice Stake by updating metrics
@@ -202,10 +187,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     function stake(address _wallet, bool _status, uint256 _amount)
     public
     onlyOracle
+    onlyEnabled(STAKE_ACTION)
     {
-        // Require that stake action has not been disabled
-        require(!disabledByAction[STAKE_ACTION]);
-
         // Update metrics
         stakedAmountByWalletStatus[_wallet][_status] = stakedAmountByWalletStatus[_wallet][_status].add(_amount);
         stakedAmountByBlockStatus[block.number][_status] = stakedAmountByBlockStatus[block.number][_status].add(_amount);
@@ -221,10 +204,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     function resolveIfCriteriaMet()
     public
     onlyOracle
+    onlyEnabled(RESOLVE_ACTION)
     {
-        // Require that resolve action has not been disabled
-        require(!disabledByAction[RESOLVE_ACTION]);
-
         // If resolution criteria are met...
         if (resolutionCriteriaMet()) {
             // Close existing verification phase
@@ -388,10 +369,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     function stageBounty(address _wallet)
     public
     onlyRoleAccessor(OWNER_ROLE)
+    onlyDisabled(RESOLVE_ACTION)
     {
-        // Require that resolve action has not been disabled
-        require(disabledByAction[RESOLVE_ACTION]);
-
         // Increment the wallets staged amount
         stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
 
