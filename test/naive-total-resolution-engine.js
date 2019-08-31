@@ -19,13 +19,14 @@ const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 
 contract('NaiveTotalResolutionEngine', (accounts) => {
-    let ownerAddress, oracleAddress;
+    let ownerAddress, operatorAddress, oracleAddress;
     let provider;
     let stakeToken, resolutionEngine, bountyFund, bountyFraction;
     let ownerRole, oracleRole, operatorRole;
 
     beforeEach(async () => {
         ownerAddress = accounts[0];
+        operatorAddress = accounts[0];
         oracleAddress = accounts[1];
 
         provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(ownerAddress).provider;
@@ -36,7 +37,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         await stakeToken.mint(bountyFund.address, 100);
 
         bountyFraction = (await bountyFund.PARTS_PER()).divn(10);
-        resolutionEngine = await NaiveTotalResolutionEngine.new(oracleAddress, bountyFund.address, bountyFraction, 100);
+        resolutionEngine = await NaiveTotalResolutionEngine.new(
+            oracleAddress, operatorAddress, bountyFund.address, bountyFraction, 100
+        );
 
         ownerRole = await resolutionEngine.OWNER_ROLE();
         oracleRole = await resolutionEngine.ORACLE_ROLE();
@@ -51,11 +54,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             (await resolutionEngine.isRoleAccessor(ownerRole, ownerAddress)).should.be.true;
             (await resolutionEngine.isRoleAccessor(ownerRole, oracleAddress)).should.be.false;
 
-            (await resolutionEngine.isRole(oracleRole)).should.be.true;
-            (await resolutionEngine.isRoleAccessor(oracleRole, ownerAddress)).should.be.false;
-            (await resolutionEngine.isRoleAccessor(oracleRole, oracleAddress)).should.be.true;
+            (await resolutionEngine.oracle()).should.equal(oracleAddress);
 
-            (await resolutionEngine.isRole(operatorRole)).should.be.true;
+            (await resolutionEngine.operator()).should.equal(operatorAddress);
 
             (await resolutionEngine.bounty()).fraction.should.be.eq.BN(bountyFraction);
             (await resolutionEngine.bounty()).amount.should.be.eq.BN(10);
@@ -74,10 +75,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         });
 
         describe('if called by operator on resolution engine with action enabled', () => {
-            beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-            });
-
             it('should successfully disable the resolution engine', async () => {
                 const result = await resolutionEngine.disable('some action');
                 result.logs[0].event.should.equal('Disabled');
@@ -86,7 +83,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if called by operator on resolution engine with action disabled', () => {
             beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
                 await resolutionEngine.disable('some action');
             });
 
@@ -105,7 +101,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if called by operator on resolution engine with action disabled', () => {
             beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
                 await resolutionEngine.disable('some action');
             });
 
@@ -116,10 +111,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         });
 
         describe('if called by operator on resolution engine with action enabled', () => {
-            beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
-            });
-
             it('should revert', async () => {
                 resolutionEngine.enable('some action').should.be.rejected;
             });
@@ -135,7 +126,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if stake action disabled', () => {
             beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
                 await resolutionEngine.disable(await resolutionEngine.STAKE_ACTION());
             });
 
@@ -304,7 +294,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         describe('if resolve action is disabled', () => {
             beforeEach(async () => {
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
                 await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
 
@@ -513,7 +502,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             beforeEach(async () => {
                 bountyAmount = (await resolutionEngine.bounty()).amount;
 
-                await resolutionEngine.addRoleAccessor(operatorRole, ownerAddress);
                 await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
 

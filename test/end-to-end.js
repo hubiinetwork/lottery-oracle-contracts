@@ -16,11 +16,12 @@ chai.should();
 
 const StakeToken = artifacts.require('StakeToken');
 const Oracle = artifacts.require('Oracle');
+const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
 const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 
 contract('*', (accounts) => {
-    let stakeToken, oracle, bountyFund, naiveTotalResolutionEngine, balanceBeforeAccount1, balanceBeforeAccount2;
+    let stakeToken, oracle, operator, bountyFund, naiveTotalResolutionEngine, balanceBeforeAccount1, balanceBeforeAccount2;
 
     describe('NaiveTotalResolutionEngine', () => {
         describe('initialize', () => {
@@ -34,6 +35,9 @@ contract('*', (accounts) => {
                 // Deploy oracle
                 oracle = await Oracle.new();
 
+                // Deploy resolution engine operator
+                operator = await ResolutionEngineOperator.new(2);
+
                 // Deploy bounty fund
                 bountyFund = await BountyFund.new(stakeToken.address);
 
@@ -44,7 +48,7 @@ contract('*', (accounts) => {
                 // Deploy naïve total resolution engine and register it with oracle
                 const bountyFraction = (await bountyFund.PARTS_PER()).divn(10);
                 naiveTotalResolutionEngine = await NaiveTotalResolutionEngine.new(
-                    oracle.address, bountyFund.address, bountyFraction, 100
+                    oracle.address, operator.address, bountyFund.address, bountyFraction, 100
                 );
                 await oracle.addResolutionEngine(naiveTotalResolutionEngine.address);
 
