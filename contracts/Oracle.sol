@@ -65,6 +65,7 @@ contract Oracle is RBACed {
         bool _status, uint256 _amount);
     event PayoutStaged(address indexed _wallet, address indexed _resolutionEngine,
         uint256 _firstVerificationPhaseNumber, uint256 _lastVerificationPhaseNumber);
+    event StakeStaged(address indexed _wallet, address indexed _resolutionEngine);
     event Withdrawn(address indexed _wallet, address indexed _resolutionEngine,
         uint256 _amount);
 
@@ -187,6 +188,21 @@ contract Oracle is RBACed {
 
         // Emit event
         emit PayoutStaged(msg.sender, _resolutionEngine, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+    }
+
+    /// @notice For the given resolution engine stage the stake
+    /// @param _resolutionEngine The concerned resolution engine
+    function stageStake(address _resolutionEngine)
+    public
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Withdraw payout from resolution engine
+        resolutionEngine.stageStake(msg.sender);
+
+        // Emit event
+        emit StakeStaged(msg.sender, _resolutionEngine);
     }
 
     /// @notice For the given resolution engine withdraw the given amount

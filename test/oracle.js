@@ -156,14 +156,14 @@ contract('Oracle', (accounts) => {
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await mockedResolutionEngine.stageCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(40);
+                (await mockedResolutionEngine._stageCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stageCall()).amount.should.eq.BN(40);
 
-                (await mockedResolutionEngine.stakeCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.stakeCall()).status.should.be.true;
-                (await mockedResolutionEngine.stakeCall()).amount.should.eq.BN(60);
+                (await mockedResolutionEngine._stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine._stakeCall()).amount.should.eq.BN(60);
 
-                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+                (await mockedResolutionEngine._resolveIfCriteriaMetCalled()).should.be.true;
 
                 // Stake only, i.e. no bounty with mocked resolution engine
                 (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(100);
@@ -183,18 +183,36 @@ contract('Oracle', (accounts) => {
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await mockedResolutionEngine.stageCall()).wallet.should.equal(AddressZero);
-                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(0);
+                (await mockedResolutionEngine._stageCall()).wallet.should.equal(AddressZero);
+                (await mockedResolutionEngine._stageCall()).amount.should.eq.BN(0);
 
-                (await mockedResolutionEngine.stakeCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.stakeCall()).status.should.be.true;
-                (await mockedResolutionEngine.stakeCall()).amount.should.eq.BN(100);
+                (await mockedResolutionEngine._stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine._stakeCall()).amount.should.eq.BN(100);
 
-                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+                (await mockedResolutionEngine._resolveIfCriteriaMetCalled()).should.be.true;
 
                 // Stake only, i.e. no bounty with mocked resolution engine
                 (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(100);
             });
+        });
+    });
+
+    describe('stageStake()', () => {
+        let mockedResolutionEngine;
+
+        beforeEach(async () => {
+            mockedResolutionEngine = await MockedResolutionEngine.new();
+
+            await oracle.addResolutionEngine(mockedResolutionEngine.address);
+        });
+
+        it('should successfully stage payout', async () => {
+            const result = await oracle.stageStake(mockedResolutionEngine.address, {from: accounts[1]});
+
+            result.logs[0].event.should.equal('StakeStaged');
+
+            (await mockedResolutionEngine._stageStakeWallet()).should.equal(accounts[1]);
         });
     });
 
@@ -212,9 +230,9 @@ contract('Oracle', (accounts) => {
 
             result.logs[0].event.should.equal('PayoutStaged');
 
-            (await mockedResolutionEngine.stagePayoutCall()).wallet.should.equal(accounts[1]);
-            (await mockedResolutionEngine.stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
-            (await mockedResolutionEngine.stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
+            (await mockedResolutionEngine._stagePayoutCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine._stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
+            (await mockedResolutionEngine._stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
         });
     });
 
@@ -232,8 +250,8 @@ contract('Oracle', (accounts) => {
 
             result.logs[0].event.should.equal('Withdrawn');
 
-            (await mockedResolutionEngine.withdrawCall()).wallet.should.equal(accounts[1]);
-            (await mockedResolutionEngine.withdrawCall()).amount.should.eq.BN(10);
+            (await mockedResolutionEngine._withdrawCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine._withdrawCall()).amount.should.eq.BN(10);
         });
     });
 });

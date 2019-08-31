@@ -29,7 +29,7 @@ contract MockedResolutionEngine is Resolvable {
         uint256 amount;
     }
 
-    StageCall public stageCall;
+    StageCall public _stageCall;
 
     struct StakeCall {
         address wallet;
@@ -37,9 +37,9 @@ contract MockedResolutionEngine is Resolvable {
         uint256 amount;
     }
 
-    StakeCall public stakeCall;
+    StakeCall public _stakeCall;
 
-    bool public resolveIfCriteriaMetCalled;
+    bool public _resolveIfCriteriaMetCalled;
 
     struct StagePayoutCall {
         address wallet;
@@ -47,18 +47,20 @@ contract MockedResolutionEngine is Resolvable {
         uint256 lastVerificationPhaseNumber;
     }
 
-    StagePayoutCall public stagePayoutCall;
+    StagePayoutCall public _stagePayoutCall;
+
+    address public _stageStakeWallet;
 
     struct WithdrawCall {
         address wallet;
         uint256 amount;
     }
 
-    WithdrawCall public withdrawCall;
+    WithdrawCall public _withdrawCall;
 
-    BountyFund public bountyFund;
+    BountyFund public _bountyFund;
 
-    VerificationPhaseLib.Status public verificationStatus;
+    VerificationPhaseLib.Status public _verificationStatus;
 
     bool public _disabled;
     string public _disabledAction;
@@ -123,54 +125,60 @@ contract MockedResolutionEngine is Resolvable {
     function _withdrawTokens(uint256 _bountyFraction)
     public
     {
-        bountyFund.withdrawTokens(_bountyFraction);
+        _bountyFund.withdrawTokens(_bountyFraction);
+    }
+
+    function verificationStatus()
+    public
+    view
+    returns (VerificationPhaseLib.Status)
+    {
+        return _verificationStatus;
     }
 
     function _setVerificationStatus(VerificationPhaseLib.Status _status)
     public
     {
-        verificationStatus = _status;
+        _verificationStatus = _status;
     }
-
-    //    function _stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
-    //        uint256 _lastVerificationPhaseNumber)
-    //    public
-    //    {
-    //                for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-    //                    super._stagePayout(_wallet, i);
-    //    }
 
     function stage(address _wallet, uint256 _amount)
     public
     {
-        stageCall = StageCall(_wallet, _amount);
+        _stageCall = StageCall(_wallet, _amount);
     }
 
     function stake(address _wallet, bool _status, uint256 _amount)
     public
     {
-        stakeCall = StakeCall(_wallet, _status, _amount);
+        _stakeCall = StakeCall(_wallet, _status, _amount);
     }
 
     function resolveIfCriteriaMet()
     public
     {
-        resolveIfCriteriaMetCalled = true;
+        _resolveIfCriteriaMetCalled = true;
     }
 
     function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
     {
-        stagePayoutCall = StagePayoutCall(
+        _stagePayoutCall = StagePayoutCall(
             _wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber
         );
+    }
+
+    function stageStake(address _wallet)
+    public
+    {
+        _stageStakeWallet = _wallet;
     }
 
     function withdraw(address _wallet, uint256 _amount)
     public
     {
-        withdrawCall = WithdrawCall(_wallet, _amount);
+        _withdrawCall = WithdrawCall(_wallet, _amount);
     }
 
     function disabled(string memory)
