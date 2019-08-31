@@ -382,51 +382,81 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('stagePayout()', () => {
+        beforeEach(async () => {
+            await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+            await resolutionEngine.stake(accounts[3], true, 90, {from: oracleAddress});
+            await resolutionEngine.stake(accounts[4], false, 50, {from: oracleAddress});
+        });
+
         describe('if called by non-oracle', () => {
             it('should revert', async () => {
                 resolutionEngine.stagePayout(accounts[2], 0, 0, {from: accounts[2]}).should.be.rejected;
             });
         });
 
-        describe('if called by oracle', () => {
+        describe('if called on verification phase that has not closed', () => {
+            it('should stage 0', async () => {
+                await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
+
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(0);
+            });
+        });
+
+        describe('if called the first time on verification phase that has closed', () => {
             beforeEach(async () => {
-                await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
-                await resolutionEngine.stake(accounts[3], true, 90, {from: oracleAddress});
-                await resolutionEngine.stake(accounts[4], false, 50, {from: oracleAddress});
+                await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
             });
 
-            describe('if called on verification phase that has not closed', () => {
-                it('should stage 0', async () => {
-                    await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
+            it('should successfully stage payout', async () => {
+                await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
 
-                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(0);
-                });
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
+            });
+        });
+
+        describe('if called the second time on verification phase that has closed', () => {
+            beforeEach(async () => {
+                await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
+
+                await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
             });
 
-            describe('if called the first time on verification phase that has closed', () => {
-                beforeEach(async () => {
-                    await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
-                });
+            it('should stage 0', async () => {
+                await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
 
-                it('should successfully withdraw payout', async () => {
-                    await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
+            });
+        });
+    });
 
-                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
-                });
+    describe('stageStake()', () => {
+        beforeEach(async () => {
+            await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+            await resolutionEngine.stake(accounts[2], false, 20, {from: oracleAddress});
+            await resolutionEngine.stake(accounts[3], true, 40, {from: oracleAddress});
+        });
+
+        describe('if called by non-oracle', () => {
+            it('should revert', async () => {
+                resolutionEngine.stageStake(accounts[2], {from: accounts[2]}).should.be.rejected;
+            });
+        });
+
+        describe('if called when resolve action is enabled', () => {
+            it('should revert', async () => {
+                resolutionEngine.stageStake(accounts[2], {from: oracleAddress}).should.be.rejected;
+            });
+        });
+
+        describe('if called by oracle when resolve action is disabled', () => {
+            beforeEach(async () => {
+                await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
 
-            describe('if called the second time on verification phase that has closed', () => {
-                beforeEach(async () => {
-                    await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
+            it('should successfully stage stake', async () => {
+                await resolutionEngine.stageStake(accounts[2], {from: oracleAddress});
 
-                    await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
-                });
-
-                it('should withdraw 0', async () => {
-                    await resolutionEngine.stagePayout(accounts[2], 1, 1, {from: oracleAddress});
-
-                    (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(16);
-                });
+                (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(30);
             });
         });
     });

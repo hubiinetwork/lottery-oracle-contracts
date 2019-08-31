@@ -75,8 +75,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
-    //    event Disabled(string action);
-    //    event Enabled(string action);
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
@@ -87,6 +85,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
     event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
         uint256 indexed _lastVerificationPhaseNumber, uint256 _payout);
+    event StakeStaged(address indexed _wallet, uint _amount);
     event Staged(address indexed _wallet, uint _amount);
     event Withdrawn(address indexed _wallet, uint _amount);
 
@@ -332,6 +331,30 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
         // Emit event
         emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
+    }
+
+    /// @notice Stage the amount staked in the current verification phase
+    /// @dev The function can only be called by oracle and when resolve action has been disabled
+    /// @param _wallet The address of the concerned wallet
+    function stageStake(address _wallet)
+    public
+    onlyOracle
+    onlyDisabled(RESOLVE_ACTION)
+    {
+        // Retrieve the verification phase
+        VerificationPhaseLib.VerificationPhase storage verificationPhase =
+        verificationPhaseByPhaseNumber[verificationPhaseNumber];
+
+        // Calculate the amount staked by the wallet
+        uint256 amount = verificationPhase.stakedAmountByWalletStatus[_wallet][true].add(
+            verificationPhase.stakedAmountByWalletStatus[_wallet][false]
+        );
+
+        // Stage the amount
+        _stage(_wallet, amount);
+
+        // Emit event
+        emit StakeStaged(_wallet, amount);
     }
 
     /// @notice Stage the given amount
