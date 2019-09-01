@@ -78,7 +78,7 @@ contract Oracle is RBACed {
     }
 
     modifier onlyRegisteredResolutionEngine(address _resolutionEngine) {
-        require(hasResolutionEngine(_resolutionEngine));
+        require(hasResolutionEngine(_resolutionEngine), "Oracle: Resolution engine is not registered");
         _;
     }
 
@@ -145,7 +145,8 @@ contract Oracle is RBACed {
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
         // Require that stake targets current verification phase number
-        require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber);
+        require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber,
+            "Oracle: not the current verification phase number");
 
         // Calculate the amount overshooting the resolution delta amount
         uint256 refundAmount = _amount > resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status) ?

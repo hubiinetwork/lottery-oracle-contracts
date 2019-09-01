@@ -149,12 +149,12 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     }
 
     modifier onlyOracle() {
-        require(msg.sender == oracle);
+        require(msg.sender == oracle, "ResolutionEngine: sender is not the set oracle");
         _;
     }
 
     modifier onlyOperator() {
-        require(msg.sender == operator);
+        require(msg.sender == operator, "ResolutionEngine: sender is not the set operator");
         _;
     }
 
@@ -417,7 +417,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     internal
     {
         // Require that verification phase is not open
-        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened);
+        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
+        "ResolutionEngine: verification phase is not in unopened state");
 
         // Bump verification phase number
         verificationPhaseNumber++;
@@ -434,7 +435,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     internal
     {
         // Require that verification phase is open
-        require(verificationPhaseByPhaseNumber[verificationPhaseNumber].state == VerificationPhaseLib.State.Opened);
+        require(verificationPhaseByPhaseNumber[verificationPhaseNumber].state == VerificationPhaseLib.State.Opened,
+            "ResolutionEngine: verification phase is not in opened state");
 
         // Close the verification phase
         verificationPhaseByPhaseNumber[verificationPhaseNumber].close();
@@ -493,7 +495,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     internal
     {
         // Require that the withdrawal amount is smaller than the wallet's staged amount
-        require(_amount <= stagedAmountByWallet[_wallet]);
+        require(_amount <= stagedAmountByWallet[_wallet], "ResolutionEngine: amount is greater than staged amount");
 
         // Unstage the amount
         stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);

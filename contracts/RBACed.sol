@@ -36,7 +36,7 @@ contract RBACed {
     }
 
     modifier onlyRoleAccessor(string memory _role) {
-        require(isRoleAccessor(_role, msg.sender));
+        require(isRoleAccessor(_role, msg.sender), "RBACed: sender is not accessor of the role");
         _;
     }
 

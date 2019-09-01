@@ -39,7 +39,7 @@ contract ResolutionEngineOperator is RBACed {
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Require that the given timeout beyond the minimum
-        require(_timeout >= minimumTimeout);
+        require(_timeout >= minimumTimeout, "ResolutionEngineOperator: timeout is smaller than the set minimum");
 
         // Set the timeout
         disablementTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
@@ -93,7 +93,7 @@ contract ResolutionEngineOperator is RBACed {
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Require that the disablement timer has expired
-        require(isDisablementTimerExpired(_resolutionEngine));
+        require(isDisablementTimerExpired(_resolutionEngine), "ResolutionEngineOperator: disablement timer is not expired");
 
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);

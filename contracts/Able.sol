@@ -22,7 +22,7 @@ contract Able {
     public
     {
         // Require that the name is disabled
-        require(_disabled[_name]);
+        require(_disabled[_name], "Able: name is enabled");
 
         // Enable name
         _disabled[_name] = false;
@@ -37,7 +37,7 @@ contract Able {
     public
     {
         // Require that the name is enabled
-        require(!_disabled[_name]);
+        require(!_disabled[_name], "Able: name is disabled");
 
         // Disable name
         _disabled[_name] = true;
@@ -67,12 +67,12 @@ contract Able {
     }
 
     modifier onlyEnabled(string memory _name) {
-        require(enabled(_name));
+        require(enabled(_name), "Able: name is disabled");
         _;
     }
 
     modifier onlyDisabled(string memory _name) {
-        require(disabled(_name));
+        require(disabled(_name), "Able: name is enabled");
         _;
     }
 }
