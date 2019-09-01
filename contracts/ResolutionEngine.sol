@@ -333,6 +333,20 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
     }
 
+    /// @notice Export the bounty to the given address
+    /// @param _wallet The recipient address of the bounty transfer
+    function stageBounty(address _wallet)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyDisabled(RESOLVE_ACTION)
+    {
+        // Increment the wallets staged amount
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
+
+        // Emit event
+        emit BountyStaged(_wallet, bounty.amount);
+    }
+
     /// @notice Stage the amount staked in the current verification phase
     /// @dev The function can only be called by oracle and when resolve action has been disabled
     /// @param _wallet The address of the concerned wallet
@@ -385,20 +399,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
         // Emit event
         emit Withdrawn(_wallet, _amount);
-    }
-
-    /// @notice Export the bounty to the given address
-    /// @param _wallet The recipient address of the bounty transfer
-    function stageBounty(address _wallet)
-    public
-    onlyRoleAccessor(OWNER_ROLE)
-    onlyDisabled(RESOLVE_ACTION)
-    {
-        // Increment the wallets staged amount
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
-
-        // Emit event
-        emit BountyStaged(_wallet, bounty.amount);
     }
 
     /// @notice Import from bounty fund
