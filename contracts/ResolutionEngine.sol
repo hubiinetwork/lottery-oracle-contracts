@@ -78,8 +78,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
-    event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
-        uint256 _bountyAmount);
+    event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyAmount);
     event BountyStaged(address indexed _wallet, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
@@ -97,17 +96,11 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     address public oracle;
     address public operator;
+    address public bountyAllocator;
 
     BountyFund public bountyFund;
 
     ERC20 public token;
-
-    struct Bounty {
-        uint256 fraction;
-        uint256 amount;
-    }
-
-    Bounty public bounty;
 
     uint256 public verificationPhaseNumber;
 
@@ -124,12 +117,13 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     mapping(address => uint256) public stagedAmountByWallet;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _operator, address _bountyFund, uint256 _bountyFraction)
+    constructor(address _oracle, address _operator, address _bountyFund, address _bountyAllocator)
     public
     {
-        // Initialize oracle and operator
+        // Initialize oracle, operator and bounty allocator
         oracle = _oracle;
         operator = _operator;
+        bountyAllocator = _bountyAllocator;
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
@@ -138,14 +132,11 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         // Initialize token to the one of bounty fund
         token = ERC20(bountyFund.token());
 
-        // Initialize bounty fraction
-        bounty.fraction = _bountyFraction;
-
-        // Withdraw bounty
-        _importBounty();
+        // Import bounty
+        uint256 bountyAmount = _importBounty();
 
         // Open verification phase
-        _openVerificationPhase();
+        _openVerificationPhase(bountyAmount);
     }
 
     modifier onlyOracle() {
@@ -213,8 +204,11 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
             // Emit event
             emit Resolved(verificationPhaseNumber);
 
+            // Import bounty
+            uint256 bountyAmount = _importBounty();
+
             // Open new verification phase
-            _openVerificationPhase();
+            _openVerificationPhase(bountyAmount);
         }
     }
 
@@ -341,10 +335,12 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyDisabled(RESOLVE_ACTION)
     {
         // Increment the wallets staged amount
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(
+            verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount
+        );
 
         // Emit event
-        emit BountyStaged(_wallet, bounty.amount);
+        emit BountyStaged(_wallet, verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
     }
 
     /// @notice Stage the amount staked in the current verification phase
@@ -401,33 +397,36 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         emit Withdrawn(_wallet, _amount);
     }
 
-    /// @notice Import from bounty fund
-    function _importBounty()
-    internal
-    {
-        // Withdraw from bounty fund
-        bounty.amount = bountyFund.withdrawTokens(bounty.fraction);
-
-        // Emit event
-        emit BountyImported(verificationPhaseNumber, bounty.fraction, bounty.amount);
-    }
-
     /// @notice Open verification phase
-    function _openVerificationPhase()
+    function _openVerificationPhase(uint256 _bountyAmount)
     internal
     {
         // Require that verification phase is not open
         require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
-        "ResolutionEngine: verification phase is not in unopened state");
+            "ResolutionEngine: verification phase is not in unopened state");
 
         // Bump verification phase number
         verificationPhaseNumber++;
 
         // Open the verification phase
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bounty.amount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(_bountyAmount);
 
         // Emit event
         emit VerificationPhaseOpened(verificationPhaseNumber);
+    }
+
+    /// @notice Import from bounty fund
+    function _importBounty()
+    internal
+    returns (uint256)
+    {
+        // Allocate from bounty fund using the set bounty allocator
+        uint256 bountyAmount = bountyFund.allocateTokens(bountyAllocator);
+
+        // Emit event
+        emit BountyImported(verificationPhaseNumber, bountyAmount);
+
+        return bountyAmount;
     }
 
     /// @notice Close verification phase
@@ -448,9 +447,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
             // Award bounty to this verification phase
             verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAwarded = true;
-
-            // Extract new bounty
-            _importBounty();
         }
 
         // Emit event

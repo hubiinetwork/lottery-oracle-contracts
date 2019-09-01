@@ -90,7 +90,7 @@ contract('*', (accounts) => {
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(1);
                 (await naiveTotalResolutionEngine.verificationStatus()).should.eq.BN(0);
-                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(100);
+                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(100);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
@@ -114,7 +114,7 @@ contract('*', (accounts) => {
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(1)).bountyAwarded.should.be.true;
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(2);
-                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(90);
+                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(90);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(1, accounts[1]))
                     .trueStakeAmount.should.eq.BN(100);
@@ -142,7 +142,7 @@ contract('*', (accounts) => {
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(2)).bountyAwarded.should.be.true;
 
                 (await naiveTotalResolutionEngine.verificationPhaseNumber()).should.eq.BN(3);
-                (await naiveTotalResolutionEngine.bounty()).amount.should.eq.BN(81);
+                (await naiveTotalResolutionEngine.bountyAmount()).should.eq.BN(81);
 
                 (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumberAndWallet(2, accounts[1]))
                     .trueStakeAmount.should.eq.BN(10);
@@ -292,7 +292,7 @@ contract('*', (accounts) => {
                 await naiveTotalResolutionEngine.stageBounty(accounts[2]);
 
                 (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(
-                    (await naiveTotalResolutionEngine.bounty()).amount
+                    (await naiveTotalResolutionEngine.bountyAmount())
                 );
             });
         });
@@ -301,8 +301,8 @@ contract('*', (accounts) => {
             let bountyAmount;
 
             before(async () => {
-               balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
-               bountyAmount = (await naiveTotalResolutionEngine.bounty()).amount;
+                balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
+                bountyAmount = (await naiveTotalResolutionEngine.bountyAmount());
             });
 
             it('should withdraw successfully', async () => {

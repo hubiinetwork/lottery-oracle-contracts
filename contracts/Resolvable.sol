@@ -11,8 +11,6 @@ pragma solidity ^0.5.11;
 /// @notice A resolvable base contract
 contract Resolvable {
     /// @notice Resolve the market in the current verification phase if resolution criteria have been met
-    /// @dev The function can only be called by oracle.
-    /// be the current verification phase number
     function resolveIfCriteriaMet()
     public;
 

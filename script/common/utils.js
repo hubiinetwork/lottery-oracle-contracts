@@ -53,6 +53,7 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
     return ownerAccount;
 };
 
+// TODO Consider the need for this one
 exports.getNaiveTotalBountyDivisor = () => {
     return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR === 'undefined' ?
         10 :

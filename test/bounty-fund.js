@@ -92,7 +92,7 @@ contract('BountyFund', (accounts) => {
         });
     });
 
-    describe('withdrawTokens()', () => {
+    describe('allocateTokens()', () => {
         let partsPer;
 
         beforeEach(async () => {
@@ -101,17 +101,7 @@ contract('BountyFund', (accounts) => {
 
         describe('if called by agent not registered as resolution engine', () => {
             it('should revert', async () => {
-                bountyFund.withdrawTokens(partsPer.divn(10)).should.be.rejected;
-            });
-        });
-
-        describe('if bounty fraction is too large', () => {
-            beforeEach(async () => {
-                await bountyFund.setResolutionEngine(accounts[0]);
-            });
-
-            it('should revert', async () => {
-                bountyFund.withdrawTokens(partsPer.muln(2)).should.be.rejected;
+                bountyFund.allocateTokens(partsPer.divn(10)).should.be.rejected;
             });
         });
 
@@ -129,9 +119,9 @@ contract('BountyFund', (accounts) => {
             });
 
             it('should successfully transfer tokens to bounty fund', async () => {
-                const result = await bountyFund.withdrawTokens(bountyFraction);
+                const result = await bountyFund.allocateTokens(bountyFraction);
 
-                result.logs[0].event.should.equal('TokensWithdrawn');
+                result.logs[0].event.should.equal('TokensAllocated');
 
                 (await stakeToken.balanceOf(bountyFund.address))
                     .should.eq.BN(balanceBefore.mul(bountyFraction).div(partsPer));

@@ -58,8 +58,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
             (await resolutionEngine.operator()).should.equal(operatorAddress);
 
-            (await resolutionEngine.bounty()).fraction.should.be.eq.BN(bountyFraction);
-            (await resolutionEngine.bounty()).amount.should.be.eq.BN(10);
+            (await resolutionEngine.bountyAmount()).should.be.eq.BN(10);
             (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
 
             (await stakeToken.balanceOf(resolutionEngine.address))
@@ -530,7 +529,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             let bountyAmount;
 
             beforeEach(async () => {
-                bountyAmount = (await resolutionEngine.bounty()).amount;
+                bountyAmount = (await resolutionEngine.bountyAmount());
 
                 await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
