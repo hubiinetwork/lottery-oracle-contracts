@@ -88,9 +88,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     event Staged(address indexed _wallet, uint _amount);
     event Withdrawn(address indexed _wallet, uint _amount);
 
-    string constant public ORACLE_ROLE = "ORACLE";
-    string constant public OPERATOR_ROLE = "OPERATOR";
-
     string constant public STAKE_ACTION = "STAKE";
     string constant public RESOLVE_ACTION = "RESOLVE";
 
@@ -116,6 +113,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     mapping(address => uint256) public stagedAmountByWallet;
 
+    // TODO Remove allocator from constructor params
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _oracle, address _operator, address _bountyFund, address _bountyAllocator)
     public
@@ -311,14 +309,14 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     /// @notice Stage the payout earned by given wallet in the inclusive range of given verification phase numbers
     /// @dev The function can only be called by oracle.
     /// @param _wallet The address of the concerned wallet
-    /// @param _firstVerificationPhaseNumber The first verification phase number to withdraw payout from
-    /// @param _lastVerificationPhaseNumber The last verification phase number to withdraw payout from
+    /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
+    /// @param _lastVerificationPhaseNumber The last verification phase number to stage payout from
     function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
     onlyOracle
     {
-        // For each verification phase number in the inclusive range withdraw payout
+        // For each verification phase number in the inclusive range stage payout
         uint256 payout = 0;
         for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
             payout = payout.add(_stagePayout(_wallet, i));

@@ -1,14 +1,14 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, utils, constants: {AddressZero}} = require('ethers');
+const {constants: {AddressZero}} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
@@ -30,7 +30,7 @@ contract('FractionalBalanceAllocator', (accounts) => {
         stakeToken.mint(stakeToken.address, 100);
 
         allocator = await FractionalBalanceAllocator.new(
-            bountyFund.address, new BN('1e17')
+            bountyFund.address, new BN('10').pow(new BN('17'))
         );
     });
 
@@ -39,7 +39,7 @@ contract('FractionalBalanceAllocator', (accounts) => {
             allocator.address.should.have.lengthOf(42);
 
             (await allocator.bountyFund()).should.equal(bountyFund.address);
-            (await allocator.fraction()).should.eq.BN(new BN('1e17'));
+            (await allocator.fraction()).should.eq.BN(new BN('10').pow(new BN('17')));
             (await allocator.token()).should.equal(stakeToken.address);
         });
     });

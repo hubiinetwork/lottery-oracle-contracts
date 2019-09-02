@@ -1,7 +1,7 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const chai = require('chai');
@@ -16,6 +16,7 @@ chai.should();
 
 const BountyFund = artifacts.require('BountyFund');
 const StakeToken = artifacts.require('StakeToken');
+const MockedAllocator = artifacts.require('MockedAllocator');
 
 contract('BountyFund', (accounts) => {
     let stakeToken, bountyFund;
@@ -93,15 +94,16 @@ contract('BountyFund', (accounts) => {
     });
 
     describe('allocateTokens()', () => {
-        let partsPer;
+        let allocator;
 
         beforeEach(async () => {
-            partsPer = await bountyFund.PARTS_PER();
+            allocator = await MockedAllocator.new();
+            await allocator._setAllocation(10);
         });
 
         describe('if called by agent not registered as resolution engine', () => {
             it('should revert', async () => {
-                bountyFund.allocateTokens(partsPer.divn(10)).should.be.rejected;
+                bountyFund.allocateTokens(allocator).should.be.rejected;
             });
         });
 
@@ -109,22 +111,22 @@ contract('BountyFund', (accounts) => {
             let balanceBefore, bountyFraction;
 
             beforeEach(async () => {
-                await stakeToken.mint(bountyFund.address, 100);
-
                 await bountyFund.setResolutionEngine(accounts[0]);
 
-                balanceBefore = await stakeToken.balanceOf(bountyFund.address);
+                await stakeToken.mint(bountyFund.address, 100);
 
-                bountyFraction = partsPer.divn(2);
+                balanceBefore = await stakeToken.balanceOf(bountyFund.address);
             });
 
             it('should successfully transfer tokens to bounty fund', async () => {
-                const result = await bountyFund.allocateTokens(bountyFraction);
+                const result = await bountyFund.allocateTokens(allocator.address);
 
                 result.logs[0].event.should.equal('TokensAllocated');
 
                 (await stakeToken.balanceOf(bountyFund.address))
-                    .should.eq.BN(balanceBefore.mul(bountyFraction).div(partsPer));
+                    .should.eq.BN(balanceBefore.subn(10));
+                (await stakeToken.balanceOf(accounts[0]))
+                    .should.eq.BN(10);
             });
         });
     });

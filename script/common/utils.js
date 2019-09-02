@@ -1,7 +1,7 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const unlockedMap = new Map();
@@ -51,13 +51,6 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
         ownerAccount = account;
     }
     return ownerAccount;
-};
-
-// TODO Consider the need for this one
-exports.getNaiveTotalBountyDivisor = () => {
-    return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR === 'undefined' ?
-        10 :
-        Number.parseInt(process.env.NAIVE_TOTAL_BOUNTY_DIVISOR);
 };
 
 exports.getNaiveTotalCriterionAmountStaked = () => {

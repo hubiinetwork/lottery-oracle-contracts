@@ -1,7 +1,7 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const chai = require('chai');
@@ -15,14 +15,15 @@ chai.use(bnChai(BN));
 chai.should();
 
 const StakeToken = artifacts.require('StakeToken');
-const BountyFund = artifacts.require('BountyFund');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
+const MockedBountyFund = artifacts.require('MockedBountyFund');
+const MockedAllocator = artifacts.require('MockedAllocator');
 
 contract('NaiveTotalResolutionEngine', (accounts) => {
     let ownerAddress, operatorAddress, oracleAddress;
     let provider;
-    let stakeToken, resolutionEngine, bountyFund, bountyFraction;
-    let ownerRole, oracleRole, operatorRole;
+    let stakeToken, resolutionEngine, bountyFund, allocator;
+    let ownerRole;
 
     beforeEach(async () => {
         ownerAddress = accounts[0];
@@ -33,36 +34,36 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
 
-        bountyFund = await BountyFund.new(stakeToken.address);
+        bountyFund = await MockedBountyFund.new();
+        await bountyFund._setToken(stakeToken.address);
+        await bountyFund._setAllocation(10);
+
         await stakeToken.mint(bountyFund.address, 100);
 
-        bountyFraction = (await bountyFund.PARTS_PER()).divn(10);
+        allocator = await MockedAllocator.new();
+
         resolutionEngine = await NaiveTotalResolutionEngine.new(
-            oracleAddress, operatorAddress, bountyFund.address, bountyFraction, 100
+            oracleAddress, operatorAddress, bountyFund.address, allocator.address, 100
         );
 
         ownerRole = await resolutionEngine.OWNER_ROLE();
-        oracleRole = await resolutionEngine.ORACLE_ROLE();
-        operatorRole = await resolutionEngine.OPERATOR_ROLE();
     });
 
     describe('constructor()', () => {
         it('should successfully initialize', async () => {
-            // TODO Add tests on events emitted at construction time
-
             (await resolutionEngine.isRole(ownerRole)).should.be.true;
             (await resolutionEngine.isRoleAccessor(ownerRole, ownerAddress)).should.be.true;
             (await resolutionEngine.isRoleAccessor(ownerRole, oracleAddress)).should.be.false;
 
             (await resolutionEngine.oracle()).should.equal(oracleAddress);
-
             (await resolutionEngine.operator()).should.equal(operatorAddress);
+            (await resolutionEngine.bountyFund()).should.equal(bountyFund.address);
+            (await resolutionEngine.bountyAllocator()).should.equal(allocator.address);
 
-            (await resolutionEngine.bountyAmount()).should.be.eq.BN(10);
             (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
 
-            (await stakeToken.balanceOf(resolutionEngine.address))
-                .should.eq.BN(10);
+            (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
+            (await bountyFund._tokenAllocatee()).should.equal(resolutionEngine.address);
         });
     });
 
@@ -529,7 +530,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             let bountyAmount;
 
             beforeEach(async () => {
-                bountyAmount = (await resolutionEngine.bountyAmount());
+                bountyAmount = (await resolutionEngine.metricsByVerificationPhaseNumber(
+                    await resolutionEngine.verificationPhaseNumber()
+                )).bountyAmount;
 
                 await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
             });
