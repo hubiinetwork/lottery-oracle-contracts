@@ -24,7 +24,7 @@ module.exports = async (deployer, network, accounts) => {
     const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
     await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
 
-    const allocator = await deployer.deploy(
+    const bountyAllocator = await deployer.deploy(
         FractionalBalanceAllocator, bountyFund.address, web3.utils.toBN(1e17), {from: ownerAccount}
     );
 
@@ -32,7 +32,10 @@ module.exports = async (deployer, network, accounts) => {
 
     const resolutionEngine = await deployer.deploy(
         NaiveTotalResolutionEngine, oracle.address, operator.address, bountyFund.address,
-        allocator.address, criterionAmountStaked, {from: ownerAccount}
+        criterionAmountStaked, {from: ownerAccount}
     );
+    await resolutionEngine.setBountyAllocator(bountyAllocator.address);
+    await resolutionEngine.initialize();
+
     await oracle.addResolutionEngine(resolutionEngine.address, {from: ownerAccount});
 };

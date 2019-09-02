@@ -16,12 +16,11 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
     uint256 public criterionAmountStaked;
 
-    // TODO Remove allocator from constructor params
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _operator, address _bountyFund, address _bountyAllocator,
+    constructor(address _oracle, address _operator, address _bountyFund,
         uint256 _criterionAmountStaked)
     public
-    ResolutionEngine(_oracle, _operator, _bountyFund, _bountyAllocator)
+    ResolutionEngine(_oracle, _operator, _bountyFund)
     {
         criterionAmountStaked = _criterionAmountStaked;
     }

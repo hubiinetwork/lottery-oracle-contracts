@@ -94,16 +94,16 @@ contract('BountyFund', (accounts) => {
     });
 
     describe('allocateTokens()', () => {
-        let allocator;
+        let bountyAllocator;
 
         beforeEach(async () => {
-            allocator = await MockedAllocator.new();
-            await allocator._setAllocation(10);
+            bountyAllocator = await MockedAllocator.new();
+            await bountyAllocator._setAllocation(10);
         });
 
         describe('if called by agent not registered as resolution engine', () => {
             it('should revert', async () => {
-                bountyFund.allocateTokens(allocator).should.be.rejected;
+                bountyFund.allocateTokens(bountyAllocator).should.be.rejected;
             });
         });
 
@@ -119,7 +119,7 @@ contract('BountyFund', (accounts) => {
             });
 
             it('should successfully transfer tokens to bounty fund', async () => {
-                const result = await bountyFund.allocateTokens(allocator.address);
+                const result = await bountyFund.allocateTokens(bountyAllocator.address);
 
                 result.logs[0].event.should.equal('TokensAllocated');
 

@@ -38,7 +38,7 @@ const unlockAccount = async (web3, account, password) => {
 
     ['exit', 'SIGINT', 'SIGTERM'].forEach((eventType) => {
         process.on(eventType, lockAccount);
-    })
+    });
 };
 
 exports.initializeOwnerAccount = async (web3, network, accounts) => {

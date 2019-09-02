@@ -66,8 +66,10 @@ contract('*', (accounts) => {
 
             // Deploy naïve total resolution engine and register it with oracle
             naiveTotalResolutionEngine = await NaiveTotalResolutionEngine.new(
-                oracle.address, operator.address, bountyFund.address, bountyAllocator.address, 100
+                oracle.address, operator.address, bountyFund.address, 100
             );
+            await naiveTotalResolutionEngine.setBountyAllocator(bountyAllocator.address);
+            await naiveTotalResolutionEngine.initialize();
 
             // Add resolution engine to oracle
             await oracle.addResolutionEngine(naiveTotalResolutionEngine.address);
@@ -229,8 +231,10 @@ contract('*', (accounts) => {
 
             // Deploy naïve total resolution engine and register it with oracle
             naiveTotalResolutionEngine = await NaiveTotalResolutionEngine.new(
-                oracle.address, operator.address, bountyFund.address, bountyAllocator.address, 100
+                oracle.address, operator.address, bountyFund.address, 100
             );
+            await naiveTotalResolutionEngine.setBountyAllocator(bountyAllocator.address);
+            await naiveTotalResolutionEngine.initialize();
 
             // Add resolution engine to oracle
             await oracle.addResolutionEngine(naiveTotalResolutionEngine.address);

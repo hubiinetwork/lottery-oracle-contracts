@@ -75,6 +75,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
+    event BountyAllocatorSet(address indexed _bountyAllocator);
+    event Initialized();
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
@@ -99,6 +101,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     ERC20 public token;
 
+    bool public initialized;
+
     uint256 public verificationPhaseNumber;
 
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) public verificationPhaseByPhaseNumber;
@@ -113,15 +117,13 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     mapping(address => uint256) public stagedAmountByWallet;
 
-    // TODO Remove allocator from constructor params
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _operator, address _bountyFund, address _bountyAllocator)
+    constructor(address _oracle, address _operator, address _bountyFund)
     public
     {
-        // Initialize oracle, operator and bounty allocator
+        // Initialize oracle and operator
         oracle = _oracle;
         operator = _operator;
-        bountyAllocator = _bountyAllocator;
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
@@ -129,12 +131,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
         // Initialize token to the one of bounty fund
         token = ERC20(bountyFund.token());
-
-        // Import bounty
-        uint256 bountyAmount = _importBounty();
-
-        // Open verification phase
-        _openVerificationPhase(bountyAmount);
     }
 
     modifier onlyOracle() {
@@ -145,6 +141,43 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     modifier onlyOperator() {
         require(msg.sender == operator, "ResolutionEngine: sender is not the set operator");
         _;
+    }
+
+    /// @notice Set the bounty allocator
+    /// @param _bountyAllocator The bounty allocator to be set
+    function setBountyAllocator(address _bountyAllocator)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        // Set the bounty allocator
+        bountyAllocator = _bountyAllocator;
+
+        // Emit event
+        emit BountyAllocatorSet(bountyAllocator);
+    }
+
+    /// @notice Initialize the engine
+    function initialize()
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        // Require no previous initialization
+        require(!initialized, "ResolutionEngine: already initialized");
+
+        // Require that a bounty allocator has been set
+        require(address(0) != bountyAllocator, "ResolutionEngine: missing bounty allocator");
+
+        // Set initialized flag
+        initialized = true;
+
+        // Import bounty
+        uint256 bountyAmount = _importBounty();
+
+        // Open verification phase
+        _openVerificationPhase(bountyAmount);
+
+        // Emit event
+        emit Initialized();
     }
 
     /// @notice Disable the given action

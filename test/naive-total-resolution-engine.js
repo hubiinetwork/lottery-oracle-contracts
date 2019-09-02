@@ -8,7 +8,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, providers} = require('ethers');
+const {Wallet, providers, constants: {AddressZero}} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
@@ -22,7 +22,7 @@ const MockedAllocator = artifacts.require('MockedAllocator');
 contract('NaiveTotalResolutionEngine', (accounts) => {
     let ownerAddress, operatorAddress, oracleAddress;
     let provider;
-    let stakeToken, resolutionEngine, bountyFund, allocator;
+    let stakeToken, resolutionEngine, bountyFund, bountyAllocator;
     let ownerRole;
 
     beforeEach(async () => {
@@ -40,16 +40,24 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
         await stakeToken.mint(bountyFund.address, 100);
 
-        allocator = await MockedAllocator.new();
+        bountyAllocator = await MockedAllocator.new();
 
         resolutionEngine = await NaiveTotalResolutionEngine.new(
-            oracleAddress, operatorAddress, bountyFund.address, allocator.address, 100
+            oracleAddress, operatorAddress, bountyFund.address, 100
         );
+        await resolutionEngine.setBountyAllocator(bountyAllocator.address);
+        await resolutionEngine.initialize();
 
         ownerRole = await resolutionEngine.OWNER_ROLE();
     });
 
     describe('constructor()', () => {
+        beforeEach(async () => {
+            resolutionEngine = await NaiveTotalResolutionEngine.new(
+                oracleAddress, operatorAddress, bountyFund.address, 100
+            );
+        });
+
         it('should successfully initialize', async () => {
             (await resolutionEngine.isRole(ownerRole)).should.be.true;
             (await resolutionEngine.isRoleAccessor(ownerRole, ownerAddress)).should.be.true;
@@ -58,12 +66,83 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
             (await resolutionEngine.oracle()).should.equal(oracleAddress);
             (await resolutionEngine.operator()).should.equal(operatorAddress);
             (await resolutionEngine.bountyFund()).should.equal(bountyFund.address);
-            (await resolutionEngine.bountyAllocator()).should.equal(allocator.address);
 
-            (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
+            (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(0);
 
             (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
-            (await bountyFund._tokenAllocatee()).should.equal(resolutionEngine.address);
+        });
+    });
+
+    describe('setBountyAllocator()', () => {
+        let bountyAllocator;
+
+        before(() => {
+            bountyAllocator = Wallet.createRandom().address
+        });
+
+        describe('if called by non-owner', () => {
+            it('should revert', async () => {
+                resolutionEngine.setBountyAllocator(bountyAllocator, {from: accounts[2]})
+                    .should.be.rejected;
+            });
+        });
+
+        describe('if called by owner', () => {
+            it('should successfully update the bounty allocator', async () => {
+                const result = await resolutionEngine.setBountyAllocator(bountyAllocator);
+
+                result.logs[0].event.should.equal('BountyAllocatorSet');
+
+                (await resolutionEngine.bountyAllocator()).should.equal(bountyAllocator);
+            });
+        });
+    });
+
+    describe('initialize()', () => {
+        beforeEach(async () => {
+            resolutionEngine = await NaiveTotalResolutionEngine.new(
+                oracleAddress, operatorAddress, bountyFund.address, 100
+            );
+            await resolutionEngine.setBountyAllocator(bountyAllocator.address);
+        });
+
+        describe('if called by non-owner', () => {
+            it('should revert', async () => {
+                resolutionEngine.initialize({from: accounts[2]})
+                    .should.be.rejected;
+            });
+        });
+
+        describe('if bounty allocator is zero-address', () => {
+            beforeEach(async () => {
+               await resolutionEngine.setBountyAllocator(AddressZero);
+            });
+
+            it('should revert', async () => {
+                resolutionEngine.initialize().should.be.rejected;
+            });
+        });
+
+        describe('if called by owner', () => {
+            it('should successfully initialize', async () => {
+                const result = await resolutionEngine.initialize();
+
+                result.logs.map(l => l.event).should.include('Initialized');
+
+                (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
+                (await bountyFund._tokenAllocatee()).should.equal(resolutionEngine.address);
+            });
+        });
+
+        describe('if already initialized', () => {
+            beforeEach(async () => {
+                await resolutionEngine.initialize();
+            });
+
+            it('should revert', async () => {
+                resolutionEngine.initialize({from: accounts[2]})
+                    .should.be.rejected;
+            });
         });
     });
 
