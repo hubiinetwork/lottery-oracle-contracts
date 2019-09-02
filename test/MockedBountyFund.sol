@@ -6,6 +6,8 @@
 
 pragma solidity ^0.5.11;
 
+import {Allocator} from "../contracts/Allocator.sol";
+
 /// @title MockedBountyFund
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A mock of bounty fund
@@ -35,6 +37,14 @@ contract MockedBountyFund {
     {
         _tokenAllocatee = msg.sender;
         return _allocation;
+    }
+
+    function _allocateTokens(address _allocator)
+    public
+    view
+    returns (uint256)
+    {
+        return Allocator(_allocator).allocate();
     }
 
     function _setAllocation(uint256 allocation)

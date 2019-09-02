@@ -25,7 +25,7 @@ module.exports = async (deployer, network, accounts) => {
     await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
 
     const bountyAllocator = await deployer.deploy(
-        FractionalBalanceAllocator, bountyFund.address, web3.utils.toBN(1e17), {from: ownerAccount}
+        FractionalBalanceAllocator, web3.utils.toBN(1e17), {from: ownerAccount}
     );
 
     const criterionAmountStaked = web3.utils.toBN(utils.getNaiveTotalCriterionAmountStaked());

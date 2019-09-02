@@ -19,26 +19,16 @@ contract FractionalBalanceAllocator is Allocator {
 
     uint256 constant public PARTS_PER = 1e18; // The entirety, 100%
 
-    BountyFund public bountyFund;
-
     uint256 public fraction;
 
-    ERC20 public token;
-
-    constructor(address _bountyFund, uint256 _fraction)
+    constructor(uint256 _fraction)
     public
     {
         // Require that fraction is less than the entirety
         require(_fraction <= PARTS_PER, "FractionalBalanceAllocator: fraction is greater than entirety");
 
-        // Initialize bounty fund
-        bountyFund = BountyFund(_bountyFund);
-
         // Initialize fraction
         fraction = _fraction;
-
-        // Initialize token to the one of bounty fund
-        token = ERC20(bountyFund.token());
     }
 
     /// @notice Return the defined allocation from the allocator
@@ -47,6 +37,9 @@ contract FractionalBalanceAllocator is Allocator {
     view
     returns (uint256)
     {
-        return token.balanceOf(address(bountyFund)).mul(fraction).div(PARTS_PER);
+        return BountyFund(msg.sender).token()
+        .balanceOf(address(msg.sender))
+        .mul(fraction)
+        .div(PARTS_PER);
     }
 }

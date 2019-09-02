@@ -22,15 +22,8 @@ contract('FractionalBalanceAllocator', (accounts) => {
     let allocator, stakeToken, bountyFund;
 
     beforeEach(async () => {
-        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
-
-        bountyFund = await MockedBountyFund.new();
-        await bountyFund._setToken(stakeToken.address);
-
-        stakeToken.mint(stakeToken.address, 100);
-
         allocator = await FractionalBalanceAllocator.new(
-            bountyFund.address, new BN('10').pow(new BN('17'))
+            new BN('10').pow(new BN('17'))
         );
     });
 
@@ -38,15 +31,22 @@ contract('FractionalBalanceAllocator', (accounts) => {
         it('initialize successfully', async () => {
             allocator.address.should.have.lengthOf(42);
 
-            (await allocator.bountyFund()).should.equal(bountyFund.address);
             (await allocator.fraction()).should.eq.BN(new BN('10').pow(new BN('17')));
-            (await allocator.token()).should.equal(stakeToken.address);
         });
     });
 
     describe('allocate()', () => {
+        beforeEach(async () => {
+            stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
+
+            bountyFund = await MockedBountyFund.new();
+            await bountyFund._setToken(stakeToken.address);
+
+            stakeToken.mint(bountyFund.address, 100);
+        });
+
         it('should return the fractional amount of tokens owned by the bounty fund', async () => {
-            (await allocator.allocate()).should.eq.BN(
+            (await bountyFund._allocateTokens(allocator.address)).should.eq.BN(
                 (await stakeToken.balanceOf(bountyFund.address)).divn(10)
             );
         });

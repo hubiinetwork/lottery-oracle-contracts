@@ -50,7 +50,7 @@ contract('*', (accounts) => {
 
             // Deploy fractional balance allocator for bounty
             bountyAllocator = await FractionalBalanceAllocator.new(
-                bountyFund.address, new BN('10').pow(new BN('17'))
+                new BN('10').pow(new BN('17'))
             );
 
             // Deposit tokens into bounty fund
@@ -226,7 +226,7 @@ contract('*', (accounts) => {
 
             // Deploy fractional balance allocator for bounty
             bountyAllocator = await FractionalBalanceAllocator.new(
-                bountyFund.address, new BN('10').pow(new BN('17'))
+                new BN('10').pow(new BN('17'))
             );
 
             // Deploy naïve total resolution engine and register it with oracle
