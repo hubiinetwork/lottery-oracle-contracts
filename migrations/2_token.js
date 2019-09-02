@@ -15,7 +15,7 @@ module.exports = async (deployer, network, accounts) => {
 
     const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-    const stakeToken = await deployer.deploy(StakeToken, 'hubiit', 'HBT', 15, {from: ownerAccount});
+    const stakeToken = await deployer.deploy(StakeToken, 'Lottery Oracle Token', 'LOT', 15, {from: ownerAccount});
 
     const minters = utils.getMinters();
     for (let minter of minters)
