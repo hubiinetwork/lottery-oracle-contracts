@@ -11,6 +11,7 @@
     "build:all": "truffle compile --all",
     "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
+    "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle migrate'",
     "test": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version:compiler": "truffle version"
   },
@@ -43,6 +44,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "concurrently": "^4.0.1",
+    "debug": "^4.1.1",
     "ethers": "^4.0.36",
     "ganache-cli": "^6.1.8",
     "sinon": "^6.3.3",
