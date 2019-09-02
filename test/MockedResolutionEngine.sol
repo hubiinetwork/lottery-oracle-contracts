@@ -6,33 +6,40 @@
 
 pragma solidity ^0.5.11;
 
-import {VerificationPhaseLib, ResolutionEngine} from "../contracts/ResolutionEngine.sol";
+import {Resolvable} from "../contracts/Resolvable.sol";
+import {VerificationPhaseLib} from "../contracts/ResolutionEngine.sol";
 import {BountyFund} from "../contracts/BountyFund.sol";
 
 /// @title MockedResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A mock of resolution engine
-contract MockedResolutionEngine is ResolutionEngine {
+contract MockedResolutionEngine is Resolvable {
 
+    string constant public STAKE_ACTION = "STAKE";
+    string constant public RESOLVE_ACTION = "RESOLVE";
+
+    uint256 public _verificationPhaseNumber;
     uint256 public _resolutionDeltaAmount;
     bool public _resolutionCriteriaMet;
+
+    address public _token;
 
     struct StageCall {
         address wallet;
         uint256 amount;
     }
 
-    StageCall public stageCall;
+    StageCall public _stageCall;
 
-    struct UpdateMetricsCall {
+    struct StakeCall {
         address wallet;
         bool status;
         uint256 amount;
     }
 
-    UpdateMetricsCall public updateMetricsCall;
+    StakeCall public _stakeCall;
 
-    bool public resolveIfCriteriaMetCalled;
+    bool public _resolveIfCriteriaMetCalled;
 
     struct StagePayoutCall {
         address wallet;
@@ -40,81 +47,163 @@ contract MockedResolutionEngine is ResolutionEngine {
         uint256 lastVerificationPhaseNumber;
     }
 
-    StagePayoutCall public stagePayoutCall;
+    StagePayoutCall public _stagePayoutCall;
+
+    address public _stageStakeWallet;
 
     struct WithdrawCall {
         address wallet;
         uint256 amount;
     }
 
-    WithdrawCall public withdrawCall;
+    WithdrawCall public _withdrawCall;
 
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
+    BountyFund public _bountyFund;
+
+    VerificationPhaseLib.Status public _verificationStatus;
+
+    bool public _disabled;
+    string public _disabledAction;
+    string public _enabledAction;
+
+    function verificationPhaseNumber()
     public
-    ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
+    view
+    returns (uint256)
     {
+        return _verificationPhaseNumber;
     }
 
-    function resolutionDeltaAmount(uint256, bool) public view returns (uint256) {
+    function _setVerificationPhaseNumber(uint256 number)
+    public
+    {
+        _verificationPhaseNumber = number;
+    }
+
+    function token()
+    public
+    view
+    returns (address)
+    {
+        return _token;
+    }
+
+    function _setToken(address tkn)
+    public
+    {
+        _token = tkn;
+    }
+
+    function resolutionDeltaAmount(uint256, bool)
+    public
+    view
+    returns (uint256)
+    {
         return _resolutionDeltaAmount;
     }
 
-    function _setResolutionDeltaAmount(uint256 amount) public {
+    function _setResolutionDeltaAmount(uint256 amount)
+    public
+    {
         _resolutionDeltaAmount = amount;
     }
 
-    function resolutionCriteriaMet() public view returns (bool) {
+    function resolutionCriteriaMet()
+    public
+    view
+    returns (bool)
+    {
         return _resolutionCriteriaMet;
     }
 
-    function _setResolutionCriteria(bool met) public {
+    function _setResolutionCriteria(bool met)
+    public
+    {
         _resolutionCriteriaMet = met;
     }
 
-    function _withdrawTokens(uint256 _bountyFraction) public {
-        bountyFund.withdrawTokens(_bountyFraction);
-    }
-
-    function _setVerificationStatus(VerificationPhaseLib.Status _status) public {
-        verificationStatus = _status;
-    }
-
-    function _stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
-        uint256 _lastVerificationPhaseNumber)
+    function _withdrawTokens(uint256 _bountyFraction)
     public
     {
-        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-            super._stagePayout(_wallet, i);
+        _bountyFund.withdrawTokens(_bountyFraction);
+    }
+
+    function verificationStatus()
+    public
+    view
+    returns (VerificationPhaseLib.Status)
+    {
+        return _verificationStatus;
+    }
+
+    function _setVerificationStatus(VerificationPhaseLib.Status _status)
+    public
+    {
+        _verificationStatus = _status;
     }
 
     function stage(address _wallet, uint256 _amount)
     public
     {
-        stageCall = StageCall(_wallet, _amount);
+        _stageCall = StageCall(_wallet, _amount);
     }
 
-    function updateMetrics(address _wallet, bool _status, uint256 _amount)
+    function stake(address _wallet, bool _status, uint256 _amount)
     public
     {
-        updateMetricsCall = UpdateMetricsCall(_wallet, _status, _amount);
+        _stakeCall = StakeCall(_wallet, _status, _amount);
     }
 
     function resolveIfCriteriaMet()
     public
     {
-        resolveIfCriteriaMetCalled = true;
+        _resolveIfCriteriaMetCalled = true;
     }
 
     function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
     {
-        stagePayoutCall = StagePayoutCall(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+        _stagePayoutCall = StagePayoutCall(
+            _wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber
+        );
+    }
+
+    function stageStake(address _wallet)
+    public
+    {
+        _stageStakeWallet = _wallet;
     }
 
     function withdraw(address _wallet, uint256 _amount)
     public
     {
-        withdrawCall = WithdrawCall(_wallet, _amount);
+        _withdrawCall = WithdrawCall(_wallet, _amount);
+    }
+
+    function disabled(string memory)
+    public
+    view
+    returns (bool)
+    {
+        return _disabled;
+    }
+
+    function _setDisabled(bool _dsbld)
+    public
+    {
+        _disabled = _dsbld;
+    }
+
+    function disable(string memory _action)
+    public
+    {
+        _disabledAction = _action;
+    }
+
+    function enable(string memory _action)
+    public
+    {
+        _enabledAction = _action;
     }
 }

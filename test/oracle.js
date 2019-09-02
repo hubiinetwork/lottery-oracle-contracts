@@ -8,14 +8,13 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, constants} = require('ethers');
+const {Wallet, constants: {AddressZero}} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
 const Oracle = artifacts.require('Oracle');
-const BountyFund = artifacts.require('BountyFund');
 const StakeToken = artifacts.require('StakeToken');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 
@@ -123,25 +122,29 @@ contract('Oracle', (accounts) => {
     });
 
     describe('stake()', () => {
+        let mockedResolutionEngine;
+
+        beforeEach(async () => {
+            mockedResolutionEngine = await MockedResolutionEngine.new();
+            await mockedResolutionEngine._setToken(stakeToken.address);
+
+            await oracle.addResolutionEngine(mockedResolutionEngine.address);
+        });
+
         describe('if called on non-registered resolution engine', () => {
+            it('should revert', async () => {
+                oracle.stake(Wallet.createRandom().address, 0, true, 100, {from: accounts[1]}).should.be.rejected;
+            });
+        });
+
+        describe('if called with wrong verification phase number', () => {
             it('should revert', async () => {
                 oracle.stake(Wallet.createRandom().address, 1, true, 100, {from: accounts[1]}).should.be.rejected;
             });
         });
 
         describe('if called with amount greater than resolution delta amount', () => {
-            let mockedResolutionEngine;
-
             beforeEach(async () => {
-                const bountyFund = await BountyFund.new(stakeToken.address);
-                stakeToken.mint(bountyFund.address, 100);
-
-                mockedResolutionEngine = await MockedResolutionEngine.new(
-                    oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
-                );
-
-                await oracle.addResolutionEngine(mockedResolutionEngine.address);
-
                 await stakeToken.mint(accounts[1], 100);
                 await stakeToken.approve(oracle.address, 100, {from: accounts[1]});
 
@@ -149,36 +152,26 @@ contract('Oracle', (accounts) => {
             });
 
             it('should successfully stake tokens and stage refund', async () => {
-                const result = await oracle.stake(mockedResolutionEngine.address, 1, true, 100, {from: accounts[1]});
+                const result = await oracle.stake(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await mockedResolutionEngine.stageCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(40);
+                (await mockedResolutionEngine._stageCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stageCall()).amount.should.eq.BN(40);
 
-                (await mockedResolutionEngine.updateMetricsCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.updateMetricsCall()).status.should.be.true;
-                (await mockedResolutionEngine.updateMetricsCall()).amount.should.eq.BN(60);
+                (await mockedResolutionEngine._stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine._stakeCall()).amount.should.eq.BN(60);
 
-                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+                (await mockedResolutionEngine._resolveIfCriteriaMetCalled()).should.be.true;
 
-                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(110); // Stake + bounty
+                // Stake only, i.e. no bounty with mocked resolution engine
+                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(100);
             });
         });
 
         describe('if called with amount smaller than resolution delta amount', () => {
-            let mockedResolutionEngine;
-
             beforeEach(async () => {
-                const bountyFund = await BountyFund.new(stakeToken.address);
-                stakeToken.mint(bountyFund.address, 100);
-
-                mockedResolutionEngine = await MockedResolutionEngine.new(
-                    oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
-                );
-
-                await oracle.addResolutionEngine(mockedResolutionEngine.address);
-
                 await stakeToken.mint(accounts[1], 100);
                 await stakeToken.approve(oracle.address, 100, {from: accounts[1]});
 
@@ -186,21 +179,40 @@ contract('Oracle', (accounts) => {
             });
 
             it('should successfully stake tokens and not stage refund', async () => {
-                const result = await oracle.stake(mockedResolutionEngine.address, 1, true, 100, {from: accounts[1]});
+                const result = await oracle.stake(mockedResolutionEngine.address, 0, true, 100, {from: accounts[1]});
 
                 result.logs[0].event.should.equal('TokensStaked');
 
-                (await mockedResolutionEngine.stageCall()).wallet.should.equal(constants.AddressZero);
-                (await mockedResolutionEngine.stageCall()).amount.should.eq.BN(0);
+                (await mockedResolutionEngine._stageCall()).wallet.should.equal(AddressZero);
+                (await mockedResolutionEngine._stageCall()).amount.should.eq.BN(0);
 
-                (await mockedResolutionEngine.updateMetricsCall()).wallet.should.equal(accounts[1]);
-                (await mockedResolutionEngine.updateMetricsCall()).status.should.be.true;
-                (await mockedResolutionEngine.updateMetricsCall()).amount.should.eq.BN(100);
+                (await mockedResolutionEngine._stakeCall()).wallet.should.equal(accounts[1]);
+                (await mockedResolutionEngine._stakeCall()).status.should.be.true;
+                (await mockedResolutionEngine._stakeCall()).amount.should.eq.BN(100);
 
-                (await mockedResolutionEngine.resolveIfCriteriaMetCalled()).should.be.true;
+                (await mockedResolutionEngine._resolveIfCriteriaMetCalled()).should.be.true;
 
-                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(110); // Stake + bounty
+                // Stake only, i.e. no bounty with mocked resolution engine
+                (await stakeToken.balanceOf(mockedResolutionEngine.address)).should.eq.BN(100);
             });
+        });
+    });
+
+    describe('stageStake()', () => {
+        let mockedResolutionEngine;
+
+        beforeEach(async () => {
+            mockedResolutionEngine = await MockedResolutionEngine.new();
+
+            await oracle.addResolutionEngine(mockedResolutionEngine.address);
+        });
+
+        it('should successfully stage payout', async () => {
+            const result = await oracle.stageStake(mockedResolutionEngine.address, {from: accounts[1]});
+
+            result.logs[0].event.should.equal('StakeStaged');
+
+            (await mockedResolutionEngine._stageStakeWallet()).should.equal(accounts[1]);
         });
     });
 
@@ -208,12 +220,7 @@ contract('Oracle', (accounts) => {
         let mockedResolutionEngine;
 
         beforeEach(async () => {
-            const bountyFund = await BountyFund.new(stakeToken.address);
-            stakeToken.mint(bountyFund.address, 100);
-
-            mockedResolutionEngine = await MockedResolutionEngine.new(
-                oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
-            );
+            mockedResolutionEngine = await MockedResolutionEngine.new();
 
             await oracle.addResolutionEngine(mockedResolutionEngine.address);
         });
@@ -223,9 +230,9 @@ contract('Oracle', (accounts) => {
 
             result.logs[0].event.should.equal('PayoutStaged');
 
-            (await mockedResolutionEngine.stagePayoutCall()).wallet.should.equal(accounts[1]);
-            (await mockedResolutionEngine.stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
-            (await mockedResolutionEngine.stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
+            (await mockedResolutionEngine._stagePayoutCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine._stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
+            (await mockedResolutionEngine._stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
         });
     });
 
@@ -233,12 +240,7 @@ contract('Oracle', (accounts) => {
         let mockedResolutionEngine;
 
         beforeEach(async () => {
-            const bountyFund = await BountyFund.new(stakeToken.address);
-            stakeToken.mint(bountyFund.address, 100);
-
-            mockedResolutionEngine = await MockedResolutionEngine.new(
-                oracle.address, bountyFund.address, (await bountyFund.PARTS_PER()).divn(10)
-            );
+            mockedResolutionEngine = await MockedResolutionEngine.new();
 
             await oracle.addResolutionEngine(mockedResolutionEngine.address);
         });
@@ -248,8 +250,8 @@ contract('Oracle', (accounts) => {
 
             result.logs[0].event.should.equal('Withdrawn');
 
-            (await mockedResolutionEngine.withdrawCall()).wallet.should.equal(accounts[1]);
-            (await mockedResolutionEngine.withdrawCall()).amount.should.eq.BN(10);
+            (await mockedResolutionEngine._withdrawCall()).wallet.should.equal(accounts[1]);
+            (await mockedResolutionEngine._withdrawCall()).amount.should.eq.BN(10);
         });
     });
 });

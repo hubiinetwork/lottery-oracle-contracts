@@ -27,22 +27,26 @@ contract BountyFund is RBACed {
     ResolutionEngine public resolutionEngine;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _token) public {
+    constructor(address _token)
+    public
+    {
         // Initialize token
         token = ERC20(_token);
     }
 
     modifier onlyRegisteredResolutionEngine() {
-        require(msg.sender == address(resolutionEngine));
+        require(msg.sender == address(resolutionEngine), "BountyFund: sender is not the set resolution engine");
         _;
     }
 
     /// @notice Set the resolution engine of this bounty fund
     /// @dev This function can only be called once
     /// @param _resolutionEngine The address of the concerned resolution engine
-    function setResolutionEngine(address _resolutionEngine) public {
-        require(address(0) != _resolutionEngine);
-        require(address(0) == address(resolutionEngine));
+    function setResolutionEngine(address _resolutionEngine)
+    public
+    {
+        require(address(0) != _resolutionEngine, "BountyFund: resolution engine argument is zero address");
+        require(address(0) == address(resolutionEngine), "BountyFund: resolution engine has already been set");
 
         // Update resolution engine
         resolutionEngine = ResolutionEngine(_resolutionEngine);
@@ -72,6 +76,9 @@ contract BountyFund is RBACed {
     onlyRegisteredResolutionEngine
     returns (uint256)
     {
+        // Require that fraction is less than the entirety
+        require(_fraction <= PARTS_PER, "BountyFund: fraction is greater than entirety");
+
         // Calculate amount to transfer
         uint256 amount = token.balanceOf(address(this)).mul(_fraction).div(PARTS_PER);
 

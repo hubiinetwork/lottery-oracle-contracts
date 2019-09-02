@@ -8,7 +8,7 @@ pragma solidity ^0.5.11;
 
 import {Resolvable} from "./Resolvable.sol";
 import {RBACed} from "./RBACed.sol";
-import {Oracle} from "./Oracle.sol";
+import {Able} from "./Able.sol";
 import {BountyFund} from "./BountyFund.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
@@ -53,7 +53,7 @@ library VerificationPhaseLib {
             _phase.result = Status.False;
     }
 
-    function updateMetrics(VerificationPhase storage _phase, address _wallet,
+    function stake(VerificationPhase storage _phase, address _wallet,
         bool _status, uint256 _amount) internal {
 
         _phase.amountByStatus[_status] = _phase.amountByStatus[_status].add(_amount);
@@ -71,33 +71,43 @@ library VerificationPhaseLib {
 /// @title ResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A resolution engine base contract
-contract ResolutionEngine is Resolvable, RBACed {
+contract ResolutionEngine is Resolvable, RBACed, Able {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
-    event MetricsUpdated(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
+    event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
     event Resolved(uint256 indexed _verificationPhaseNumber);
-    event BountyExtracted(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
+    event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyFraction,
         uint256 _bountyAmount);
+    event BountyStaged(address indexed _wallet, uint256 _bountyAmount);
     event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
     event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
         uint256 indexed _lastVerificationPhaseNumber, uint256 _payout);
+    event StakeStaged(address indexed _wallet, uint _amount);
     event Staged(address indexed _wallet, uint _amount);
     event Withdrawn(address indexed _wallet, uint _amount);
 
     string constant public ORACLE_ROLE = "ORACLE";
+    string constant public OPERATOR_ROLE = "OPERATOR";
 
-    Oracle public oracle;
+    string constant public STAKE_ACTION = "STAKE";
+    string constant public RESOLVE_ACTION = "RESOLVE";
 
-    ERC20 public token;
+    address public oracle;
+    address public operator;
 
     BountyFund public bountyFund;
 
-    uint256 public bountyFraction;
+    ERC20 public token;
 
-    uint256 public bountyAmount;
+    struct Bounty {
+        uint256 fraction;
+        uint256 amount;
+    }
+
+    Bounty public bounty;
 
     uint256 public verificationPhaseNumber;
 
@@ -109,20 +119,17 @@ contract ResolutionEngine is Resolvable, RBACed {
 
     VerificationPhaseLib.Status public verificationStatus;
 
-    mapping(address => mapping(uint256 => bool)) public payedOutByWalletPhase;
+    mapping(address => mapping(uint256 => bool)) public payoutStagedByWalletPhase;
 
     mapping(address => uint256) public stagedAmountByWallet;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction)
+    constructor(address _oracle, address _operator, address _bountyFund, uint256 _bountyFraction)
     public
     {
-        // Initialize oracle
-        oracle = Oracle(_oracle);
-
-        // Add oracle role and add oracle as accessor to it
-        addRoleInternal(ORACLE_ROLE);
-        addRoleAccessorInternal(ORACLE_ROLE, _oracle);
+        // Initialize oracle and operator
+        oracle = _oracle;
+        operator = _operator;
 
         // Initialize bounty fund
         bountyFund = BountyFund(_bountyFund);
@@ -132,31 +139,62 @@ contract ResolutionEngine is Resolvable, RBACed {
         token = ERC20(bountyFund.token());
 
         // Initialize bounty fraction
-        bountyFraction = _bountyFraction;
+        bounty.fraction = _bountyFraction;
 
         // Withdraw bounty
-        _extractBounty();
+        _importBounty();
 
         // Open verification phase
         _openVerificationPhase();
     }
 
-    /// @notice Update metrics following a stake operation in the oracle
+    modifier onlyOracle() {
+        require(msg.sender == oracle, "ResolutionEngine: sender is not the set oracle");
+        _;
+    }
+
+    modifier onlyOperator() {
+        require(msg.sender == operator, "ResolutionEngine: sender is not the set operator");
+        _;
+    }
+
+    /// @notice Disable the given action
+    /// @param _action The action to disable
+    function disable(string memory _action)
+    public
+    onlyOperator
+    {
+        // Disable
+        super.disable(_action);
+    }
+
+    /// @notice Enable the given action
+    /// @param _action The action to enable
+    function enable(string memory _action)
+    public
+    onlyOperator
+    {
+        // Enable
+        super.enable(_action);
+    }
+
+    /// @notice Stake by updating metrics
     /// @dev The function can only be called by oracle.
     /// @param _wallet The concerned wallet
     /// @param _status The status staked at
     /// @param _amount The amount staked
-    function updateMetrics(address _wallet, bool _status, uint256 _amount)
+    function stake(address _wallet, bool _status, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
+    onlyEnabled(STAKE_ACTION)
     {
         // Update metrics
         stakedAmountByWalletStatus[_wallet][_status] = stakedAmountByWalletStatus[_wallet][_status].add(_amount);
         stakedAmountByBlockStatus[block.number][_status] = stakedAmountByBlockStatus[block.number][_status].add(_amount);
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].updateMetrics(_wallet, _status, _amount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stake(_wallet, _status, _amount);
 
         // Emit event
-        emit MetricsUpdated(_wallet, verificationPhaseNumber, _status, _amount);
+        emit Staked(_wallet, verificationPhaseNumber, _status, _amount);
     }
 
     /// @notice Resolve the market in the current verification phase if resolution criteria have been met
@@ -164,7 +202,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// be the current verification phase number
     function resolveIfCriteriaMet()
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
+    onlyEnabled(RESOLVE_ACTION)
     {
         // If resolution criteria are met...
         if (resolutionCriteriaMet()) {
@@ -178,16 +217,6 @@ contract ResolutionEngine is Resolvable, RBACed {
             _openVerificationPhase();
         }
     }
-
-    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
-    /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @param _status The concerned status
-    /// @return the amount needed to obtain to resolve the market
-    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status) public view returns (uint256);
-
-    /// @notice Gauge whether the resolution criteria have been met
-    /// @return true if resolution criteria have been met, else false
-    function resolutionCriteriaMet() public view returns (bool);
 
     /// @notice Get the metrics for the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
@@ -293,7 +322,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     function stagePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
         uint256 _lastVerificationPhaseNumber)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // For each verification phase number in the inclusive range withdraw payout
         uint256 payout = 0;
@@ -304,13 +333,51 @@ contract ResolutionEngine is Resolvable, RBACed {
         emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
     }
 
+    /// @notice Export the bounty to the given address
+    /// @param _wallet The recipient address of the bounty transfer
+    function stageBounty(address _wallet)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyDisabled(RESOLVE_ACTION)
+    {
+        // Increment the wallets staged amount
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(bounty.amount);
+
+        // Emit event
+        emit BountyStaged(_wallet, bounty.amount);
+    }
+
+    /// @notice Stage the amount staked in the current verification phase
+    /// @dev The function can only be called by oracle and when resolve action has been disabled
+    /// @param _wallet The address of the concerned wallet
+    function stageStake(address _wallet)
+    public
+    onlyOracle
+    onlyDisabled(RESOLVE_ACTION)
+    {
+        // Retrieve the verification phase
+        VerificationPhaseLib.VerificationPhase storage verificationPhase =
+        verificationPhaseByPhaseNumber[verificationPhaseNumber];
+
+        // Calculate the amount staked by the wallet
+        uint256 amount = verificationPhase.stakedAmountByWalletStatus[_wallet][true].add(
+            verificationPhase.stakedAmountByWalletStatus[_wallet][false]
+        );
+
+        // Stage the amount
+        _stage(_wallet, amount);
+
+        // Emit event
+        emit StakeStaged(_wallet, amount);
+    }
+
     /// @notice Stage the given amount
     /// @dev The function can only be called by oracle.
     /// @param _wallet The address of the concerned wallet
     /// @param _amount The amount to be staged
     function stage(address _wallet, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Stage the amount
         _stage(_wallet, _amount);
@@ -325,7 +392,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     /// @param _amount The amount to be withdrawn
     function withdraw(address _wallet, uint256 _amount)
     public
-    onlyRoleAccessor(ORACLE_ROLE)
+    onlyOracle
     {
         // Withdraw the amount
         _withdraw(_wallet, _amount);
@@ -334,15 +401,15 @@ contract ResolutionEngine is Resolvable, RBACed {
         emit Withdrawn(_wallet, _amount);
     }
 
-    /// @notice Extract from bounty fund
-    function _extractBounty()
+    /// @notice Import from bounty fund
+    function _importBounty()
     internal
     {
         // Withdraw from bounty fund
-        bountyAmount = bountyFund.withdrawTokens(bountyFraction);
+        bounty.amount = bountyFund.withdrawTokens(bounty.fraction);
 
         // Emit event
-        emit BountyExtracted(verificationPhaseNumber, bountyFraction, bountyAmount);
+        emit BountyImported(verificationPhaseNumber, bounty.fraction, bounty.amount);
     }
 
     /// @notice Open verification phase
@@ -350,13 +417,14 @@ contract ResolutionEngine is Resolvable, RBACed {
     internal
     {
         // Require that verification phase is not open
-        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened);
+        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
+        "ResolutionEngine: verification phase is not in unopened state");
 
         // Bump verification phase number
         verificationPhaseNumber++;
 
         // Open the verification phase
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bountyAmount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bounty.amount);
 
         // Emit event
         emit VerificationPhaseOpened(verificationPhaseNumber);
@@ -367,7 +435,8 @@ contract ResolutionEngine is Resolvable, RBACed {
     internal
     {
         // Require that verification phase is open
-        require(verificationPhaseByPhaseNumber[verificationPhaseNumber].state == VerificationPhaseLib.State.Opened);
+        require(verificationPhaseByPhaseNumber[verificationPhaseNumber].state == VerificationPhaseLib.State.Opened,
+            "ResolutionEngine: verification phase is not in opened state");
 
         // Close the verification phase
         verificationPhaseByPhaseNumber[verificationPhaseNumber].close();
@@ -381,7 +450,7 @@ contract ResolutionEngine is Resolvable, RBACed {
             verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAwarded = true;
 
             // Extract new bounty
-            _extractBounty();
+            _importBounty();
         }
 
         // Emit event
@@ -398,14 +467,14 @@ contract ResolutionEngine is Resolvable, RBACed {
             return 0;
 
         // Return wallet payout has already been staged for this verification phase number
-        if (payedOutByWalletPhase[_wallet][_verificationPhaseNumber])
+        if (payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber])
             return 0;
 
         // Calculate payout
         uint256 payout = calculatePayout(_verificationPhaseNumber, _wallet);
 
         // Register payout of wallet and verification phase number
-        payedOutByWalletPhase[_wallet][_verificationPhaseNumber] = true;
+        payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber] = true;
 
         // Stage the payout
         _stage(_wallet, payout);
@@ -426,7 +495,7 @@ contract ResolutionEngine is Resolvable, RBACed {
     internal
     {
         // Require that the withdrawal amount is smaller than the wallet's staged amount
-        require(_amount <= stagedAmountByWallet[_wallet]);
+        require(_amount <= stagedAmountByWallet[_wallet], "ResolutionEngine: amount is greater than staged amount");
 
         // Unstage the amount
         stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);

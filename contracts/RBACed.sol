@@ -25,37 +25,50 @@ contract RBACed {
     mapping(bytes32 => Roles.Role) private roleByName;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor() public {
+    constructor()
+    public
+    {
         // Add role
-        addRoleInternal(OWNER_ROLE);
+        _addRole(OWNER_ROLE);
 
         // Add role accessor
-        addRoleAccessorInternal(OWNER_ROLE, msg.sender);
+        _addRoleAccessor(OWNER_ROLE, msg.sender);
     }
 
     modifier onlyRoleAccessor(string memory _role) {
-        require(isRoleAccessor(_role, msg.sender));
+        require(isRoleAccessor(_role, msg.sender), "RBACed: sender is not accessor of the role");
         _;
     }
 
     /// @notice Get the count of roles
     /// @return The count of roles
-    function rolesCount() public view returns (uint256) {
+    function rolesCount()
+    public
+    view
+    returns (uint256)
+    {
         return roles.length;
     }
 
     /// @notice Gauge whether a role is set
     /// @param _role The concerned role
     /// @return true if role has been set, else false
-    function isRole(string memory _role) public view returns (bool) {
-        return 0 != roleIndexByName[role2Key(_role)];
+    function isRole(string memory _role)
+    public
+    view
+    returns (bool)
+    {
+        return 0 != roleIndexByName[_role2Key(_role)];
     }
 
     /// @notice Add role
     /// @param _role The concerned role
-    function addRole(string memory _role) public onlyRoleAccessor(OWNER_ROLE) {
+    function addRole(string memory _role)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
         // Add role
-        addRoleInternal(_role);
+        _addRole(_role);
 
         // Emit event
         emit RoleAdded(_role);
@@ -65,16 +78,23 @@ contract RBACed {
     /// @param _role The concerned role
     /// @param _address The concerned address
     /// @return true if address is the one of a registered accessor of role, else false
-    function isRoleAccessor(string memory _role, address _address) public view returns (bool) {
-        return roleByName[role2Key(_role)].has(_address);
+    function isRoleAccessor(string memory _role, address _address)
+    public
+    view
+    returns (bool)
+    {
+        return roleByName[_role2Key(_role)].has(_address);
     }
 
     /// @notice Register an address as accessor of a role
     /// @param _role The concerned role
     /// @param _address The concerned address
-    function addRoleAccessor(string memory _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+    function addRoleAccessor(string memory _role, address _address)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
         // Add role accessor
-        addRoleAccessorInternal(_role, _address);
+        _addRoleAccessor(_role, _address);
 
         // Emit event
         emit RoleAccessorAdded(_role, _address);
@@ -83,26 +103,37 @@ contract RBACed {
     /// @notice Deregister an address as accessor of a role
     /// @param _role The concerned role
     /// @param _address The concerned address
-    function removeRoleAccessor(string memory _role, address _address) public onlyRoleAccessor(OWNER_ROLE) {
+    function removeRoleAccessor(string memory _role, address _address)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
         // Remove role accessor
-        roleByName[role2Key(_role)].remove(_address);
+        roleByName[_role2Key(_role)].remove(_address);
 
         // Emit event
         emit RoleAccessorRemoved(_role, _address);
     }
 
-    function addRoleInternal(string memory _role) internal {
-        if (0 == roleIndexByName[role2Key(_role)]) {
+    function _addRole(string memory _role)
+    internal
+    {
+        if (0 == roleIndexByName[_role2Key(_role)]) {
             roles.push(_role);
-            roleIndexByName[role2Key(_role)] = roles.length;
+            roleIndexByName[_role2Key(_role)] = roles.length;
         }
     }
 
-    function addRoleAccessorInternal(string memory _role, address _address) internal {
-        roleByName[role2Key(_role)].add(_address);
+    function _addRoleAccessor(string memory _role, address _address)
+    internal
+    {
+        roleByName[_role2Key(_role)].add(_address);
     }
 
-    function role2Key(string memory _role) internal pure returns (bytes32) {
+    function _role2Key(string memory _role)
+    internal
+    pure
+    returns (bytes32)
+    {
         return keccak256(abi.encodePacked(_role));
     }
 }

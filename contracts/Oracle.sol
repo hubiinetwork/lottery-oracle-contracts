@@ -65,6 +65,7 @@ contract Oracle is RBACed {
         bool _status, uint256 _amount);
     event PayoutStaged(address indexed _wallet, address indexed _resolutionEngine,
         uint256 _firstVerificationPhaseNumber, uint256 _lastVerificationPhaseNumber);
+    event StakeStaged(address indexed _wallet, address indexed _resolutionEngine);
     event Withdrawn(address indexed _wallet, address indexed _resolutionEngine,
         uint256 _amount);
 
@@ -77,7 +78,7 @@ contract Oracle is RBACed {
     }
 
     modifier onlyRegisteredResolutionEngine(address _resolutionEngine) {
-        require(hasResolutionEngine(_resolutionEngine));
+        require(hasResolutionEngine(_resolutionEngine), "Oracle: Resolution engine is not registered");
         _;
     }
 
@@ -144,7 +145,8 @@ contract Oracle is RBACed {
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
         // Require that stake targets current verification phase number
-        require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber);
+        require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber,
+            "Oracle: not the current verification phase number");
 
         // Calculate the amount overshooting the resolution delta amount
         uint256 refundAmount = _amount > resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status) ?
@@ -162,7 +164,7 @@ contract Oracle is RBACed {
             resolutionEngine.stage(msg.sender, refundAmount);
 
         // Update the current verification phase metrics post transfer
-        resolutionEngine.updateMetrics(msg.sender, _status, _amount.sub(refundAmount));
+        resolutionEngine.stake(msg.sender, _status, _amount.sub(refundAmount));
 
         // Possibly resolve market in the current verification phase if resolution criteria have been met
         resolutionEngine.resolveIfCriteriaMet();
@@ -187,6 +189,21 @@ contract Oracle is RBACed {
 
         // Emit event
         emit PayoutStaged(msg.sender, _resolutionEngine, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
+    }
+
+    /// @notice For the given resolution engine stage the stake
+    /// @param _resolutionEngine The concerned resolution engine
+    function stageStake(address _resolutionEngine)
+    public
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Withdraw payout from resolution engine
+        resolutionEngine.stageStake(msg.sender);
+
+        // Emit event
+        emit StakeStaged(msg.sender, _resolutionEngine);
     }
 
     /// @notice For the given resolution engine withdraw the given amount

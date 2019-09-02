@@ -16,10 +16,11 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
     uint256 public criterionAmountStaked;
 
-    constructor(address _oracle, address _bountyFund, uint256 _bountyFraction,
+    /// @notice `msg.sender` will be added as accessor to the owner role
+    constructor(address _oracle, address _operator, address _bountyFund, uint256 _bountyFraction,
         uint256 _criterionAmountStaked)
     public
-    ResolutionEngine(_oracle, _bountyFund, _bountyFraction)
+    ResolutionEngine(_oracle, _operator, _bountyFund, _bountyFraction)
     {
         criterionAmountStaked = _criterionAmountStaked;
     }
@@ -28,7 +29,10 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _status The concerned status
     /// @return the amount needed to obtain to resolve the market
-    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status) public view returns (uint256)
+    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status)
+    public
+    view
+    returns (uint256)
     {
         if (_verificationPhaseNumber < verificationPhaseNumber)
             return 0;
@@ -38,7 +42,11 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
     /// @notice Gauge whether the resolution criteria have been met
     /// @return true if resolution criteria have been met, else false
-    function resolutionCriteriaMet() public view returns (bool) {
+    function resolutionCriteriaMet()
+    public
+    view
+    returns (bool)
+    {
         return verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[true] >= criterionAmountStaked ||
         verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[false] >= criterionAmountStaked;
     }
