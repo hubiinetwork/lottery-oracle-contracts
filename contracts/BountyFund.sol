@@ -7,7 +7,6 @@
 pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
-import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {Allocator} from "./Allocator.sol";
@@ -24,7 +23,7 @@ contract BountyFund is RBACed {
         uint256 _amount, uint256 _balance);
 
     ERC20 public token;
-    ResolutionEngine public resolutionEngine;
+    address public resolutionEngine;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(address _token)
@@ -35,7 +34,7 @@ contract BountyFund is RBACed {
     }
 
     modifier onlyResolutionEngine() {
-        require(msg.sender == address(resolutionEngine), "BountyFund: sender is not the set resolution engine");
+        require(msg.sender == resolutionEngine, "BountyFund: sender is not the set resolution engine");
         _;
     }
 
@@ -46,10 +45,10 @@ contract BountyFund is RBACed {
     public
     {
         require(address(0) != _resolutionEngine, "BountyFund: resolution engine argument is zero address");
-        require(address(0) == address(resolutionEngine), "BountyFund: resolution engine has already been set");
+        require(address(0) == resolutionEngine, "BountyFund: resolution engine has already been set");
 
         // Update resolution engine
-        resolutionEngine = ResolutionEngine(_resolutionEngine);
+        resolutionEngine = _resolutionEngine;
 
         // Emit event
         emit ResolutionEngineSet(_resolutionEngine);
