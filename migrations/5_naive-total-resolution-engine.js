@@ -1,7 +1,7 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const utils = require('../script/common/utils.js');
@@ -11,6 +11,7 @@ const StakeToken = artifacts.require('./StakeToken.sol');
 const Oracle = artifacts.require('./Oracle.sol');
 const ResolutionEngineOperator = artifacts.require('./ResolutionEngineOperator.sol');
 const BountyFund = artifacts.require('./BountyFund.sol');
+const FractionalBalanceAllocator = artifacts.require('./FractionalBalanceAllocator.sol');
 const NaiveTotalResolutionEngine = artifacts.require('./NaiveTotalResolutionEngine.sol');
 
 module.exports = async (deployer, network, accounts) => {
@@ -23,14 +24,18 @@ module.exports = async (deployer, network, accounts) => {
     const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
     await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
 
-    const bountyDivisor = utils.getNaiveTotalBountyDivisor();
-    const bountyFraction = (await bountyFund.PARTS_PER.call()).divn(bountyDivisor);
+    const bountyAllocator = await deployer.deploy(
+        FractionalBalanceAllocator, web3.utils.toBN(1e17), {from: ownerAccount}
+    );
 
     const criterionAmountStaked = web3.utils.toBN(utils.getNaiveTotalCriterionAmountStaked());
 
     const resolutionEngine = await deployer.deploy(
         NaiveTotalResolutionEngine, oracle.address, operator.address, bountyFund.address,
-        bountyFraction, criterionAmountStaked, {from: ownerAccount}
+        criterionAmountStaked, {from: ownerAccount}
     );
+    await resolutionEngine.setBountyAllocator(bountyAllocator.address);
+    await resolutionEngine.initialize();
+
     await oracle.addResolutionEngine(resolutionEngine.address, {from: ownerAccount});
 };

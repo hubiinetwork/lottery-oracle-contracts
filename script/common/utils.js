@@ -1,7 +1,7 @@
 /*
  * Lottery oracle
  *
- * Copyright (C) 2017-2018 Hubii AS
+ * Copyright (C) 2017-2019 Hubii AS
  */
 
 const unlockedMap = new Map();
@@ -38,7 +38,7 @@ const unlockAccount = async (web3, account, password) => {
 
     ['exit', 'SIGINT', 'SIGTERM'].forEach((eventType) => {
         process.on(eventType, lockAccount);
-    })
+    });
 };
 
 exports.initializeOwnerAccount = async (web3, network, accounts) => {
@@ -51,12 +51,6 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
         ownerAccount = account;
     }
     return ownerAccount;
-};
-
-exports.getNaiveTotalBountyDivisor = () => {
-    return typeof process.env.NAIVE_TOTAL_BOUNTY_DIVISOR === 'undefined' ?
-        10 :
-        Number.parseInt(process.env.NAIVE_TOTAL_BOUNTY_DIVISOR);
 };
 
 exports.getNaiveTotalCriterionAmountStaked = () => {

@@ -125,7 +125,8 @@ contract MockedResolutionEngine is Resolvable {
     function _withdrawTokens(uint256 _bountyFraction)
     public
     {
-        _bountyFund.withdrawTokens(_bountyFraction);
+        // TODO Consider the need for this function
+        //        _bountyFund.allocateTokens(_bountyFraction);
     }
 
     function verificationStatus()

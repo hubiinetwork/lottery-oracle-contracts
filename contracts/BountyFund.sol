@@ -10,6 +10,7 @@ import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import {Allocator} from "./Allocator.sol";
 
 /// @title BountyFund
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
@@ -19,9 +20,8 @@ contract BountyFund is RBACed {
 
     event ResolutionEngineSet(address indexed _resolutionEngine);
     event TokensDeposited(address indexed _wallet, uint256 _amount, uint256 _balance);
-    event TokensWithdrawn(address indexed _wallet, uint256 _amount, uint256 _balance);
-
-    uint256 constant public PARTS_PER = 1e18;
+    event TokensAllocated(address indexed _wallet, address indexed _allocator,
+        uint256 _amount, uint256 _balance);
 
     ERC20 public token;
     ResolutionEngine public resolutionEngine;
@@ -34,7 +34,7 @@ contract BountyFund is RBACed {
         token = ERC20(_token);
     }
 
-    modifier onlyRegisteredResolutionEngine() {
+    modifier onlyResolutionEngine() {
         require(msg.sender == address(resolutionEngine), "BountyFund: sender is not the set resolution engine");
         _;
     }
@@ -69,24 +69,20 @@ contract BountyFund is RBACed {
     }
 
     /// @notice Transfer the fraction of balance of token to msg.sender
-    /// @dev The entirety from which _fraction is subset
-    /// @param _fraction The fraction of current balance to withdraw
-    function withdrawTokens(uint256 _fraction)
+    /// @param _allocator The allocator that calculates the allocation
+    function allocateTokens(address _allocator)
     public
-    onlyRegisteredResolutionEngine
+    onlyResolutionEngine
     returns (uint256)
     {
-        // Require that fraction is less than the entirety
-        require(_fraction <= PARTS_PER, "BountyFund: fraction is greater than entirety");
-
         // Calculate amount to transfer
-        uint256 amount = token.balanceOf(address(this)).mul(_fraction).div(PARTS_PER);
+        uint256 amount = Allocator(_allocator).allocate();
 
         // Transfer tokens to sender
         token.transfer(msg.sender, amount);
 
         // Emit event
-        emit TokensWithdrawn(msg.sender, amount, token.balanceOf(address(this)));
+        emit TokensAllocated(msg.sender, _allocator, amount, token.balanceOf(address(this)));
 
         // Return calculated amount
         return amount;
