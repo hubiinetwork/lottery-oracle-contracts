@@ -37,7 +37,7 @@ contract('FractionalBalanceAllocator', (accounts) => {
 
     describe('allocate()', () => {
         beforeEach(async () => {
-            stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
+            stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
             bountyFund = await MockedBountyFund.new();
             await bountyFund._setToken(stakeToken.address);

@@ -22,7 +22,7 @@ contract('BountyFund', (accounts) => {
     let stakeToken, bountyFund;
 
     beforeEach(async () => {
-        stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
+        stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
         bountyFund = await BountyFund.new(stakeToken.address);
     });

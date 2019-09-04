@@ -10,7 +10,8 @@ const utils = require('../script/common/utils.js');
 const ResolutionEngineOperator = artifacts.require('./ResolutionEngineOperator.sol');
 
 module.exports = async (deployer, network, accounts) => {
-    let ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
+    const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-    await deployer.deploy(ResolutionEngineOperator, 30 * 24 * 60 * 60, {from: ownerAccount}); // 30 day minimum timeout
+    const timeout = web3.utils.toBN(utils.getResolutionEngineOperatorTimeout());
+    await deployer.deploy(ResolutionEngineOperator, timeout, {from: ownerAccount});
 };

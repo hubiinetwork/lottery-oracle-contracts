@@ -34,7 +34,7 @@ contract('*', (accounts) => {
     describe('NaiveTotalResolutionEngine', () => {
         before(async () => {
             // Deploy test token
-            stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
+            stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
             // Mint tokens for default account
             await stakeToken.mint(accounts[0], 1000);
@@ -210,7 +210,7 @@ contract('*', (accounts) => {
     describe('ResolutionEngineOperator', () => {
         before(async () => {
             // Deploy test token
-            stakeToken = await StakeToken.new('hubiit', 'HBT', 15);
+            stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
             // Mint tokens for default account
             await stakeToken.mint(accounts[0], 1000);

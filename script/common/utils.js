@@ -4,7 +4,9 @@
  * Copyright (C) 2017-2019 Hubii AS
  */
 
-const unlockedMap = new Map();
+const debug = require('debug')('utils');
+
+const unlockByAccount = new Map();
 const unlockTimeInSeconds = typeof process.env.ETH_UNLOCK_SECONDS === 'undefined' ?
     7200 :
     Number.parseInt(process.env.ETH_UNLOCK_SECONDS);
@@ -18,20 +20,20 @@ const getNetworkCredentials = () => {
 };
 
 const unlockAccount = async (web3, account, password) => {
-    if (!unlockedMap.get(account)) {
-        unlockedMap.set(account, true);
+    if (!unlockByAccount.get(account)) {
+        unlockByAccount.set(account, true);
 
-        console.log(`Unlocking account ${account}...`);
+        debug(`Unlocking account ${account}...`);
         await web3.eth.personal.unlockAccount(account, password, unlockTimeInSeconds);
 
-        await timeout(3000);
+        await exports.timeout(3000);
     }
 
     const lockAccount = async () => {
-        if (unlockedMap.get(account)) {
-            unlockedMap.set(account, false);
+        if (unlockByAccount.get(account)) {
+            unlockByAccount.set(account, false);
 
-            console.log(`Locking account ${account}...`);
+            debug(`Locking account ${account}...`);
             await web3.eth.personal.lockAccount(account);
         }
     };
@@ -53,10 +55,42 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
     return ownerAccount;
 };
 
-exports.getNaiveTotalCriterionAmountStaked = () => {
-    return process.env.NAIVE_TOTAL_CRITERION_AMOUNT_STAKED || 1000;
+exports.unlockAddress = async (web3, address, password, timeoutInSecs) => {
+    const succeeded = await web3.eth.personal.unlockAccount(address, password, timeoutInSecs);
+    debug(`Unlock of address ${address} for ${timeoutInSecs}s: ${succeeded ? 'successful' : 'unsuccessful'}`);
+    return succeeded;
 };
 
-const timeout = (ms) => {
+exports.lockAddress = async (web3, address) => {
+    const succeeded = await web3.eth.personal.lockAccount(address);
+    debug(`Lock of address ${address}: ${succeeded ? 'successful' : 'unsuccessful'}`);
+    return succeeded;
+};
+
+exports.getNaiveTotalBountyFraction = () => {
+    const bountyFraction = process.env.NAIVE_TOTAL_BOUNTY_FRACTION || 1e17;
+    debug(`Naive total bounty fraction: ${bountyFraction}`);
+    return bountyFraction;
+};
+
+exports.getNaiveTotalCriterionAmountStaked = () => {
+    const criterionAmountStaked = process.env.NAIVE_TOTAL_CRITERION_AMOUNT_STAKED || 1000;
+    debug(`Naive total criterion amount staked: ${criterionAmountStaked}`);
+    return criterionAmountStaked;
+};
+
+exports.getMinters = () => {
+    const minters = process.env.MINTERS ? process.env.MINTERS.split(',') : [];
+    debug(`Minters: ${minters}`);
+    return minters;
+};
+
+exports.getResolutionEngineOperatorTimeout = () => {
+    const minters = process.env.RESOLUTION_ENGINE_OPERATOR_TIMEOUT || 30 * 24 * 60 * 60; // 30 days
+    debug(`Minters: ${minters}`);
+    return minters;
+};
+
+exports.timeout = (ms) => {
     return new Promise(resolve => setTimeout(resolve, ms));
 };

@@ -10,7 +10,7 @@ const utils = require('../script/common/utils.js');
 const Migrations = artifacts.require('./Migrations.sol');
 
 module.exports = async (deployer, network, accounts) => {
-    let ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
+    const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
     await deployer.deploy(Migrations, {from: ownerAccount});
 };

@@ -8,56 +8,16 @@ pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import {AddressStoreLib} from "./AddressStoreLib.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-
-/// @title ResolutionEnginesLib
-/// @author Jens Ivar Jørdre <jensivar@hubii.com>
-/// @notice A library to ease the oracle's management of resolution engines
-library ResolutionEnginesLib {
-
-    struct ResolutionEngines {
-        mapping(bytes32 => uint256) map;
-        ResolutionEngine[] list;
-    }
-
-    function has(ResolutionEngines storage _engines, address _address) internal view returns (bool) {
-        return (0 != _engines.map[address2Key(_address)]);
-    }
-
-    function add(ResolutionEngines storage _engines, address _address) internal {
-        ResolutionEngine engine = ResolutionEngine(_address);
-        bytes32 key = address2Key(_address);
-        if (_engines.map[key] == 0) {
-            _engines.list.push(engine);
-            _engines.map[key] = _engines.list.length;
-        }
-    }
-
-    function remove(ResolutionEngines storage _engines, address _address) internal {
-        bytes32 key = address2Key(_address);
-        if (_engines.map[key] != 0) {
-            if (_engines.map[key] < _engines.list.length) {
-                _engines.list[_engines.map[key] - 1] = _engines.list[_engines.list.length - 1];
-                _engines.map[address2Key(address(_engines.list[_engines.map[key] - 1]))] = _engines.map[key];
-                delete _engines.list[_engines.list.length - 1];
-            }
-            _engines.list.length--;
-            _engines.map[key] = 0;
-        }
-    }
-
-    function address2Key(address _address) private pure returns (bytes32) {
-        return keccak256(abi.encodePacked(_address));
-    }
-}
 
 /// @title Oracle
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A lottery oracle
 contract Oracle is RBACed {
     using SafeMath for uint256;
-    using ResolutionEnginesLib for ResolutionEnginesLib.ResolutionEngines;
+    using AddressStoreLib for AddressStoreLib.Addresses;
 
     event ResolutionEngineAdded(address indexed _resolutionEngine);
     event ResolutionEngineRemoved(address indexed _resolutionEngine);
@@ -69,7 +29,7 @@ contract Oracle is RBACed {
     event Withdrawn(address indexed _wallet, address indexed _resolutionEngine,
         uint256 _amount);
 
-    ResolutionEnginesLib.ResolutionEngines resolutionEngines;
+    AddressStoreLib.Addresses resolutionEngines;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor()
