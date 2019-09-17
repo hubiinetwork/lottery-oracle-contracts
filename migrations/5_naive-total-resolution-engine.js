@@ -4,6 +4,7 @@
  * Copyright (C) 2017-2019 Hubii AS
  */
 
+'use strict';
 const utils = require('../script/common/utils.js');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
@@ -16,30 +17,30 @@ const VerificationPhaseLib = artifacts.require('./VerificationPhaseLib.sol');
 const NaiveTotalResolutionEngine = artifacts.require('./NaiveTotalResolutionEngine.sol');
 
 module.exports = async (deployer, network, accounts) => {
-    const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
+  const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-    const stakeToken = await StakeToken.deployed();
-    const oracle = await Oracle.deployed();
-    const operator = await ResolutionEngineOperator.deployed();
+  const stakeToken = await StakeToken.deployed();
+  const oracle = await Oracle.deployed();
+  const operator = await ResolutionEngineOperator.deployed();
 
-    const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
-    await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
+  const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
+  await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
 
-    const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
-    const bountyAllocator = await deployer.deploy(
-        FractionalBalanceAllocator, bountyFraction, {from: ownerAccount}
-    );
+  const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
+  const bountyAllocator = await deployer.deploy(
+    FractionalBalanceAllocator, bountyFraction, {from: ownerAccount}
+  );
 
-    await deployer.deploy(VerificationPhaseLib);
-    await deployer.link(VerificationPhaseLib, [NaiveTotalResolutionEngine]);
+  await deployer.deploy(VerificationPhaseLib);
+  await deployer.link(VerificationPhaseLib, [NaiveTotalResolutionEngine]);
 
-    const criterionAmountStaked = web3.utils.toBN(utils.getNaiveTotalCriterionAmountStaked());
-    const resolutionEngine = await deployer.deploy(
-        NaiveTotalResolutionEngine, oracle.address, operator.address, bountyFund.address,
-        criterionAmountStaked, {from: ownerAccount}
-    );
-    await resolutionEngine.setBountyAllocator(bountyAllocator.address);
-    await resolutionEngine.initialize();
+  const criterionAmountStaked = web3.utils.toBN(utils.getNaiveTotalCriterionAmountStaked());
+  const resolutionEngine = await deployer.deploy(
+    NaiveTotalResolutionEngine, oracle.address, operator.address, bountyFund.address,
+    criterionAmountStaked, {from: ownerAccount}
+  );
+  await resolutionEngine.setBountyAllocator(bountyAllocator.address);
+  await resolutionEngine.initialize();
 
-    await oracle.addResolutionEngine(resolutionEngine.address, {from: ownerAccount});
+  await oracle.addResolutionEngine(resolutionEngine.address, {from: ownerAccount});
 };

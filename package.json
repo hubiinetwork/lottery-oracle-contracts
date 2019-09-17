@@ -12,8 +12,10 @@
     "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
     "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle migrate'",
+    "lint": "eslint --ignore-path .gitignore .",
+    "lint:fix": "npm run lint -- --fix",
     "test": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
-    "version:compiler": "truffle version"
+    "version": "truffle version"
   },
   "repository": {
     "type": "git",
@@ -40,11 +42,13 @@
     "truffle-hdwallet-provider": "^1.0.17"
   },
   "devDependencies": {
+    "@hubiinetwork/eslint-config": "github:hubiinetwork/eslint-config",
     "bn-chai": "^1.0.1",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "concurrently": "^4.1.2",
     "debug": "^4.1.1",
+    "eslint": "^6.4.0",
     "ethers": "^4.0.37",
     "ganache-cli": "^6.7.0",
     "sinon": "^7.4.2",

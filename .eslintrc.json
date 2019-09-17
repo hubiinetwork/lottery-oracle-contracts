@@ -1,0 +1,21 @@
+{
+  "env": {
+    "es6": true,
+    "node": true,
+    "mocha": true
+  },
+  "parserOptions": {
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "impliedStrict": false
+    }
+  },
+  "rules": {
+    "strict": [
+      "error",
+      "global"
+    ],
+    "no-undef": "off"
+  },
+  "extends": "@hubiinetwork"
+}
