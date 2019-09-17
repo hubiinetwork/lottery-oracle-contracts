@@ -10,6 +10,7 @@ import {Allocator} from "./Allocator.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import {BountyFund} from "./BountyFund.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import {ConstantsLib} from "./ConstantsLib.sol";
 
 /// @title FractionalBalanceAllocator
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
@@ -17,15 +18,13 @@ import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 contract FractionalBalanceAllocator is Allocator {
     using SafeMath for uint256;
 
-    uint256 constant public PARTS_PER = 1e18; // The entirety, 100%
-
     uint256 public fraction;
 
     constructor(uint256 _fraction)
     public
     {
         // Require that fraction is less than the entirety
-        require(_fraction <= PARTS_PER, "FractionalBalanceAllocator: fraction is greater than entirety");
+        require(_fraction <= ConstantsLib.PARTS_PER(), "FractionalBalanceAllocator: fraction is greater than entirety");
 
         // Initialize fraction
         fraction = _fraction;
@@ -40,6 +39,6 @@ contract FractionalBalanceAllocator is Allocator {
         return BountyFund(msg.sender).token()
         .balanceOf(address(msg.sender))
         .mul(fraction)
-        .div(PARTS_PER);
+        .div(ConstantsLib.PARTS_PER());
     }
 }

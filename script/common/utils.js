@@ -74,10 +74,10 @@ exports.getNaiveTotalBountyFraction = () => {
   return bountyFraction;
 };
 
-exports.getNaiveTotalCriterionAmountStaked = () => {
-  const criterionAmountStaked = process.env.NAIVE_TOTAL_CRITERION_AMOUNT_STAKED || 1000;
-  debug(`Naive total criterion amount staked: ${criterionAmountStaked}`);
-  return criterionAmountStaked;
+exports.getNaiveTotalCriterionAmount = () => {
+  const criterionAmount = process.env.NAIVE_TOTAL_CRITERION_AMOUNT || 1000;
+  debug(`Naive total criterion amount: ${criterionAmount}`);
+  return criterionAmount;
 };
 
 exports.getMinters = () => {

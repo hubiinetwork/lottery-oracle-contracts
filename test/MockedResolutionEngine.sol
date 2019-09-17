@@ -94,7 +94,7 @@ contract MockedResolutionEngine is Resolvable {
         _token = tkn;
     }
 
-    function resolutionDeltaAmount(uint256, bool)
+    function resolutionDeltaAmount(bool)
     public
     view
     returns (uint256)

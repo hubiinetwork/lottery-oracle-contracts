@@ -21,11 +21,10 @@ contract Resolvable {
     view
     returns (bool);
 
-    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
-    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @notice Return the amount needed to resolve the current market for the given status
     /// @param _status The concerned status
     /// @return the amount needed to obtain to resolve the market
-    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status)
+    function resolutionDeltaAmount(bool _status)
     public
     view
     returns (uint256);

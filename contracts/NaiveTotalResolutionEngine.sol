@@ -12,32 +12,40 @@ import {ResolutionEngine} from "./ResolutionEngine.sol";
 /// @title NaiveTotalResolutionEngine
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A naïve total resolution engine
+/// Resolve the staking market when:
+/// - The total number of tokens staked on either option reaches the defined amount criterion
 contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
-    uint256 public criterionAmountStaked;
+    uint256 public amount;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
+    /// @param _oracle The address of oracle
+    /// @param _operator The address of operator
+    /// @param _bountyFund The address of bounty fund
+    /// @param _amount The amount criterion of this resolution engine
     constructor(address _oracle, address _operator, address _bountyFund,
-        uint256 _criterionAmountStaked)
+        uint256 _amount)
     public
     ResolutionEngine(_oracle, _operator, _bountyFund)
     {
-        criterionAmountStaked = _criterionAmountStaked;
+        amount = _amount;
     }
 
-    /// @notice Return the amount needed to resolve the market for the given verification phase number and status
-    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @notice Return the amount needed to resolve the current market for the given status
     /// @param _status The concerned status
     /// @return the amount needed to obtain to resolve the market
-    function resolutionDeltaAmount(uint256 _verificationPhaseNumber, bool _status)
+    function resolutionDeltaAmount(bool _status)
     public
     view
     returns (uint256)
     {
-        if (_verificationPhaseNumber < verificationPhaseNumber)
-            return 0;
-        else
-            return criterionAmountStaked.sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[_status]);
+        return (
+        amount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status] ?
+        amount.sub(
+            verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status]
+        ) :
+        0
+        );
     }
 
     /// @notice Gauge whether the resolution criteria have been met
@@ -47,7 +55,7 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
-        return verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[true] >= criterionAmountStaked ||
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].amountByStatus[false] >= criterionAmountStaked;
+        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >= amount ||
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >= amount;
     }
 }

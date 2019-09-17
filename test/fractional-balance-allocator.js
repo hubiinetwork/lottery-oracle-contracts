@@ -22,16 +22,14 @@ contract('FractionalBalanceAllocator', () => {
   let allocator, stakeToken, bountyFund;
 
   beforeEach(async () => {
-    allocator = await FractionalBalanceAllocator.new(
-      new BN('10').pow(new BN('17'))
-    );
+    allocator = await FractionalBalanceAllocator.new(web3.utils.toBN(1e17));
   });
 
   describe('constructor()', () => {
     it('initialize successfully', async () => {
       allocator.address.should.have.lengthOf(42);
 
-      (await allocator.fraction()).should.eq.BN(new BN('10').pow(new BN('17')));
+      (await allocator.fraction()).should.eq.BN(web3.utils.toBN(1e17));
     });
   });
 

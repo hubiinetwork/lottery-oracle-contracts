@@ -14,7 +14,7 @@ const Oracle = artifacts.require('./Oracle.sol');
 module.exports = async (deployer, network, accounts) => {
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-  await deployer.deploy(AddressStoreLib, {from: ownerAccount});
-  await deployer.link(AddressStoreLib, [Oracle]);
+  await Oracle.link('AddressStoreLib', (await AddressStoreLib.deployed()).address);
+
   await deployer.deploy(Oracle, {from: ownerAccount});
 };

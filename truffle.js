@@ -8,28 +8,28 @@ module.exports = {
       host: 'localhost',
       port: 8545,
       network_id: '*',
-      gas: 6000000,
+      gas: 8000000,
       websockets: true // To take advantage of the confirmations listener and to hear Events using .on or .once
     },
     develop: {
       host: 'localhost',
       port: 9545,
       network_id: '*',
-      gas: 6000000,
+      gas: 8000000,
       websockets: true
     },
     ganache: {
       host: 'localhost',
       port: 7545,
       network_id: '*',
-      gas: 6000000,
+      gas: 8000000,
       websockets: true
     },
     ropsten: {
       host: 'geth-ropsten.ethereum',
       port: 80,
       network_id: '*',
-      gas: 6000000,
+      gas: 8000000,
       skipDryRun: true // default: false for public nets
       // gasPrice: 10000000000,  // default: 20 gwei
       // confirmations: 2,       // default: 0
@@ -39,14 +39,14 @@ module.exports = {
       host: 'geth-rinkeby.ethereum',
       port: 80,
       network_id: '*',
-      gas: 6000000,
+      gas: 8000000,
       skipDryRun: true
     },
     mainnet: {
       host: 'ethereum.hubii.com',
       port: 8545,
       network_id: '1',
-      gas: 6000000
+      gas: 8000000
     }
   },
   compilers: {

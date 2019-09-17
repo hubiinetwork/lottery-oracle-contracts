@@ -200,9 +200,9 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         uint256 startBlock, uint256 endBlock, uint256 numberOfBlocks)
     {
         state = verificationPhaseByPhaseNumber[_verificationPhaseNumber].state;
-        trueStakeAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].amountByStatus[true];
-        falseStakeAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].amountByStatus[false];
-        stakeAmount = trueStakeAmount.add(falseStakeAmount);
+        trueStakeAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[true];
+        falseStakeAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[false];
+        stakeAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmount;
         numberOfWallets = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakingWallets;
         bountyAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAmount;
         bountyAwarded = verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAwarded;
@@ -270,7 +270,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         bool status = verificationPhaseByPhaseNumber[_verificationPhaseNumber].result == VerificationPhaseLib.Status.True;
 
         // Get the lot staked opposite of status
-        uint256 lot = verificationPhaseByPhaseNumber[_verificationPhaseNumber].amountByStatus[!status];
+        uint256 lot = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[!status];
 
         // If bounty was awarded add bounty to the total lot
         if (verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAwarded)
@@ -278,7 +278,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
         // Get the amount the wallet staked and total amount staked on the obtained status
         uint256 walletStatusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][status];
-        uint256 statusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].amountByStatus[status];
+        uint256 statusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[status];
 
         // Return the lot scaled by the fractional contribution that wallet staked on the obtained status and
         // to this added the wallet's own staked amount
@@ -383,7 +383,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
             "ResolutionEngine: verification phase is not in unopened state");
 
         // Bump verification phase number
-        verificationPhaseNumber++;
+        verificationPhaseNumber = verificationPhaseNumber.add(1);
 
         // Open the verification phase
         verificationPhaseByPhaseNumber[verificationPhaseNumber].open(_bountyAmount);
