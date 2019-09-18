@@ -11,12 +11,13 @@
     "build:all": "truffle compile --all",
     "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
-    "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'ganache-cli -l 8000000 >/dev/null' 'truffle migrate'",
+    "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'npm run ganache-cli >/dev/null' 'truffle migrate'",
+    "ganache-cli": "ganache-cli -l 8000000",
     "lint": "npm run lint:es && npm run lint:sol",
     "lint:es": "eslint --ignore-path .gitignore .",
     "lint:es:fix": "npm run lint:es -- --fix",
     "lint:sol": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
-    "test": "concurrently --raw --success first --kill-others 'ganache-cli -l 8000000 >/dev/null' 'truffle compile && truffle test'",
+    "test": "concurrently --raw --success first --kill-others 'npm run ganache-cli >/dev/null' 'truffle compile && truffle test'",
     "version": "truffle version"
   },
   "repository": {
