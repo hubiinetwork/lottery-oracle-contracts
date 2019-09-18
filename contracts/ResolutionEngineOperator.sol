@@ -93,7 +93,10 @@ contract ResolutionEngineOperator is RBACed {
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Require that the disablement timer has expired
-        require(isDisablementTimerExpired(_resolutionEngine), "ResolutionEngineOperator: disablement timer is not expired");
+        require(
+            isDisablementTimerExpired(_resolutionEngine),
+            "ResolutionEngineOperator: disablement timer is not expired"
+        );
 
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);

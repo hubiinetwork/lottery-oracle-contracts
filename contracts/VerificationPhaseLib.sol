@@ -55,8 +55,10 @@ library VerificationPhaseLib {
         bool _status, uint256 _amount) internal {
         _phase.stakedAmount = _phase.stakedAmount.add(_amount);
         _phase.stakedAmountByStatus[_status] = _phase.stakedAmountByStatus[_status].add(_amount);
-        _phase.stakedAmountByWalletStatus[_wallet][_status] = _phase.stakedAmountByWalletStatus[_wallet][_status].add(_amount);
-        _phase.stakedAmountByBlockStatus[block.number][_status] = _phase.stakedAmountByBlockStatus[block.number][_status].add(_amount);
+        _phase.stakedAmountByWalletStatus[_wallet][_status] =
+        _phase.stakedAmountByWalletStatus[_wallet][_status].add(_amount);
+        _phase.stakedAmountByBlockStatus[block.number][_status] =
+        _phase.stakedAmountByBlockStatus[block.number][_status].add(_amount);
 
         if (!_phase.stakedByWallet[_wallet]) {
             _phase.stakedByWallet[_wallet] = true;

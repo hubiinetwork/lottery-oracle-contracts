@@ -279,7 +279,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should return false', async () => {
-          (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(14);
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(14);
       });
     });
 
@@ -291,7 +291,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should return false', async () => {
-          (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(10);
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(10);
       });
     });
   });
