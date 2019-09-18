@@ -40,10 +40,10 @@ module.exports = async (deployer, network, accounts) => {
     VerificationPhaseLib: (await VerificationPhaseLib.deployed()).address
   });
 
-  const criterionAmount = web3.utils.toBN(utils.getNaiveTotalCriterionAmount());
+  const amount = web3.utils.toBN(utils.getNaiveTotalCriterionAmount());
   const resolutionEngine = await deployer.deploy(
     NaiveTotalResolutionEngine, oracle.address, operator.address, bountyFund.address,
-    criterionAmount, {from: ownerAccount}
+    amount, {from: ownerAccount}
   );
   await resolutionEngine.setBountyAllocator(bountyAllocator.address);
   await resolutionEngine.initialize();

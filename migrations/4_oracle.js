@@ -15,6 +15,5 @@ module.exports = async (deployer, network, accounts) => {
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
   await Oracle.link('AddressStoreLib', (await AddressStoreLib.deployed()).address);
-
   await deployer.deploy(Oracle, {from: ownerAccount});
 };

@@ -31,7 +31,7 @@ module.exports = async (deployer, network, accounts) => {
     ConstantsLib: (await ConstantsLib.deployed()).address
   });
 
-  const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
+  const bountyFraction = web3.utils.toBN(utils.getAlphaBetaGammaBountyFraction());
   const bountyAllocator = await deployer.deploy(
     FractionalBalanceAllocator, bountyFraction, {from: ownerAccount}
   );
@@ -41,9 +41,12 @@ module.exports = async (deployer, network, accounts) => {
     VerificationPhaseLib: (await VerificationPhaseLib.deployed()).address
   });
 
+  const alpha = web3.utils.toBN(utils.getAlphaBetaGammaCriterionAlpha());
+  const beta = web3.utils.toBN(utils.getAlphaBetaGammaCriterionBeta());
+  const gamma = web3.utils.toBN(utils.getAlphaBetaGammaCriterionGamma());
   const resolutionEngine = await deployer.deploy(
     AlphaBetaGammaResolutionEngine, oracle.address, operator.address, bountyFund.address,
-    2, web3.utils.toBN('500000000000000000'), 3, // TODO Add cmd line params
+    alpha, beta, gamma,
     {from: ownerAccount}
   );
   await resolutionEngine.setBountyAllocator(bountyAllocator.address);
