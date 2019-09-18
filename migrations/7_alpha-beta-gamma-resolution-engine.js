@@ -8,8 +8,8 @@
 const utils = require('../script/common/utils.js');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
+const AlphaBetaGammaBountyFund = artifacts.require('./AlphaBetaGammaBountyFund.sol');
 const AlphaBetaGammaResolutionEngine = artifacts.require('./AlphaBetaGammaResolutionEngine.sol');
-const BountyFund = artifacts.require('./BountyFund.sol');
 const ConstantsLib = artifacts.require('./ConstantsLib.sol');
 const FractionalBalanceAllocator = artifacts.require('./FractionalBalanceAllocator.sol');
 const Oracle = artifacts.require('./Oracle.sol');
@@ -24,7 +24,7 @@ module.exports = async (deployer, network, accounts) => {
   const oracle = await Oracle.deployed();
   const operator = await ResolutionEngineOperator.deployed();
 
-  const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
+  const bountyFund = await deployer.deploy(AlphaBetaGammaBountyFund, stakeToken.address, {from: ownerAccount});
   await stakeToken.mint(bountyFund.address, 100, {from: ownerAccount});
 
   await FractionalBalanceAllocator.link({
