@@ -16,18 +16,40 @@ import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract ResolutionEngineOperator is RBACed {
     using SafeMath for uint256;
 
+    bool public frozen;
+
     uint256 public minimumTimeout;
     mapping(address => uint256) public disablementTimeoutByResolutionEngine;
 
+    event Frozen();
     event DisablementTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
     event DisablementTimerStopped(address indexed _resolutionEngine);
     event Disabled(address indexed _resolutionEngine);
+    event MinimumTimeoutSet(uint256 minimumTimeout);
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     constructor(uint256 _minimumTimeout)
     public
     {
         minimumTimeout = _minimumTimeout;
+    }
+
+    modifier onlyNotFrozen() {
+        require(!frozen, "ResolutionEngineOperator: is frozen");
+        _;
+    }
+
+    /// @notice Freeze this resolution engine
+    /// @dev This operation can not be undone
+    function freeze()
+    onlyRoleAccessor(OWNER_ROLE)
+    public
+    {
+        // Set the frozen flag
+        frozen = true;
+
+        // Emit event
+        emit Frozen();
     }
 
     /// @notice Start the disablement timer for the given resolution engine
@@ -106,5 +128,20 @@ contract ResolutionEngineOperator is RBACed {
 
         // Emit event
         emit Disabled(_resolutionEngine);
+    }
+
+    /// @notice Set the minimum timeout criterion
+    /// @dev Only enabled when the resolution engine is not frozen
+    /// @param _minimumTimeout The concerned minimum timeout
+    function setMinimumTimeout(uint256 _minimumTimeout)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyNotFrozen
+    {
+        // Set the minimumTimeout
+        minimumTimeout = _minimumTimeout;
+
+        // Emit event
+        emit MinimumTimeoutSet(minimumTimeout);
     }
 }

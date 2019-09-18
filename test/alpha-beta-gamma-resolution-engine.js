@@ -74,6 +74,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       (await resolutionEngine.oracle()).should.equal(oracleAddress);
       (await resolutionEngine.operator()).should.equal(operatorAddress);
       (await resolutionEngine.bountyFund()).should.equal(bountyFund.address);
+      (await resolutionEngine.frozen()).should.be.false;
 
       (await resolutionEngine.verificationPhaseNumber()).should.eq.BN(0);
 
@@ -82,6 +83,25 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       (await resolutionEngine.gamma()).should.eq.BN(gamma);
 
       (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
+    });
+  });
+
+  describe('freeze()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.freeze({from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully freeze', async () => {
+        const result = await resolutionEngine.freeze();
+
+        result.logs[0].event.should.equal('Frozen');
+
+        (await resolutionEngine.frozen()).should.be.true;
+      });
     });
   });
 
@@ -100,7 +120,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
     });
 
     describe('if called by owner', () => {
-      it('should successfully update the bounty allocator', async () => {
+      it('should successfully set the bounty allocator', async () => {
         const result = await resolutionEngine.setBountyAllocator(bountyAllocator);
 
         result.logs[0].event.should.equal('BountyAllocatorSet');
@@ -800,6 +820,96 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
         const result = await resolutionEngine.stageBounty(accounts[2]);
         result.logs[0].event.should.equal('BountyStaged');
         (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(bountyAmount);
+      });
+    });
+  });
+
+  describe('setAlpha()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setAlpha(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setAlpha(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the alpha', async () => {
+        const result = await resolutionEngine.setAlpha(10);
+
+        result.logs[0].event.should.equal('AlphaSet');
+
+        (await resolutionEngine.alpha()).should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('setBeta()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setBeta(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setBeta(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the beta', async () => {
+        const result = await resolutionEngine.setBeta(10);
+
+        result.logs[0].event.should.equal('BetaSet');
+
+        (await resolutionEngine.beta()).should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('setGamma()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setGamma(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setGamma(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the gamma', async () => {
+        const result = await resolutionEngine.setGamma(10);
+
+        result.logs[0].event.should.equal('GammaSet');
+
+        (await resolutionEngine.gamma()).should.eq.BN(10);
       });
     });
   });

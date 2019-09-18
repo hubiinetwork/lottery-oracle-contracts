@@ -21,6 +21,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     using SafeMath for uint256;
     using VerificationPhaseLib for VerificationPhaseLib.VerificationPhase;
 
+    event Frozen();
     event BountyAllocatorSet(address indexed _bountyAllocator);
     event Initialized();
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
@@ -48,6 +49,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     ERC20 public token;
 
     bool public initialized;
+    bool public frozen;
 
     uint256 public verificationPhaseNumber;
 
@@ -87,6 +89,24 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     modifier onlyOperator() {
         require(msg.sender == operator, "ResolutionEngine: sender is not the set operator");
         _;
+    }
+
+    modifier onlyNotFrozen() {
+        require(!frozen, "ResolutionEngine: is frozen");
+        _;
+    }
+
+    /// @notice Freeze this resolution engine
+    /// @dev This operation can not be undone
+    function freeze()
+    onlyRoleAccessor(OWNER_ROLE)
+    public
+    {
+        // Set the frozen flag
+        frozen = true;
+
+        // Emit event
+        emit Frozen();
     }
 
     /// @notice Set the bounty allocator

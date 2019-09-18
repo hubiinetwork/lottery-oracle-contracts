@@ -67,10 +67,30 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       (await resolutionEngine.oracle()).should.equal(oracleAddress);
       (await resolutionEngine.operator()).should.equal(operatorAddress);
       (await resolutionEngine.bountyFund()).should.equal(bountyFund.address);
+      (await resolutionEngine.frozen()).should.be.false;
 
       (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(0);
 
       (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
+    });
+  });
+
+  describe('freeze()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.freeze({from: accounts[2]})
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully freeze', async () => {
+        const result = await resolutionEngine.freeze();
+
+        result.logs[0].event.should.equal('Frozen');
+
+        (await resolutionEngine.frozen()).should.be.true;
+      });
     });
   });
 
@@ -89,7 +109,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('if called by owner', () => {
-      it('should successfully update the bounty allocator', async () => {
+      it('should successfully set the bounty allocator', async () => {
         const result = await resolutionEngine.setBountyAllocator(bountyAllocator);
 
         result.logs[0].event.should.equal('BountyAllocatorSet');
@@ -634,6 +654,36 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         const result = await resolutionEngine.stageBounty(accounts[2]);
         result.logs[0].event.should.equal('BountyStaged');
         (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(bountyAmount);
+      });
+    });
+  });
+
+  describe('setAmount()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setAmount(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setAmount(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the amount', async () => {
+        const result = await resolutionEngine.setAmount(10);
+
+        result.logs[0].event.should.equal('AmountSet');
+
+        (await resolutionEngine.amount()).should.eq.BN(10);
       });
     });
   });

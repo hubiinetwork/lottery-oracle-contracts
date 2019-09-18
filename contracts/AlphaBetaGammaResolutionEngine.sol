@@ -20,6 +20,10 @@ import {Math} from "openzeppelin-solidity/contracts/math/Math.sol";
 /// - The total number of addresses staking tokens is >= gamma
 contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
 
+    event AlphaSet(uint256 alpha);
+    event BetaSet(uint256 beta);
+    event GammaSet(uint256 gamma);
+
     uint256 public alpha;
     uint256 public beta;
     uint256 public gamma;
@@ -147,5 +151,50 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     returns (bool)
     {
         return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakingWallets >= gamma;
+    }
+
+    /// @notice Set the alpha criterion
+    /// @dev Only enabled when the resolution engine is not frozen
+    /// @param _alpha The concerned alpha
+    function setAlpha(uint256 _alpha)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyNotFrozen
+    {
+        // Set the alpha
+        alpha = _alpha;
+
+        // Emit event
+        emit AlphaSet(alpha);
+    }
+
+    /// @notice Set the beta criterion
+    /// @dev Only enabled when the resolution engine is not frozen
+    /// @param _beta The concerned beta
+    function setBeta(uint256 _beta)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyNotFrozen
+    {
+        // Set the beta
+        beta = _beta;
+
+        // Emit event
+        emit BetaSet(beta);
+    }
+
+    /// @notice Set the gamma criterion
+    /// @dev Only enabled when the resolution engine is not frozen
+    /// @param _gamma The concerned gamma
+    function setGamma(uint256 _gamma)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyNotFrozen
+    {
+        // Set the gamma
+        gamma = _gamma;
+
+        // Emit event
+        emit GammaSet(gamma);
     }
 }

@@ -34,6 +34,26 @@ contract('ResolutionEngineOperator', (accounts) => {
       const ownerRole = await operator.OWNER_ROLE();
       (await operator.isRoleAccessor(ownerRole, accounts[0])).should.be.true;
       (await operator.isRoleAccessor(ownerRole, accounts[1])).should.be.false;
+      (await operator.frozen()).should.be.false;
+    });
+  });
+
+  describe('freeze()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        operator.freeze({from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully freeze', async () => {
+        const result = await operator.freeze();
+
+        result.logs[0].event.should.equal('Frozen');
+
+        (await operator.frozen()).should.be.true;
+      });
     });
   });
 
@@ -169,6 +189,36 @@ contract('ResolutionEngineOperator', (accounts) => {
         (await mockedResolutionEngine._disabledAction()).should.equal(
           await mockedResolutionEngine.RESOLVE_ACTION()
         );
+      });
+    });
+  });
+
+  describe('setMinimumTimeout()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        operator.setMinimumTimeout(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await operator.freeze();
+      });
+
+      it('should revert', async () => {
+        operator.setMinimumTimeout(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the minimum timeout', async () => {
+        const result = await operator.setMinimumTimeout(10);
+
+        result.logs[0].event.should.equal('MinimumTimeoutSet');
+
+        (await operator.minimumTimeout()).should.eq.BN(10);
       });
     });
   });

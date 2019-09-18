@@ -16,6 +16,8 @@ import {ResolutionEngine} from "./ResolutionEngine.sol";
 /// - The total number of tokens staked on either option reaches the defined amount criterion
 contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
+    event AmountSet(uint256 amount);
+
     uint256 public amount;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -57,5 +59,22 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     {
         return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >= amount ||
         verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >= amount;
+    }
+
+
+    // TODO Remember freeze method in super and operator freeze and config setter
+    /// @notice Set the amount criterion
+    /// @dev Only enabled when the resolution engine is not frozen
+    /// @param _amount The concerned amount
+    function setAmount(uint256 _amount)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    onlyNotFrozen
+    {
+        // Set the amount
+        amount = _amount;
+
+        // Emit event
+        emit AmountSet(amount);
     }
 }
