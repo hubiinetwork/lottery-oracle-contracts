@@ -15,17 +15,17 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const AlphaBetaGammaBountyFund = artifacts.require('AlphaBetaGammaBountyFund');
+const BountyFund = artifacts.require('BountyFund');
 const StakeToken = artifacts.require('StakeToken');
 const MockedAllocator = artifacts.require('MockedAllocator');
 
-contract.only('AlphaBetaGammaBountyFund', (accounts) => {
+contract('BountyFund', (accounts) => {
   let stakeToken, bountyFund;
 
   beforeEach(async () => {
     stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
-    bountyFund = await AlphaBetaGammaBountyFund.new(stakeToken.address);
+    bountyFund = await BountyFund.new(stakeToken.address);
   });
 
   describe('constructor()', () => {

@@ -662,7 +662,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
         resolutionEngine.setAmount(10, {from: accounts[2]})
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
@@ -673,7 +673,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
       it('should revert', async () => {
         resolutionEngine.setAmount(10)
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 

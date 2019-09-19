@@ -42,7 +42,7 @@ contract('ResolutionEngineOperator', (accounts) => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
         operator.freeze({from: accounts[2]})
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
@@ -197,7 +197,7 @@ contract('ResolutionEngineOperator', (accounts) => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
         operator.setMinimumTimeout(10, {from: accounts[2]})
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
@@ -208,7 +208,7 @@ contract('ResolutionEngineOperator', (accounts) => {
 
       it('should revert', async () => {
         operator.setMinimumTimeout(10)
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
