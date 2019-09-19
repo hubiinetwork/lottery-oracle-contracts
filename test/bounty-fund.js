@@ -49,7 +49,8 @@ contract('BountyFund', (accounts) => {
 
     describe('when called with zero address', () => {
       it('should revert', async () => {
-        bountyFund.setResolutionEngine(AddressZero).should.be.rejected;
+        await bountyFund.setResolutionEngine(AddressZero)
+          .should.be.rejected;
       });
     });
 
@@ -74,7 +75,8 @@ contract('BountyFund', (accounts) => {
       });
 
       it('should revert', async () => {
-        bountyFund.setResolutionEngine(resolutionEngine).should.be.rejected;
+        await bountyFund.setResolutionEngine(resolutionEngine)
+          .should.be.rejected;
       });
     });
   });
@@ -104,7 +106,8 @@ contract('BountyFund', (accounts) => {
 
     describe('if called by agent not registered as resolution engine', () => {
       it('should revert', async () => {
-        bountyFund.allocateTokens(bountyAllocator).should.be.rejected;
+        await bountyFund.allocateTokens(bountyAllocator)
+          .should.be.rejected;
       });
     });
 
