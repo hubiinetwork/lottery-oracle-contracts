@@ -16,13 +16,14 @@ chai.use(bnChai(BN));
 chai.should();
 
 const StakeToken = artifacts.require('StakeToken');
-const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
+const AlphaBetaGammaResolutionEngine = artifacts.require('AlphaBetaGammaResolutionEngine');
 const MockedBountyFund = artifacts.require('MockedBountyFund');
 const MockedAllocator = artifacts.require('MockedAllocator');
 
-contract('NaiveTotalResolutionEngine', (accounts) => {
+contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   let ownerAddress, operatorAddress, oracleAddress;
   let provider;
+  let alpha, beta, gamma;
   let stakeToken, resolutionEngine, bountyFund, bountyAllocator;
   let ownerRole;
 
@@ -32,6 +33,10 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     oracleAddress = accounts[1];
 
     provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(ownerAddress).provider;
+
+    alpha = 2;
+    beta = web3.utils.toBN(6e17);
+    gamma = 3;
 
     stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
@@ -43,8 +48,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
     bountyAllocator = await MockedAllocator.new();
 
-    resolutionEngine = await NaiveTotalResolutionEngine.new(
-      oracleAddress, operatorAddress, bountyFund.address, 100
+    resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+      oracleAddress, operatorAddress, bountyFund.address,
+      alpha, beta, gamma
     );
     await resolutionEngine.setBountyAllocator(bountyAllocator.address);
     await resolutionEngine.initialize();
@@ -54,8 +60,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
   describe('constructor()', () => {
     beforeEach(async () => {
-      resolutionEngine = await NaiveTotalResolutionEngine.new(
-        oracleAddress, operatorAddress, bountyFund.address, 100
+      resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+        oracleAddress, operatorAddress, bountyFund.address,
+        alpha, beta, gamma
       );
     });
 
@@ -69,7 +76,11 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       (await resolutionEngine.bountyFund()).should.equal(bountyFund.address);
       (await resolutionEngine.frozen()).should.be.false;
 
-      (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(0);
+      (await resolutionEngine.verificationPhaseNumber()).should.eq.BN(0);
+
+      (await resolutionEngine.alpha()).should.eq.BN(alpha);
+      (await resolutionEngine.beta()).should.eq.BN(beta);
+      (await resolutionEngine.gamma()).should.eq.BN(gamma);
 
       (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
     });
@@ -79,7 +90,7 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
         resolutionEngine.freeze({from: accounts[2]})
-          .should.be.rejected;
+            .should.be.rejected;
       });
     });
 
@@ -121,8 +132,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
   describe('initialize()', () => {
     beforeEach(async () => {
-      resolutionEngine = await NaiveTotalResolutionEngine.new(
-        oracleAddress, operatorAddress, bountyFund.address, 100
+      resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+        oracleAddress, operatorAddress, bountyFund.address,
+        alpha, beta, gamma
       );
       await resolutionEngine.setBountyAllocator(bountyAllocator.address);
     });
@@ -243,20 +255,179 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
   });
 
-  describe('resolutionDeltaAmount()', () => {
+  describe('alphaResolutionDeltaAmount()', () => {
+    beforeEach(async () => {
+      await resolutionEngine.stake(accounts[2], true, 1, {from: oracleAddress});
+      await resolutionEngine.stake(accounts[3], false, 2, {from: oracleAddress});
+      await resolutionEngine.stake(accounts[4], false, 3, {from: oracleAddress});
+    });
+
+    it('should return the calculated delta amount', async () => {
+      (await resolutionEngine.alphaResolutionDeltaAmount()).should.eq.BN(14);
+    });
+  });
+
+  describe('betaResolutionDeltaAmount()', () => {
+    beforeEach(async () => {
+      await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+      await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+      await resolutionEngine.stake(accounts[4], true, 10, {from: oracleAddress});
+    });
+
+    it('should return the calculated delta amount', async () => {
+      (await resolutionEngine.betaResolutionDeltaAmount(true)).should.eq.BN(10);
+    });
+  });
+
+  describe('gammaResolutionDelta()', () => {
     beforeEach(async () => {
       await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
       await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
     });
 
-    it('should return the calculated delta amount', async () => {
-      (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(90);
-      (await resolutionEngine.resolutionDeltaAmount(false)).should.eq.BN(80);
+    it('should return the calculated delta', async () => {
+      (await resolutionEngine.gammaResolutionDelta()).should.eq.BN(1);
+    });
+  });
+
+  describe('resolutionDeltaAmount()', () => {
+    describe('if alpha resolution delta amount dominates', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 1, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 2, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 3, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(14);
+      });
+    });
+
+    describe('if alpha resolution delta amount dominates', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], true, 10, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('alphaCriterionMet()', () => {
+    describe('if alpha criterion has not been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 1, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 2, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 3, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.alphaCriterionMet()).should.be.false;
+      });
+    });
+
+    describe('if alpha criterion has been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 30, {from: oracleAddress});
+      });
+
+      it('should return true', async () => {
+        (await resolutionEngine.alphaCriterionMet()).should.be.true;
+      });
+    });
+  });
+
+  describe('betaCriterionMet()', () => {
+    describe('if beta criterion has not been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 10, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.betaCriterionMet()).should.be.false;
+      });
+    });
+
+    describe('if beta criterion has been met on status true', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 10, {from: oracleAddress});
+      });
+
+      it('should return true', async () => {
+        (await resolutionEngine.betaCriterionMet()).should.be.true;
+      });
+    });
+
+    describe('if beta criterion has been met on status false', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+      });
+
+      it('should return true', async () => {
+        (await resolutionEngine.betaCriterionMet()).should.be.true;
+      });
+    });
+  });
+
+  describe('gammaCriterionMet()', () => {
+    describe('if gamma criterion has not been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 10, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.gammaCriterionMet()).should.be.false;
+      });
+    });
+
+    describe('if gamma criterion has been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 30, {from: oracleAddress});
+      });
+
+      it('should return true', async () => {
+        (await resolutionEngine.gammaCriterionMet()).should.be.true;
+      });
     });
   });
 
   describe('resolutionCriteriaMet()', () => {
-    describe('if resolution criteria have not been met', () => {
+    describe('if alpha criterion has not been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 1, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 2, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 3, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.resolutionCriteriaMet()).should.be.false;
+      });
+    });
+
+    describe('if beta criterion has not been met', () => {
+      beforeEach(async () => {
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], true, 10, {from: oracleAddress});
+      });
+
+      it('should return false', async () => {
+        (await resolutionEngine.resolutionCriteriaMet()).should.be.false;
+      });
+    });
+
+    describe('if gamma criterion has not been met', () => {
       beforeEach(async () => {
         await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
         await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
@@ -267,21 +438,11 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if resolution criteria have been met on true status', () => {
-      beforeEach(async () => {
-        await resolutionEngine.stake(accounts[2], true, 110, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
-      });
-
-      it('should return true', async () => {
-        (await resolutionEngine.resolutionCriteriaMet()).should.be.true;
-      });
-    });
-
-    describe('if resolution criteria have been met on false status', () => {
+    describe('if resolution alpha, beta and gamma criteria have been met', () => {
       beforeEach(async () => {
         await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[3], false, 120, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 30, {from: oracleAddress});
       });
 
       it('should return true', async () => {
@@ -430,8 +591,11 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
 
     describe('if called when resolution criteria are met', () => {
       beforeEach(async () => {
-        await resolutionEngine.stake(accounts[2], true, 110, {from: oracleAddress});
+        // await resolutionEngine.stake(accounts[2], true, 110, {from: oracleAddress});
+        // await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
         await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 30, {from: oracleAddress});
       });
 
       it('should successfully resolve', async () => {
@@ -476,7 +640,9 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     // 1st scenario in https://docs.google.com/document/d/1o_8BCMLXMNzEJ4uovZdeYUkEmRJPktf_fi55jylJ24w/edit#heading=h.e522u33ktgp6
     describe('if bounty was not awarded', () => {
       beforeEach(async () => {
-        await resolutionEngine.stake(accounts[2], true, 100, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], true, 90, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[4], false, 50, {from: oracleAddress});
 
         await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
 
@@ -658,10 +824,10 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
   });
 
-  describe('setAmount()', () => {
+  describe('setAlpha()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.setAmount(10, {from: accounts[2]})
+        resolutionEngine.setAlpha(10, {from: accounts[2]})
             .should.be.rejected;
       });
     });
@@ -672,18 +838,78 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.setAmount(10)
+        resolutionEngine.setAlpha(10)
             .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
-      it('should successfully set the amount', async () => {
-        const result = await resolutionEngine.setAmount(10);
+      it('should successfully set the alpha', async () => {
+        const result = await resolutionEngine.setAlpha(10);
 
-        result.logs[0].event.should.equal('AmountSet');
+        result.logs[0].event.should.equal('AlphaSet');
 
-        (await resolutionEngine.amount()).should.eq.BN(10);
+        (await resolutionEngine.alpha()).should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('setBeta()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setBeta(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setBeta(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the beta', async () => {
+        const result = await resolutionEngine.setBeta(10);
+
+        result.logs[0].event.should.equal('BetaSet');
+
+        (await resolutionEngine.beta()).should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('setGamma()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        resolutionEngine.setGamma(10, {from: accounts[2]})
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called after freeze', () => {
+      beforeEach(async () => {
+        await resolutionEngine.freeze();
+      });
+
+      it('should revert', async () => {
+        resolutionEngine.setGamma(10)
+            .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully set the gamma', async () => {
+        const result = await resolutionEngine.setGamma(10);
+
+        result.logs[0].event.should.equal('GammaSet');
+
+        (await resolutionEngine.gamma()).should.eq.BN(10);
       });
     });
   });

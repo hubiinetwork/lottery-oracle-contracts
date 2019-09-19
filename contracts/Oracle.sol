@@ -108,9 +108,10 @@ contract Oracle is RBACed {
         require(resolutionEngine.verificationPhaseNumber() == _verificationPhaseNumber,
             "Oracle: not the current verification phase number");
 
-        // Calculate the amount overshooting the resolution delta amount
-        uint256 refundAmount = _amount > resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status) ?
-        _amount.sub(resolutionEngine.resolutionDeltaAmount(_verificationPhaseNumber, _status)) :
+        // Calculate the stake overage amount
+        uint256 resolutionDeltaAmount = resolutionEngine.resolutionDeltaAmount(_status);
+        uint256 overageAmount = _amount > resolutionDeltaAmount ?
+        _amount.sub(resolutionDeltaAmount) :
         0;
 
         // Initialize token
@@ -119,12 +120,12 @@ contract Oracle is RBACed {
         // Transfer from msg.sender to this resolution engine
         token.transferFrom(msg.sender, _resolutionEngine, _amount);
 
-        // Stage for refund the amount overshooting the resolution delta amount
-        if (refundAmount > 0)
-            resolutionEngine.stage(msg.sender, refundAmount);
+        // Stage for refund the stake overage amount
+        if (overageAmount > 0)
+            resolutionEngine.stage(msg.sender, overageAmount);
 
         // Update the current verification phase metrics post transfer
-        resolutionEngine.stake(msg.sender, _status, _amount.sub(refundAmount));
+        resolutionEngine.stake(msg.sender, _status, _amount.sub(overageAmount));
 
         // Possibly resolve market in the current verification phase if resolution criteria have been met
         resolutionEngine.resolveIfCriteriaMet();

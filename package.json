@@ -11,9 +11,14 @@
     "build:all": "truffle compile --all",
     "clean": "truffle networks --clean",
     "deploy": "truffle migrate",
-    "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle migrate'",
-    "test": "concurrently --raw --success first --kill-others 'ganache-cli >/dev/null' 'truffle compile && truffle test'",
-    "version:compiler": "truffle version"
+    "deploy:ganache-cli": "concurrently --raw --success first --kill-others 'npm run ganache-cli >/dev/null' 'truffle migrate'",
+    "ganache-cli": "ganache-cli -l 8000000",
+    "lint": "npm run lint:es && npm run lint:sol",
+    "lint:es": "eslint --ignore-path .gitignore .",
+    "lint:es:fix": "npm run lint:es -- --fix",
+    "lint:sol": "solhint 'contracts/**/*.sol' 'test/**/*.sol'",
+    "test": "concurrently --raw --success first --kill-others 'npm run ganache-cli >/dev/null' 'truffle compile && truffle test'",
+    "version": "truffle version"
   },
   "repository": {
     "type": "git",
@@ -34,21 +39,23 @@
   },
   "homepage": "https://github.com/hubiinetwork/lottery-resolver-contracts#readme",
   "dependencies": {
-    "mocha-teamcity-reporter": "^2.5.0",
+    "mocha-teamcity-reporter": "^3.0.0",
     "openzeppelin-solidity": "^2.3.0",
-    "truffle": "^5.0.33",
+    "truffle": "^5.0.36",
     "truffle-hdwallet-provider": "^1.0.17"
   },
   "devDependencies": {
+    "@hubiinetwork/eslint-config": "github:hubiinetwork/eslint-config",
     "bn-chai": "^1.0.1",
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "concurrently": "^4.0.1",
+    "concurrently": "^4.1.2",
     "debug": "^4.1.1",
-    "ethers": "^4.0.36",
-    "ganache-cli": "^6.1.8",
-    "sinon": "^6.3.3",
-    "sinon-chai": "^3.2.0",
+    "eslint": "^6.4.0",
+    "ethers": "^4.0.37",
+    "ganache-cli": "^6.7.0",
+    "sinon": "^7.4.2",
+    "sinon-chai": "^3.3.0",
     "solhint": "^2.2.0"
   }
 }

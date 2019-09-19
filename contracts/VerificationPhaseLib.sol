@@ -21,13 +21,13 @@ library VerificationPhaseLib {
         State state;
         Status result;
 
-        mapping(bool => uint256) amountByStatus;
+        uint256 stakedAmount;
+        mapping(bool => uint256) stakedAmountByStatus;
+        mapping(address => mapping(bool => uint256)) stakedAmountByWalletStatus;
+        mapping(uint256 => mapping(bool => uint256)) stakedAmountByBlockStatus;
 
         mapping(address => bool) stakedByWallet;
         uint256 stakingWallets;
-
-        mapping(address => mapping(bool => uint256)) stakedAmountByWalletStatus;
-        mapping(uint256 => mapping(bool => uint256)) stakedAmountByBlockStatus;
 
         uint256 bountyAmount;
         bool bountyAwarded;
@@ -45,23 +45,24 @@ library VerificationPhaseLib {
     function close(VerificationPhase storage _phase) internal {
         _phase.state = State.Closed;
         _phase.endBlock = block.number;
-        if (_phase.amountByStatus[true] > _phase.amountByStatus[false])
+        if (_phase.stakedAmountByStatus[true] > _phase.stakedAmountByStatus[false])
             _phase.result = Status.True;
-        else if (_phase.amountByStatus[true] < _phase.amountByStatus[false])
+        else if (_phase.stakedAmountByStatus[true] < _phase.stakedAmountByStatus[false])
             _phase.result = Status.False;
     }
 
     function stake(VerificationPhase storage _phase, address _wallet,
         bool _status, uint256 _amount) internal {
-
-        _phase.amountByStatus[_status] = _phase.amountByStatus[_status].add(_amount);
+        _phase.stakedAmount = _phase.stakedAmount.add(_amount);
+        _phase.stakedAmountByStatus[_status] = _phase.stakedAmountByStatus[_status].add(_amount);
+        _phase.stakedAmountByWalletStatus[_wallet][_status] =
+        _phase.stakedAmountByWalletStatus[_wallet][_status].add(_amount);
+        _phase.stakedAmountByBlockStatus[block.number][_status] =
+        _phase.stakedAmountByBlockStatus[block.number][_status].add(_amount);
 
         if (!_phase.stakedByWallet[_wallet]) {
             _phase.stakedByWallet[_wallet] = true;
-            _phase.stakingWallets++;
+            _phase.stakingWallets = _phase.stakingWallets.add(1);
         }
-
-        _phase.stakedAmountByWalletStatus[_wallet][_status] = _phase.stakedAmountByWalletStatus[_wallet][_status].add(_amount);
-        _phase.stakedAmountByBlockStatus[block.number][_status] = _phase.stakedAmountByBlockStatus[block.number][_status].add(_amount);
     }
 }
