@@ -89,8 +89,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('freeze()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.freeze({from: accounts[2]})
-            .should.be.rejected;
+        await resolutionEngine.freeze({from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -114,7 +114,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.setBountyAllocator(bountyAllocator, {from: accounts[2]})
+        await resolutionEngine.setBountyAllocator(bountyAllocator, {from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -141,7 +141,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.initialize({from: accounts[2]})
+        await resolutionEngine.initialize({from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -152,7 +152,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.initialize().should.be.rejected;
+        await resolutionEngine.initialize()
+          .should.be.rejected;
       });
     });
 
@@ -174,7 +175,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.initialize({from: accounts[2]})
+        await resolutionEngine.initialize({from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -183,7 +184,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('disable()', () => {
     describe('if called by non-operator', () => {
       it('should revert', async () => {
-        resolutionEngine.disable('some action', {from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.disable('some action', {from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -200,7 +202,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.disable('some action').should.be.rejected;
+        await resolutionEngine.disable('some action')
+          .should.be.rejected;
       });
     });
   });
@@ -208,7 +211,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('enable()', () => {
     describe('if called by non-operator', () => {
       it('should revert', async () => {
-        resolutionEngine.enable('some action', {from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.enable('some action', {from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -225,7 +229,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     describe('if called by operator on resolution engine with action enabled', () => {
       it('should revert', async () => {
-        resolutionEngine.enable('some action').should.be.rejected;
+        await resolutionEngine.enable('some action')
+          .should.be.rejected;
       });
     });
   });
@@ -233,7 +238,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('stake()', () => {
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.stake(accounts[2], true, 100, {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.stake(accounts[2], true, 100, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -243,7 +249,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.stake(accounts[2], true, 100, {from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.stake(accounts[2], true, 100, {from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -562,7 +569,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('resolveIfCriteriaMet()', () => {
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.resolveIfCriteriaMet({from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.resolveIfCriteriaMet({from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -572,7 +580,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.resolveIfCriteriaMet({from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -669,7 +678,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.stagePayout(accounts[2], 0, 0, {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.stagePayout(accounts[2], 0, 0, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -717,13 +727,15 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.stageStake(accounts[2], {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.stageStake(accounts[2], {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
     describe('if called when resolve action is enabled', () => {
       it('should revert', async () => {
-        resolutionEngine.stageStake(accounts[2], {from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.stageStake(accounts[2], {from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -743,7 +755,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('stage()', () => {
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.stage(accounts[2], 100, {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.stage(accounts[2], 100, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -761,7 +774,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('withdraw()', () => {
     describe('if called by non-oracle', () => {
       it('should revert', async () => {
-        resolutionEngine.withdraw(accounts[2], 100, {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.withdraw(accounts[2], 100, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -769,7 +783,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       it('should revert', async () => {
         (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(0);
 
-        resolutionEngine.withdraw(accounts[2], 100, {from: oracleAddress}).should.be.rejected;
+        await resolutionEngine.withdraw(accounts[2], 100, {from: oracleAddress})
+          .should.be.rejected;
       });
     });
 
@@ -795,13 +810,15 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('stageBounty()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.stageBounty(accounts[2], {from: accounts[2]}).should.be.rejected;
+        await resolutionEngine.stageBounty(accounts[2], {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
     describe('if called on enabled resolution engine', () => {
       it('should revert', async () => {
-        resolutionEngine.stageBounty(accounts[2]).should.be.rejected;
+        await resolutionEngine.stageBounty(accounts[2])
+          .should.be.rejected;
       });
     });
 
@@ -827,8 +844,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('setAlpha()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.setAlpha(10, {from: accounts[2]})
-            .should.be.rejected;
+        await resolutionEngine.setAlpha(10, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -838,8 +855,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.setAlpha(10)
-            .should.be.rejected;
+        await resolutionEngine.setAlpha(10)
+          .should.be.rejected;
       });
     });
 
@@ -857,8 +874,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('setBeta()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.setBeta(10, {from: accounts[2]})
-            .should.be.rejected;
+        await resolutionEngine.setBeta(10, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -868,8 +885,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.setBeta(10)
-            .should.be.rejected;
+        await resolutionEngine.setBeta(10)
+          .should.be.rejected;
       });
     });
 
@@ -887,8 +904,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('setGamma()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        resolutionEngine.setGamma(10, {from: accounts[2]})
-            .should.be.rejected;
+        await resolutionEngine.setGamma(10, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -898,8 +915,8 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        resolutionEngine.setGamma(10)
-            .should.be.rejected;
+        await resolutionEngine.setGamma(10)
+          .should.be.rejected;
       });
     });
 

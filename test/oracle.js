@@ -57,7 +57,8 @@ contract('Oracle', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        oracle.addResolutionEngine(engineAddress, {from: accounts[1]}).should.be.rejected;
+        await oracle.addResolutionEngine(engineAddress, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 
@@ -80,7 +81,8 @@ contract('Oracle', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        oracle.removeResolutionEngine(engineAddress1, {from: accounts[1]}).should.be.rejected;
+        await oracle.removeResolutionEngine(engineAddress1, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 
@@ -134,13 +136,15 @@ contract('Oracle', (accounts) => {
 
     describe('if called on non-registered resolution engine', () => {
       it('should revert', async () => {
-        oracle.stake(Wallet.createRandom().address, 0, true, 100, {from: accounts[1]}).should.be.rejected;
+        await oracle.stake(Wallet.createRandom().address, 0, true, 100, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 
     describe('if called with wrong verification phase number', () => {
       it('should revert', async () => {
-        oracle.stake(Wallet.createRandom().address, 1, true, 100, {from: accounts[1]}).should.be.rejected;
+        await oracle.stake(Wallet.createRandom().address, 1, true, 100, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 

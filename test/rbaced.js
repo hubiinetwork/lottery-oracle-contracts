@@ -54,7 +54,8 @@ contract('RBACed', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        rbaced.addRole(role, {from: accounts[1]}).should.be.rejected;
+        await rbaced.addRole(role, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 
@@ -90,7 +91,8 @@ contract('RBACed', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        rbaced.addRoleAccessor(ownerRole, accessorAddress, {from: accounts[1]}).should.be.rejected;
+        await rbaced.addRoleAccessor(ownerRole, accessorAddress, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 
@@ -112,7 +114,8 @@ contract('RBACed', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        rbaced.removeRoleAccessor(ownerRole, accessorAddress, {from: accounts[1]}).should.be.rejected;
+        await rbaced.removeRoleAccessor(ownerRole, accessorAddress, {from: accounts[1]})
+          .should.be.rejected;
       });
     });
 

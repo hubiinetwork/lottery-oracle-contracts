@@ -15,17 +15,17 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const AlphaBetaGammaBountyFund = artifacts.require('AlphaBetaGammaBountyFund');
+const BountyFund = artifacts.require('BountyFund');
 const StakeToken = artifacts.require('StakeToken');
 const MockedAllocator = artifacts.require('MockedAllocator');
 
-contract.only('AlphaBetaGammaBountyFund', (accounts) => {
+contract('BountyFund', (accounts) => {
   let stakeToken, bountyFund;
 
   beforeEach(async () => {
     stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
-    bountyFund = await AlphaBetaGammaBountyFund.new(stakeToken.address);
+    bountyFund = await BountyFund.new(stakeToken.address);
   });
 
   describe('constructor()', () => {
@@ -49,7 +49,8 @@ contract.only('AlphaBetaGammaBountyFund', (accounts) => {
 
     describe('when called with zero address', () => {
       it('should revert', async () => {
-        bountyFund.setResolutionEngine(AddressZero).should.be.rejected;
+        await bountyFund.setResolutionEngine(AddressZero)
+          .should.be.rejected;
       });
     });
 
@@ -74,7 +75,8 @@ contract.only('AlphaBetaGammaBountyFund', (accounts) => {
       });
 
       it('should revert', async () => {
-        bountyFund.setResolutionEngine(resolutionEngine).should.be.rejected;
+        await bountyFund.setResolutionEngine(resolutionEngine)
+          .should.be.rejected;
       });
     });
   });
@@ -104,7 +106,8 @@ contract.only('AlphaBetaGammaBountyFund', (accounts) => {
 
     describe('if called by agent not registered as resolution engine', () => {
       it('should revert', async () => {
-        bountyFund.allocateTokens(bountyAllocator).should.be.rejected;
+        await bountyFund.allocateTokens(bountyAllocator)
+          .should.be.rejected;
       });
     });
 

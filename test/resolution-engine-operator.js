@@ -41,8 +41,8 @@ contract('ResolutionEngineOperator', (accounts) => {
   describe('freeze()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        operator.freeze({from: accounts[2]})
-            .should.be.rejected;
+        await operator.freeze({from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -60,7 +60,7 @@ contract('ResolutionEngineOperator', (accounts) => {
   describe('startDisablementTimer()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        operator.startDisablementTimer(
+        await operator.startDisablementTimer(
           Wallet.createRandom().address, 10, {from: accounts[1]}
         ).should.be.rejected;
       });
@@ -68,7 +68,7 @@ contract('ResolutionEngineOperator', (accounts) => {
 
     describe('if called by with timeout param less than the minimum', () => {
       it('should revert', async () => {
-        operator.startDisablementTimer(
+        await operator.startDisablementTimer(
           Wallet.createRandom().address, 1, {from: accounts[0]}
         ).should.be.rejected;
       });
@@ -97,7 +97,7 @@ contract('ResolutionEngineOperator', (accounts) => {
   describe('stopDisablementTimer()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        operator.stopDisablementTimer(
+        await operator.stopDisablementTimer(
           Wallet.createRandom().address, {from: accounts[1]}
         ).should.be.rejected;
       });
@@ -105,7 +105,7 @@ contract('ResolutionEngineOperator', (accounts) => {
 
     describe('if called by with timeout param less than the minimum', () => {
       it('should revert', async () => {
-        operator.stopDisablementTimer(
+        await operator.stopDisablementTimer(
           Wallet.createRandom().address, {from: accounts[0]}
         ).should.be.rejected;
       });
@@ -163,14 +163,15 @@ contract('ResolutionEngineOperator', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        operator.disable(mockedResolutionEngine.address, {from: accounts[1]})
+        await operator.disable(mockedResolutionEngine.address, {from: accounts[1]})
           .should.be.rejected;
       });
     });
 
     describe('if called before disablement timer has expired', () => {
       it('should revert', async () => {
-        operator.disable(mockedResolutionEngine.address).should.be.rejected;
+        await operator.disable(mockedResolutionEngine.address)
+          .should.be.rejected;
       });
     });
 
@@ -196,8 +197,8 @@ contract('ResolutionEngineOperator', (accounts) => {
   describe('setMinimumTimeout()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        operator.setMinimumTimeout(10, {from: accounts[2]})
-            .should.be.rejected;
+        await operator.setMinimumTimeout(10, {from: accounts[2]})
+          .should.be.rejected;
       });
     });
 
@@ -207,8 +208,8 @@ contract('ResolutionEngineOperator', (accounts) => {
       });
 
       it('should revert', async () => {
-        operator.setMinimumTimeout(10)
-            .should.be.rejected;
+        await operator.setMinimumTimeout(10)
+          .should.be.rejected;
       });
     });
 
