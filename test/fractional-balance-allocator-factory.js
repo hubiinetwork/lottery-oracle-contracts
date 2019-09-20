@@ -17,7 +17,7 @@ chai.should();
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
 const FractionalBalanceAllocatorFactory = artifacts.require('FractionalBalanceAllocatorFactory');
 
-contract('FractionalBalanceAllocatorFactory', (accounts) => {
+contract.skip('FractionalBalanceAllocatorFactory', (accounts) => {
   let factory;
 
   beforeEach(async () => {
