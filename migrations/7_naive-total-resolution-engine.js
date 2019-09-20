@@ -6,6 +6,9 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
+const {providers: {Web3Provider}} = require('ethers');
+const provider = new Web3Provider(web3.currentProvider);
+const confirm = require('../script/common/confirm')(provider);
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const BountyFundFactory = artifacts.require('./BountyFundFactory.sol');
@@ -24,12 +27,12 @@ module.exports = async (deployer, network, accounts) => {
 
   const stakeToken = await StakeToken.deployed();
 
-  await bountyFundFactory.create(stakeToken.address);
+  await confirm((await bountyFundFactory.create(stakeToken.address)).tx);
   const bountyFundsCount = await bountyFundFactory.instancesCount();
   const bountyFund = await bountyFundFactory.instances(bountyFundsCount.subn(1));
 
   const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
-  await bountyAllocatorFactory.create(bountyFraction);
+  await confirm((await bountyAllocatorFactory.create(bountyFraction)).tx);
   const bountyAllocatorsCount = await bountyAllocatorFactory.instancesCount();
   const bountyAllocator = await bountyAllocatorFactory.instances(bountyAllocatorsCount.subn(1));
 
