@@ -31,9 +31,9 @@ module.exports = {
       network_id: '3',
       gas: 8000000,
       skipDryRun: true, // default: false for public nets
-      gasPrice: 40000000000 // default: 20 gwei
+      gasPrice: 40000000000, // default: 20 gwei
+      timeoutBlocks: 200 // minimum/default: 50
       // confirmations: 2,       // default: 0
-      // timeoutBlocks: 200,     // minimum/default: 50
     },
     mainnet: {
       host: 'geth-homestead.ethereum',
