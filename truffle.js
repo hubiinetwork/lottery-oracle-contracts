@@ -28,25 +28,22 @@ module.exports = {
     ropsten: {
       host: 'geth-ropsten.ethereum',
       port: 80,
-      network_id: '*',
+      network_id: '3',
       gas: 8000000,
-      skipDryRun: true // default: false for public nets
-      // gasPrice: 10000000000,  // default: 20 gwei
+      skipDryRun: true, // default: false for public nets
+      gasPrice: 40000000000 // default: 20 gwei
       // confirmations: 2,       // default: 0
       // timeoutBlocks: 200,     // minimum/default: 50
     },
-    rinkeby: {
-      host: 'geth-rinkeby.ethereum',
-      port: 80,
-      network_id: '*',
-      gas: 8000000,
-      skipDryRun: true
-    },
     mainnet: {
-      host: 'ethereum.hubii.com',
-      port: 8545,
+      host: 'geth-homestead.ethereum',
+      port: 80,
       network_id: '1',
-      gas: 8000000
+      gas: 8000000,
+      skipDryRun: true // default: false for public nets
+      // gasPrice: 40000000000  // default: 20 gwei
+      // confirmations: 2,       // default: 0
+      // timeoutBlocks: 200,     // minimum/default: 50
     }
   },
   compilers: {
