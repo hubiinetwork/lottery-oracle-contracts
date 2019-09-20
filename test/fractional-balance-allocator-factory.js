@@ -14,13 +14,20 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
+const ConstantsLib = artifacts.require('ConstantsLib');
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
 const FractionalBalanceAllocatorFactory = artifacts.require('FractionalBalanceAllocatorFactory');
 
-contract.skip('FractionalBalanceAllocatorFactory', (accounts) => {
+contract('FractionalBalanceAllocatorFactory', (accounts) => {
   let factory;
 
   beforeEach(async () => {
+    const constantsLib = await ConstantsLib.new();
+
+    await FractionalBalanceAllocatorFactory.link({
+      ConstantsLib: constantsLib.address
+    });
+
     factory = await FractionalBalanceAllocatorFactory.new();
   });
 

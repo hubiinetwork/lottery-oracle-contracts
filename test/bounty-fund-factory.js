@@ -18,7 +18,7 @@ chai.should();
 const BountyFund = artifacts.require('BountyFund');
 const BountyFundFactory = artifacts.require('BountyFundFactory');
 
-contract.skip('BountyFundFactory', (accounts) => {
+contract('BountyFundFactory', (accounts) => {
   let factory;
 
   beforeEach(async () => {
