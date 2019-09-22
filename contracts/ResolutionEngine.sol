@@ -416,8 +416,17 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         // Open the verification phase
         verificationPhaseByPhaseNumber[verificationPhaseNumber].open(_bountyAmount);
 
+        // Add criteria params
+        _addVerificationCriteria();
+
         // Emit event
         emit VerificationPhaseOpened(verificationPhaseNumber);
+    }
+
+    /// @notice Augment the verification phase with verification criteria params
+    function _addVerificationCriteria()
+    internal
+    {
     }
 
     /// @notice Import from bounty fund

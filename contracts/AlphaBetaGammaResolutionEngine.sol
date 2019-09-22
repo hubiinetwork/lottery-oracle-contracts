@@ -20,29 +20,33 @@ import {Math} from "openzeppelin-solidity/contracts/math/Math.sol";
 /// - The total number of addresses staking tokens is >= gamma
 contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
 
-    event AlphaSet(uint256 alpha);
-    event BetaSet(uint256 beta);
-    event GammaSet(uint256 gamma);
+    event NextAlphaSet(uint256 alpha);
+    event NextBetaSet(uint256 beta);
+    event NextGammaSet(uint256 gamma);
 
-    uint256 public alpha;
-    uint256 public beta;
-    uint256 public gamma;
+    uint256 constant private ALPHA_INDEX = 0;
+    uint256 constant private BETA_INDEX = 1;
+    uint256 constant private GAMMA_INDEX = 2;
+
+    uint256 public nextAlpha;
+    uint256 public nextBeta;
+    uint256 public nextGamma;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     /// @param _oracle The address of oracle
     /// @param _operator The address of operator
     /// @param _bountyFund The address of bounty fund
-    /// @param _alpha The alpha criterion of this resolution engine
-    /// @param _beta The beta criterion of this resolution engine
-    /// @param _gamma The gamma criterion of this resolution engine
+    /// @param _nextAlpha The next alpha criterion of this resolution engine
+    /// @param _nextBeta The next beta criterion of this resolution engine
+    /// @param _nextGamma The next gamma criterion of this resolution engine
     constructor(address _oracle, address _operator, address _bountyFund,
-        uint256 _alpha, uint256 _beta, uint256 _gamma)
+        uint256 _nextAlpha, uint256 _nextBeta, uint256 _nextGamma)
     public
     ResolutionEngine(_oracle, _operator, _bountyFund)
     {
-        alpha = _alpha;
-        beta = _beta;
-        gamma = _gamma;
+        nextAlpha = _nextAlpha;
+        nextBeta = _nextBeta;
+        nextGamma = _nextGamma;
     }
 
     /// @notice Return the amount needed to resolve the current market for the given status
@@ -65,11 +69,13 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (uint256)
     {
-        uint256 scaledBountyAmount = alpha.mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
+        uint256 scaledBountyAmount = alphaByPhaseNumber(verificationPhaseNumber)
+        .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
         return (
         scaledBountyAmount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount ?
         scaledBountyAmount.sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount) :
-        0);
+        0
+        );
     }
 
     /// @notice Return the amount needed to resolve the beta criterion for the given status
@@ -80,13 +86,15 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (uint256)
     {
-        uint256 scaledStakedAmount = beta
+        uint256 scaledStakedAmount = betaByPhaseNumber(verificationPhaseNumber)
         .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount);
         uint256 scaledStatusStakedAmount = ConstantsLib.PARTS_PER()
         .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status]);
         return (
         scaledStatusStakedAmount < scaledStakedAmount ?
-        scaledStakedAmount.sub(scaledStatusStakedAmount).div(ConstantsLib.PARTS_PER().sub(beta)) :
+        scaledStakedAmount.sub(scaledStatusStakedAmount).div(
+            ConstantsLib.PARTS_PER().sub(betaByPhaseNumber(verificationPhaseNumber))
+        ) :
         0
         );
     }
@@ -98,7 +106,8 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (uint256)
     {
-        return gamma.sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakingWallets);
+        return gammaByPhaseNumber(verificationPhaseNumber)
+        .sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakingWallets);
     }
 
     /// @notice Gauge whether the resolution criteria have been met
@@ -118,7 +127,8 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
-        uint256 baseline = alpha.mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
+        uint256 baseline = alphaByPhaseNumber(verificationPhaseNumber)
+        .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
         return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount >= baseline;
     }
 
@@ -134,11 +144,13 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
 
         bool trueCriterionMet = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true]
         .mul(ConstantsLib.PARTS_PER())
-        .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount) >= beta;
+        .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount)
+        >= betaByPhaseNumber(verificationPhaseNumber);
 
         bool falseCriterionMet = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false]
         .mul(ConstantsLib.PARTS_PER())
-        .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount) >= beta;
+        .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount)
+        >= betaByPhaseNumber(verificationPhaseNumber);
 
         return trueCriterionMet || falseCriterionMet;
     }
@@ -150,51 +162,94 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
-        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakingWallets >= gamma;
+        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakingWallets
+        >= gammaByPhaseNumber(verificationPhaseNumber);
     }
 
-    /// @notice Set the alpha criterion
+    /// @notice Set the next alpha criterion
     /// @dev Only enabled when the resolution engine is not frozen
-    /// @param _alpha The concerned alpha
-    function setAlpha(uint256 _alpha)
+    /// @param _nextAlpha The next alpha
+    function setNextAlpha(uint256 _nextAlpha)
     public
     onlyRoleAccessor(OWNER_ROLE)
     onlyNotFrozen
     {
         // Set the alpha
-        alpha = _alpha;
+        nextAlpha = _nextAlpha;
 
         // Emit event
-        emit AlphaSet(alpha);
+        emit NextAlphaSet(nextAlpha);
     }
 
-    /// @notice Set the beta criterion
+    /// @notice Set the next beta criterion
     /// @dev Only enabled when the resolution engine is not frozen
-    /// @param _beta The concerned beta
-    function setBeta(uint256 _beta)
+    /// @param _nextBeta The next beta
+    function setNextBeta(uint256 _nextBeta)
     public
     onlyRoleAccessor(OWNER_ROLE)
     onlyNotFrozen
     {
         // Set the beta
-        beta = _beta;
+        nextBeta = _nextBeta;
 
         // Emit event
-        emit BetaSet(beta);
+        emit NextBetaSet(nextBeta);
     }
 
-    /// @notice Set the gamma criterion
+    /// @notice Set the next gamma criterion
     /// @dev Only enabled when the resolution engine is not frozen
-    /// @param _gamma The concerned gamma
-    function setGamma(uint256 _gamma)
+    /// @param _nextGamma The next gamma
+    function setNextGamma(uint256 _nextGamma)
     public
     onlyRoleAccessor(OWNER_ROLE)
     onlyNotFrozen
     {
         // Set the gamma
-        gamma = _gamma;
+        nextGamma = _nextGamma;
 
         // Emit event
-        emit GammaSet(gamma);
+        emit NextGammaSet(nextGamma);
+    }
+
+    /// @notice Get the alpha parameter by the given verification phase number
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @return The alpha value
+    function alphaByPhaseNumber(uint256 _verificationPhaseNumber)
+    public
+    view
+    returns (uint256)
+    {
+        return verificationPhaseByPhaseNumber[_verificationPhaseNumber].uintCriteria[ALPHA_INDEX];
+    }
+    
+    /// @notice Get the beta parameter by the given verification phase number
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @return The beta value
+    function betaByPhaseNumber(uint256 _verificationPhaseNumber)
+    public
+    view
+    returns (uint256)
+    {
+        return verificationPhaseByPhaseNumber[_verificationPhaseNumber].uintCriteria[BETA_INDEX];
+    }
+
+    /// @notice Get the gamma parameter by the given verification phase number
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @return The gamma value
+    function gammaByPhaseNumber(uint256 _verificationPhaseNumber)
+    public
+    view
+    returns (uint256)
+    {
+        return verificationPhaseByPhaseNumber[_verificationPhaseNumber].uintCriteria[GAMMA_INDEX];
+    }
+
+    /// @notice Augment the verification phase with verification criteria params
+    function _addVerificationCriteria()
+    internal
+    {
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].uintCriteria.push(nextAlpha);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].uintCriteria.push(nextBeta);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].uintCriteria.push(nextGamma);
     }
 }

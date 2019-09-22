@@ -23,7 +23,7 @@ const MockedAllocator = artifacts.require('MockedAllocator');
 contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   let ownerAddress, operatorAddress, oracleAddress;
   let provider;
-  let alpha, beta, gamma;
+  let nextAlpha, nextBeta, nextGamma;
   let stakeToken, resolutionEngine, bountyFund, bountyAllocator;
   let ownerRole;
 
@@ -34,9 +34,9 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(ownerAddress).provider;
 
-    alpha = 2;
-    beta = web3.utils.toBN(6e17);
-    gamma = 3;
+    nextAlpha = 2;
+    nextBeta = web3.utils.toBN(6e17);
+    nextGamma = 3;
 
     stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
 
@@ -50,7 +50,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
       oracleAddress, operatorAddress, bountyFund.address,
-      alpha, beta, gamma
+      nextAlpha, nextBeta, nextGamma
     );
     await resolutionEngine.setBountyAllocator(bountyAllocator.address);
     await resolutionEngine.initialize();
@@ -62,7 +62,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
     beforeEach(async () => {
       resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
         oracleAddress, operatorAddress, bountyFund.address,
-        alpha, beta, gamma
+        nextAlpha, nextBeta, nextGamma
       );
     });
 
@@ -78,9 +78,9 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
       (await resolutionEngine.verificationPhaseNumber()).should.eq.BN(0);
 
-      (await resolutionEngine.alpha()).should.eq.BN(alpha);
-      (await resolutionEngine.beta()).should.eq.BN(beta);
-      (await resolutionEngine.gamma()).should.eq.BN(gamma);
+      (await resolutionEngine.nextAlpha()).should.eq.BN(nextAlpha);
+      (await resolutionEngine.nextBeta()).should.eq.BN(nextBeta);
+      (await resolutionEngine.nextGamma()).should.eq.BN(nextGamma);
 
       (await bountyFund.resolutionEngine()).should.equal(resolutionEngine.address);
     });
@@ -134,7 +134,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
     beforeEach(async () => {
       resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
         oracleAddress, operatorAddress, bountyFund.address,
-        alpha, beta, gamma
+        nextAlpha, nextBeta, nextGamma
       );
       await resolutionEngine.setBountyAllocator(bountyAllocator.address);
     });
@@ -841,10 +841,10 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
     });
   });
 
-  describe('setAlpha()', () => {
+  describe('setNextAlpha()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        await resolutionEngine.setAlpha(10, {from: accounts[2]})
+        await resolutionEngine.setNextAlpha(10, {from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -855,26 +855,26 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        await resolutionEngine.setAlpha(10)
+        await resolutionEngine.setNextAlpha(10)
           .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
-      it('should successfully set the alpha', async () => {
-        const result = await resolutionEngine.setAlpha(10);
+      it('should successfully set the next alpha', async () => {
+        const result = await resolutionEngine.setNextAlpha(10);
 
-        result.logs[0].event.should.equal('AlphaSet');
+        result.logs[0].event.should.equal('NextAlphaSet');
 
-        (await resolutionEngine.alpha()).should.eq.BN(10);
+        (await resolutionEngine.nextAlpha()).should.eq.BN(10);
       });
     });
   });
 
-  describe('setBeta()', () => {
+  describe('setNextBeta()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        await resolutionEngine.setBeta(10, {from: accounts[2]})
+        await resolutionEngine.setNextBeta(10, {from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -885,26 +885,26 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        await resolutionEngine.setBeta(10)
+        await resolutionEngine.setNextBeta(10)
           .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
-      it('should successfully set the beta', async () => {
-        const result = await resolutionEngine.setBeta(10);
+      it('should successfully set the next beta', async () => {
+        const result = await resolutionEngine.setNextBeta(10);
 
-        result.logs[0].event.should.equal('BetaSet');
+        result.logs[0].event.should.equal('NextBetaSet');
 
-        (await resolutionEngine.beta()).should.eq.BN(10);
+        (await resolutionEngine.nextBeta()).should.eq.BN(10);
       });
     });
   });
 
-  describe('setGamma()', () => {
+  describe('setNextGamma()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        await resolutionEngine.setGamma(10, {from: accounts[2]})
+        await resolutionEngine.setNextGamma(10, {from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -915,18 +915,18 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        await resolutionEngine.setGamma(10)
+        await resolutionEngine.setNextGamma(10)
           .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
-      it('should successfully set the gamma', async () => {
-        const result = await resolutionEngine.setGamma(10);
+      it('should successfully set the next gamma', async () => {
+        const result = await resolutionEngine.setNextGamma(10);
 
-        result.logs[0].event.should.equal('GammaSet');
+        result.logs[0].event.should.equal('NextGammaSet');
 
-        (await resolutionEngine.gamma()).should.eq.BN(10);
+        (await resolutionEngine.nextGamma()).should.eq.BN(10);
       });
     });
   });

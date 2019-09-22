@@ -675,10 +675,10 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
   });
 
-  describe('setAmount()', () => {
+  describe('setNextAmount()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        await resolutionEngine.setAmount(10, {from: accounts[2]})
+        await resolutionEngine.setNextAmount(10, {from: accounts[2]})
           .should.be.rejected;
       });
     });
@@ -689,18 +689,18 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       });
 
       it('should revert', async () => {
-        await resolutionEngine.setAmount(10)
+        await resolutionEngine.setNextAmount(10)
           .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
-      it('should successfully set the amount', async () => {
-        const result = await resolutionEngine.setAmount(10);
+      it('should successfully set the next amount', async () => {
+        const result = await resolutionEngine.setNextAmount(10);
 
-        result.logs[0].event.should.equal('AmountSet');
+        result.logs[0].event.should.equal('NextAmountSet');
 
-        (await resolutionEngine.amount()).should.eq.BN(10);
+        (await resolutionEngine.nextAmount()).should.eq.BN(10);
       });
     });
   });

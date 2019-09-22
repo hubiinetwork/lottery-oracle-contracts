@@ -16,21 +16,21 @@ import {ResolutionEngine} from "./ResolutionEngine.sol";
 /// - The total number of tokens staked on either option reaches the defined amount criterion
 contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
-    event AmountSet(uint256 amount);
+    event NextAmountSet(uint256 amount);
 
-    uint256 public amount;
+    uint256 public nextAmount;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
     /// @param _oracle The address of oracle
     /// @param _operator The address of operator
     /// @param _bountyFund The address of bounty fund
-    /// @param _amount The amount criterion of this resolution engine
+    /// @param _nextAmount The next amount criterion of this resolution engine
     constructor(address _oracle, address _operator, address _bountyFund,
-        uint256 _amount)
+        uint256 _nextAmount)
     public
     ResolutionEngine(_oracle, _operator, _bountyFund)
     {
-        amount = _amount;
+        nextAmount = _nextAmount;
     }
 
     /// @notice Return the amount needed to resolve the current market for the given status
@@ -42,8 +42,8 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     returns (uint256)
     {
         return (
-        amount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status] ?
-        amount.sub(
+        nextAmount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status] ?
+        nextAmount.sub(
             verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status]
         ) :
         0
@@ -57,24 +57,41 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
-        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >= amount ||
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >= amount;
+        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >= nextAmount ||
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >= nextAmount;
     }
 
 
-    // TODO Remember freeze method in super and operator freeze and config setter
-    /// @notice Set the amount criterion
+    /// @notice Set the next amount criterion
     /// @dev Only enabled when the resolution engine is not frozen
-    /// @param _amount The concerned amount
-    function setAmount(uint256 _amount)
+    /// @param _nextAmount The next amount
+    function setNextAmount(uint256 _nextAmount)
     public
     onlyRoleAccessor(OWNER_ROLE)
     onlyNotFrozen
     {
         // Set the amount
-        amount = _amount;
+        nextAmount = _nextAmount;
 
         // Emit event
-        emit AmountSet(amount);
+        emit NextAmountSet(nextAmount);
+    }
+
+    /// @notice Get the amount parameter by the given verification phase number
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @return The amount value
+    function amountByPhaseNumber(uint256 _verificationPhaseNumber)
+    public
+    view
+    returns (uint256)
+    {
+        return verificationPhaseByPhaseNumber[_verificationPhaseNumber].uintCriteria[0];
+    }
+
+    /// @notice Augment the verification phase with verification criteria params
+    function _addVerificationCriteria()
+    internal
+    {
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].uintCriteria.push(nextAmount);
     }
 }
