@@ -34,6 +34,8 @@ library VerificationPhaseLib {
 
         uint256 startBlock;
         uint256 endBlock;
+
+        uint256[] uintCriteria;
     }
 
     function open(VerificationPhase storage _phase, uint256 _bountyAmount) internal {
