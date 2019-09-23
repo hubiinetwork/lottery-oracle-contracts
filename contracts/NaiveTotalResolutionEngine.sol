@@ -82,7 +82,7 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
     /// @notice Get the amount parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @return The amount value
+    /// @return the amount value
     function amountByPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view

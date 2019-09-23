@@ -23,7 +23,7 @@ const Oracle = artifacts.require('Oracle');
 const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
 const StakeToken = artifacts.require('StakeToken');
 
-contract.only('*', (accounts) => {
+contract('*', (accounts) => {
   let provider;
   let stakeToken, oracle, operator, bountyFund, bountyAllocator;
 

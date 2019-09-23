@@ -20,7 +20,7 @@ contract FractionalBalanceAllocatorFactory is RBACed {
 
     /// @notice Create an instance of fractional balance allocator
     /// @param _fraction The fraction of the fractional bounty allocator
-    // @return The address of the fractional balance allocator created
+    /// @return the address of the fractional balance allocator created
     function create(uint256 _fraction)
     public
     returns (address)
@@ -40,8 +40,8 @@ contract FractionalBalanceAllocatorFactory is RBACed {
         return fractionalBalanceAllocatorAddress;
     }
 
-    // @notice Get the count of instances created
-    // @return The count of instances
+    /// @notice Get the count of instances created
+    /// @return the count of instances
     function instancesCount()
     public
     view
@@ -50,8 +50,8 @@ contract FractionalBalanceAllocatorFactory is RBACed {
         return instances.length;
     }
 
-    // @notice Get all instances created
-    // @return All instances
+    /// @notice Get all instances created
+    /// @return all instances
     function allInstances()
     public
     view

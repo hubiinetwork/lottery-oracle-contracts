@@ -21,7 +21,7 @@ contract BountyFundFactory is RBACed {
 
     /// @notice Create an instance of bounty fund
     /// @param _token The address of the bounty fund's token
-    // @return The address of the bounty fund created
+    /// @return the address of the bounty fund created
     function create(address _token)
     public
     returns (address)
@@ -45,8 +45,8 @@ contract BountyFundFactory is RBACed {
         return bountyFundAddress;
     }
 
-    // @notice Get the count of instances created
-    // @return The count of instances
+    /// @notice Get the count of instances created
+    /// @return the count of instances
     function instancesCount()
     public
     view
@@ -55,8 +55,8 @@ contract BountyFundFactory is RBACed {
         return instances.length;
     }
 
-    // @notice Get all instances created
-    // @return All instances
+    /// @notice Get all instances created
+    /// @return all instances
     function allInstances()
     public
     view
@@ -65,9 +65,9 @@ contract BountyFundFactory is RBACed {
         return instances;
     }
 
-    // @notice Get the count of instances created with the given owner
-    // @param The concerned owner
-    // @return The count of instances with the given owner
+    /// @notice Get the count of instances created with the given owner
+    /// @param _owner The concerned owner
+    /// @return the count of instances with the given owner
     function instancesByOwnerCount(address _owner)
     public
     view
@@ -76,9 +76,9 @@ contract BountyFundFactory is RBACed {
         return instancesByOwner[_owner].length;
     }
 
-    // @notice Get all instances created with the given owner
-    // @param The concerned owner
-    // @return All instances with the given owner
+    /// @notice Get all instances created with the given owner
+    /// @param _owner The concerned owner
+    /// @return all instances with the given owner
     function allInstancesByOwner(address _owner)
     public
     view

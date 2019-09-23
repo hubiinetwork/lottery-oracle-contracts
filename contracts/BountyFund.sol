@@ -34,7 +34,7 @@ contract BountyFund is RBACed {
     }
 
     modifier onlyResolutionEngine() {
-        require(msg.sender == resolutionEngine, "BountyFund: sender is not the set resolution engine");
+        require(msg.sender == resolutionEngine, "BountyFund: sender is not the defined resolution engine");
         _;
     }
 
@@ -55,7 +55,7 @@ contract BountyFund is RBACed {
     }
 
     /// @notice Deposit the amount of token
-    /// @dev Client has to do prior approval of the transfer of the given amount
+    /// @dev Client has to do prior approval of the transfer for the given amount
     /// @param _amount The amount to deposit
     function depositTokens(uint256 _amount)
     public
