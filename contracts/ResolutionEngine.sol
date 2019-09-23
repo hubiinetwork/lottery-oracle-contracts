@@ -337,10 +337,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyRoleAccessor(OWNER_ROLE)
     onlyDisabled(RESOLVE_ACTION)
     {
-        // Increment the wallets staged amount
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(
-            verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount
-        );
+        // Stage the bounty amount
+        _stage(_wallet, verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
 
         // Emit event
         emit BountyStaged(_wallet, verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
@@ -494,13 +492,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     }
 
     /// @notice Stage the given amount for the given wallet
-    function _stage(address _wallet, uint256 _amount)
-    internal
-    {
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(_amount);
-    }
-
-    /// @notice Stage the given amount for the given wallet
     function _withdraw(address _wallet, uint256 _amount)
     internal
     {
@@ -508,9 +499,23 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         require(_amount <= stagedAmountByWallet[_wallet], "ResolutionEngine: amount is greater than staged amount");
 
         // Unstage the amount
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);
+        _unstage(_wallet, _amount);
 
         // Transfer the amount
         token.transfer(_wallet, _amount);
+    }
+
+    /// @notice Stage the given amount for the given wallet
+    function _stage(address _wallet, uint256 _amount)
+    internal
+    {
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(_amount);
+    }
+
+    /// @notice Unstage the given amount for the given wallet
+    function _unstage(address _wallet, uint256 _amount)
+    internal
+    {
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);
     }
 }
