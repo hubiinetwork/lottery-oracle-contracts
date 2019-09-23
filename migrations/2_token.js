@@ -6,13 +6,14 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
+const debug = require('debug')('2_token');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const StakeToken = artifacts.require('./StakeToken');
 
 module.exports = async (deployer, network, accounts) => {
   if ('mainnet' === network)
-    return;
+    return debug(`Not deploying StakeToken to ${network}`);
 
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 

@@ -20,8 +20,8 @@ const VerificationPhaseLib = artifacts.require('./VerificationPhaseLib.sol');
 module.exports = async (deployer, network, accounts) => {
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
-  const stakeToken = await StakeToken.deployed();
-  const bountyFund = await deployer.deploy(BountyFund, stakeToken.address, {from: ownerAccount});
+  const stakeToken = 'mainnet' === network ? utils.getStakeToken() : (await StakeToken.deployed()).address;
+  const bountyFund = await deployer.deploy(BountyFund, stakeToken, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getAlphaBetaGammaBountyFraction());
   await FractionalBalanceAllocator.link({

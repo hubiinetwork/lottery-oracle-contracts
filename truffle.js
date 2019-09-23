@@ -31,7 +31,7 @@ module.exports = {
       network_id: '3',
       gas: 8000000,
       skipDryRun: true, // default: false for public nets
-      gasPrice: 40000000000, // default: 20 gwei
+      gasPrice: 40000000000, // default: 20 Gwei
       timeoutBlocks: 200 // minimum/default: 50
       // confirmations: 2,       // default: 0
     },
@@ -40,10 +40,10 @@ module.exports = {
       port: 80,
       network_id: '1',
       gas: 8000000,
-      skipDryRun: true // default: false for public nets
-      // gasPrice: 40000000000  // default: 20 gwei
+      skipDryRun: true, // default: false for public nets
+      gasPrice: 20000000000, // default: 20 Gwei
+      timeoutBlocks: 200 // minimum/default: 50
       // confirmations: 2,       // default: 0
-      // timeoutBlocks: 200,     // minimum/default: 50
     }
   },
   compilers: {

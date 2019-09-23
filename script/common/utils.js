@@ -116,6 +116,12 @@ exports.getResolutionEngineOperatorTimeout = () => {
   return minters;
 };
 
+exports.getStakeToken = () => {
+  const stakeToken = process.env.STAKE_TOKEN;
+  debug(`Stake token: ${stakeToken}`);
+  return stakeToken;
+};
+
 exports.timeout = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };

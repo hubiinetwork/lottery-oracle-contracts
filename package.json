@@ -1,6 +1,6 @@
 {
   "name": "lottery-resolver-contracts",
-  "version": "1.0.0-ropsten.2",
+  "version": "1.0.0",
   "description": "Smart contracts for the hubii Lottery Resolver Oracle",
   "main": "index.js",
   "directories": {
