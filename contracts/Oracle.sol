@@ -134,14 +134,15 @@ contract Oracle is RBACed {
         emit TokensStaked(msg.sender, _resolutionEngine, _status, _amount);
     }
 
-    // TODO Upgrade signature with range of verification phase numbers
     /// @notice Calculate the payout for the given resolution engine and wallet at the
-    /// given verification phase number
+    /// given verification phase number range
     /// @param _resolutionEngine The concerned resolution engine
-    /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _wallet The address of the concerned wallet
+    /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
+    /// @param _lastVerificationPhaseNumber The last verification phase number to stage payout from
     /// @return the payout
-    function calculatePayout(address _resolutionEngine, uint256 _verificationPhaseNumber, address _wallet)
+    function calculatePayout(address _resolutionEngine, address _wallet, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber)
     public
     view
     returns (uint256)
@@ -150,7 +151,7 @@ contract Oracle is RBACed {
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
         // Return calculated payout
-        return resolutionEngine.calculatePayout(_verificationPhaseNumber, _wallet);
+        return resolutionEngine.calculatePayout(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
     }
 
     /// @notice Stage payout for the given resolution engine and inclusive verification phase number range

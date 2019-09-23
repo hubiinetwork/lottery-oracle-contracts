@@ -219,7 +219,7 @@ contract MockedResolutionEngine is Resolvable {
         _calculatedPayout = _calcPay;
     }
 
-    function calculatePayout(uint256, address)
+    function calculatePayout(address, uint256, uint256)
     public
     view
     returns (uint256)

@@ -216,7 +216,7 @@ contract('Oracle', (accounts) => {
     });
 
     it('should successfully return calculated payout', async () => {
-      (await oracle.calculatePayout(mockedResolutionEngine.address, 1, wallet))
+      (await oracle.calculatePayout(mockedResolutionEngine.address, wallet, 1, 2))
         .should.eq.BN(100);
     });
   });

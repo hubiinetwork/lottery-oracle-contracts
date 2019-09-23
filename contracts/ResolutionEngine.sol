@@ -276,43 +276,27 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         stakeAmount = trueStakeAmount.add(falseStakeAmount);
     }
 
-    // TODO Upgrade signature with range of verification phase numbers
-    /// @notice Calculate the payout for the given wallet at the given verification phase number
-    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @notice Calculate the payout accrued by given wallet in the inclusive range of given verification phase numbers
+    /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
+    /// @param _lastVerificationPhaseNumber The last verification phase number to stage payout from
     /// @param _wallet The address of the concerned wallet
     /// @return the payout
-    function calculatePayout(uint256 _verificationPhaseNumber, address _wallet)
+    function calculatePayout(address _wallet, uint256 _firstVerificationPhaseNumber,
+        uint256 _lastVerificationPhaseNumber)
     public
     view
     returns (uint256)
     {
-        // Return 0 if no non-null verification status has been obtained
-        if (VerificationPhaseLib.Status.Null == verificationPhaseByPhaseNumber[_verificationPhaseNumber].result)
-            return 0;
+        // For each verification phase number in the inclusive range calculate payout
+        uint256 payout = 0;
+        for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
+            payout = payout.add(_calculatePayout(_wallet, i));
 
-        // Get the status obtained by the verification phase
-        bool status =
-        verificationPhaseByPhaseNumber[_verificationPhaseNumber].result == VerificationPhaseLib.Status.True;
-
-        // Get the lot staked opposite of status
-        uint256 lot = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[!status];
-
-        // If bounty was awarded add bounty to the total lot
-        if (verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAwarded)
-            lot = lot.add(verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAmount);
-
-        // Get the amount the wallet staked and total amount staked on the obtained status
-        uint256 walletStatusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber]
-        .stakedAmountByWalletStatus[_wallet][status];
-        uint256 statusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber]
-        .stakedAmountByStatus[status];
-
-        // Return the lot scaled by the fractional contribution that wallet staked on the obtained status and
-        // to this added the wallet's own staked amount
-        return lot.mul(walletStatusAmount).div(statusAmount).add(walletStatusAmount);
+        // Return payout
+        return payout;
     }
 
-    /// @notice Stage the payout earned by given wallet in the inclusive range of given verification phase numbers
+    /// @notice Stage the payout accrued by given wallet in the inclusive range of given verification phase numbers
     /// @dev The function can only be called by oracle.
     /// @param _wallet The address of the concerned wallet
     /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
@@ -331,7 +315,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
     }
 
-    /// @notice Export the bounty to the given address
+    /// @notice Stage the bounty to the given address
     /// @param _wallet The recipient address of the bounty transfer
     function stageBounty(address _wallet)
     public
@@ -463,6 +447,38 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         emit VerificationPhaseClosed(verificationPhaseNumber);
     }
 
+    /// @notice Calculate payout of given wallet and verification phase number
+    function _calculatePayout(address _wallet, uint256 _verificationPhaseNumber)
+    internal
+    view
+    returns (uint256)
+    {
+        // Return 0 if no non-null verification status has been obtained
+        if (VerificationPhaseLib.Status.Null == verificationPhaseByPhaseNumber[_verificationPhaseNumber].result)
+            return 0;
+
+        // Get the status obtained by the verification phase
+        bool status =
+        verificationPhaseByPhaseNumber[_verificationPhaseNumber].result == VerificationPhaseLib.Status.True;
+
+        // Get the lot staked opposite of status
+        uint256 lot = verificationPhaseByPhaseNumber[_verificationPhaseNumber].stakedAmountByStatus[!status];
+
+        // If bounty was awarded add bounty to the total lot
+        if (verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAwarded)
+            lot = lot.add(verificationPhaseByPhaseNumber[_verificationPhaseNumber].bountyAmount);
+
+        // Get the amount the wallet staked and total amount staked on the obtained status
+        uint256 walletStatusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber]
+        .stakedAmountByWalletStatus[_wallet][status];
+        uint256 statusAmount = verificationPhaseByPhaseNumber[_verificationPhaseNumber]
+        .stakedAmountByStatus[status];
+
+        // Return the lot scaled by the fractional contribution that wallet staked on the obtained status and
+        // to this added the wallet's own staked amount
+        return lot.mul(walletStatusAmount).div(statusAmount).add(walletStatusAmount);
+    }
+
     /// @notice Stage payout of given wallet and verification phase number
     function _stagePayout(address _wallet, uint256 _verificationPhaseNumber)
     internal
@@ -477,7 +493,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
             return 0;
 
         // Calculate payout
-        uint256 payout = calculatePayout(_verificationPhaseNumber, _wallet);
+        uint256 payout = _calculatePayout(_wallet, _verificationPhaseNumber);
 
         // Register payout of wallet and verification phase number
         payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber] = true;
