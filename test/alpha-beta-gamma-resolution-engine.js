@@ -808,9 +808,9 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   });
 
   describe('stageBounty()', () => {
-    describe('if called by non-owner', () => {
+    describe('if called by non-operator', () => {
       it('should revert', async () => {
-        await resolutionEngine.stageBounty(accounts[2], {from: accounts[2]})
+        await resolutionEngine.stageBounty(accounts[2], {from: oracleAddress})
           .should.be.rejected;
       });
     });
@@ -822,7 +822,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if called by owner on disabled resolution engine', () => {
+    describe('if called by operator on disabled resolution engine', () => {
       let bountyAmount;
 
       beforeEach(async () => {

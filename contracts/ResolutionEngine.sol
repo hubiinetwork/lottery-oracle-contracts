@@ -82,12 +82,12 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     }
 
     modifier onlyOracle() {
-        require(msg.sender == oracle, "ResolutionEngine: sender is not the set oracle");
+        require(msg.sender == oracle, "ResolutionEngine: sender is not the defined oracle");
         _;
     }
 
     modifier onlyOperator() {
-        require(msg.sender == operator, "ResolutionEngine: sender is not the set operator");
+        require(msg.sender == operator, "ResolutionEngine: sender is not the defined operator");
         _;
     }
 
@@ -276,7 +276,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         stakeAmount = trueStakeAmount.add(falseStakeAmount);
     }
 
-    /// @notice Calculate the payout of the given wallet at the given verification phase number
+    // TODO Upgrade signature with range of verification phase numbers
+    /// @notice Calculate the payout for the given wallet at the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @param _wallet The address of the concerned wallet
     /// @return the payout
@@ -334,7 +335,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     /// @param _wallet The recipient address of the bounty transfer
     function stageBounty(address _wallet)
     public
-    onlyRoleAccessor(OWNER_ROLE)
+    onlyOperator
     onlyDisabled(RESOLVE_ACTION)
     {
         // Stage the bounty amount
@@ -422,10 +423,7 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     }
 
     /// @notice Augment the verification phase with verification criteria params
-    function _addVerificationCriteria()
-    internal
-    {
-    }
+    function _addVerificationCriteria() internal;
 
     /// @notice Import from bounty fund
     function _importBounty()

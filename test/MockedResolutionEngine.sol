@@ -66,6 +66,12 @@ contract MockedResolutionEngine is Resolvable {
     string public _disabledAction;
     string public _enabledAction;
 
+    address public _stageBountyWallet;
+
+    uint256 public _calculatedPayout;
+
+    uint256 public _stagedAmount;
+
     function verificationPhaseNumber()
     public
     view
@@ -120,13 +126,6 @@ contract MockedResolutionEngine is Resolvable {
     public
     {
         _resolutionCriteriaMet = met;
-    }
-
-    function _withdrawTokens(uint256 _bountyFraction)
-    public
-    {
-        // TODO Consider the need for this function
-        //        _bountyFund.allocateTokens(_bountyFraction);
     }
 
     function verificationStatus()
@@ -206,5 +205,39 @@ contract MockedResolutionEngine is Resolvable {
     public
     {
         _enabledAction = _action;
+    }
+
+    function stageBounty(address _wallet)
+    public
+    {
+        _stageBountyWallet = _wallet;
+    }
+
+    function _setCalculatedPayout(uint256 _calcPay)
+    public
+    {
+        _calculatedPayout = _calcPay;
+    }
+
+    function calculatePayout(uint256, address)
+    public
+    view
+    returns (uint256)
+    {
+        return _calculatedPayout;
+    }
+
+    function _setStagedAmount(uint256 _amount)
+    public
+    {
+        _stagedAmount = _amount;
+    }
+
+    function stagedAmountByWallet(address)
+    public
+    view
+    returns (uint256)
+    {
+        return _stagedAmount;
     }
 }
