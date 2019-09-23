@@ -55,7 +55,7 @@ contract Oracle is RBACed {
     }
 
     /// @notice Return the count of registered resolution engines
-    /// @return The count of registered resolution engines
+    /// @return the count of registered resolution engines
     function resolutionEnginesCount()
     public
     view
@@ -90,9 +90,9 @@ contract Oracle is RBACed {
         emit ResolutionEngineRemoved(_resolutionEngine);
     }
 
-    /// @notice For the given resolution engine and verification phase number stake the amount of tokens
+    /// @notice Stake the amount of tokens for the given resolution engine and verification phase number
     /// at the given status
-    /// @dev Client has to do prior approval of the transfer of the given amount
+    /// @dev Client has to do prior approval of the transfer for the given amount
     /// @param _resolutionEngine The concerned resolution engine
     /// @param _verificationPhaseNumber The verification phase number to stake into
     /// @param _amount The amount staked
@@ -134,7 +134,26 @@ contract Oracle is RBACed {
         emit TokensStaked(msg.sender, _resolutionEngine, _status, _amount);
     }
 
-    /// @notice For the given resolution engine and inclusive verification phase number range stage payout
+    // TODO Upgrade signature with range of verification phase numbers
+    /// @notice Calculate the payout for the given resolution engine and wallet at the
+    /// given verification phase number
+    /// @param _resolutionEngine The concerned resolution engine
+    /// @param _verificationPhaseNumber The concerned verification phase number
+    /// @param _wallet The address of the concerned wallet
+    /// @return the payout
+    function calculatePayout(address _resolutionEngine, uint256 _verificationPhaseNumber, address _wallet)
+    public
+    view
+    returns (uint256)
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Return calculated payout
+        return resolutionEngine.calculatePayout(_verificationPhaseNumber, _wallet);
+    }
+
+    /// @notice Stage payout for the given resolution engine and inclusive verification phase number range
     /// @param _resolutionEngine The concerned resolution engine
     /// @param _firstVerificationPhaseNumber The first verification phase number to stage payout from
     /// @param _lastVerificationPhaseNumber The last verification phase number to stage payout from
@@ -152,7 +171,7 @@ contract Oracle is RBACed {
         emit PayoutStaged(msg.sender, _resolutionEngine, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber);
     }
 
-    /// @notice For the given resolution engine stage the stake
+    /// @notice Stage the stake for the given resolution engine
     /// @param _resolutionEngine The concerned resolution engine
     function stageStake(address _resolutionEngine)
     public
@@ -167,7 +186,23 @@ contract Oracle is RBACed {
         emit StakeStaged(msg.sender, _resolutionEngine);
     }
 
-    /// @notice For the given resolution engine withdraw the given amount
+    /// @notice Return the staged amount for the given resolution engine and wallet
+    /// @param _resolutionEngine The concerned resolution engine
+    /// @param _wallet The address of the concerned wallet
+    /// @return the staged amount
+    function stagedAmountByWallet(address _resolutionEngine, address _wallet)
+    public
+    view
+    returns (uint256)
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Return staged amount
+        return resolutionEngine.stagedAmountByWallet(_wallet);
+    }
+
+    /// @notice Withdraw the given amount for the given resolution engine
     /// @param _resolutionEngine The concerned resolution engine
     /// @param _amount The amount to be withdrawn
     function withdraw(address _resolutionEngine, uint256 _amount)
