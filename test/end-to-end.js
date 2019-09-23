@@ -130,7 +130,7 @@ contract('*', (accounts) => {
 
     describe('stage bounty from resolution engine', () => {
       it('should stage successfully', async () => {
-        await naiveTotalResolutionEngine.stageBounty(accounts[2]);
+        await operator.stageBounty(naiveTotalResolutionEngine.address, accounts[2]);
 
         (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(
           (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(1)).bountyAmount

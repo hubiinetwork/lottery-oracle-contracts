@@ -625,7 +625,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   describe('calculatePayout()', () => {
     describe('if resolution result is null-status', () => {
       it('should return 0', async () => {
-        (await resolutionEngine.calculatePayout(0, Wallet.createRandom().address))
+        (await resolutionEngine.calculatePayout(Wallet.createRandom().address, 0, 0))
           .should.eq.BN(0);
       });
     });
@@ -641,7 +641,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should return sum of bounty award and stake', async () => {
-        (await resolutionEngine.calculatePayout(1, accounts[2]))
+        (await resolutionEngine.calculatePayout(accounts[2], 1, 1))
           .should.eq.BN(16); // Including 10 tokens staked
       });
     });
@@ -663,7 +663,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
 
       it('should return stake', async () => {
-        (await resolutionEngine.calculatePayout(2, accounts[2]))
+        (await resolutionEngine.calculatePayout(accounts[2], 2, 2))
           .should.eq.BN(15); // Including 10 tokens staked
       });
     });
@@ -808,9 +808,9 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
   });
 
   describe('stageBounty()', () => {
-    describe('if called by non-owner', () => {
+    describe('if called by non-operator', () => {
       it('should revert', async () => {
-        await resolutionEngine.stageBounty(accounts[2], {from: accounts[2]})
+        await resolutionEngine.stageBounty(accounts[2], {from: oracleAddress})
           .should.be.rejected;
       });
     });
@@ -822,7 +822,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if called by owner on disabled resolution engine', () => {
+    describe('if called by operator on disabled resolution engine', () => {
       let bountyAmount;
 
       beforeEach(async () => {

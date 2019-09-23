@@ -213,7 +213,7 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
 
     /// @notice Get the alpha parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @return The alpha value
+    /// @return the alpha value
     function alphaByPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view
@@ -224,7 +224,7 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
     
     /// @notice Get the beta parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @return The beta value
+    /// @return the beta value
     function betaByPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view
@@ -235,7 +235,7 @@ contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
 
     /// @notice Get the gamma parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @return The gamma value
+    /// @return the gamma value
     function gammaByPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view

@@ -42,8 +42,9 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     returns (uint256)
     {
         return (
-        nextAmount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status] ?
-        nextAmount.sub(
+        amountByPhaseNumber(verificationPhaseNumber) >
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status] ?
+        amountByPhaseNumber(verificationPhaseNumber).sub(
             verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status]
         ) :
         0
@@ -57,8 +58,10 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
-        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >= nextAmount ||
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >= nextAmount;
+        return verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true] >=
+        amountByPhaseNumber(verificationPhaseNumber) ||
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false] >=
+        amountByPhaseNumber(verificationPhaseNumber);
     }
 
 
@@ -79,7 +82,7 @@ contract NaiveTotalResolutionEngine is Resolvable, ResolutionEngine {
 
     /// @notice Get the amount parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
-    /// @return The amount value
+    /// @return the amount value
     function amountByPhaseNumber(uint256 _verificationPhaseNumber)
     public
     view

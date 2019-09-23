@@ -203,21 +203,21 @@ contract('Oracle', (accounts) => {
     });
   });
 
-  describe('stageStake()', () => {
-    let mockedResolutionEngine;
+  describe('calculatePayout()', () => {
+    let mockedResolutionEngine, wallet;
 
     beforeEach(async () => {
       mockedResolutionEngine = await MockedResolutionEngine.new();
+      mockedResolutionEngine._setCalculatedPayout(100);
 
       await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+      wallet = Wallet.createRandom().address;
     });
 
-    it('should successfully stage payout', async () => {
-      const result = await oracle.stageStake(mockedResolutionEngine.address, {from: accounts[1]});
-
-      result.logs[0].event.should.equal('StakeStaged');
-
-      (await mockedResolutionEngine._stageStakeWallet()).should.equal(accounts[1]);
+    it('should successfully return calculated payout', async () => {
+      (await oracle.calculatePayout(mockedResolutionEngine.address, wallet, 1, 2))
+        .should.eq.BN(100);
     });
   });
 
@@ -238,6 +238,42 @@ contract('Oracle', (accounts) => {
       (await mockedResolutionEngine._stagePayoutCall()).wallet.should.equal(accounts[1]);
       (await mockedResolutionEngine._stagePayoutCall()).firstVerificationPhaseNumber.should.eq.BN(0);
       (await mockedResolutionEngine._stagePayoutCall()).lastVerificationPhaseNumber.should.eq.BN(10);
+    });
+  });
+
+  describe('stageStake()', () => {
+    let mockedResolutionEngine;
+
+    beforeEach(async () => {
+      mockedResolutionEngine = await MockedResolutionEngine.new();
+
+      await oracle.addResolutionEngine(mockedResolutionEngine.address);
+    });
+
+    it('should successfully stage payout', async () => {
+      const result = await oracle.stageStake(mockedResolutionEngine.address, {from: accounts[1]});
+
+      result.logs[0].event.should.equal('StakeStaged');
+
+      (await mockedResolutionEngine._stageStakeWallet()).should.equal(accounts[1]);
+    });
+  });
+
+  describe('stagedAmountByWallet()', () => {
+    let mockedResolutionEngine, wallet;
+
+    beforeEach(async () => {
+      mockedResolutionEngine = await MockedResolutionEngine.new();
+      mockedResolutionEngine._setStagedAmount(100);
+
+      await oracle.addResolutionEngine(mockedResolutionEngine.address);
+
+      wallet = Wallet.createRandom().address;
+    });
+
+    it('should successfully return calculated payout', async () => {
+      (await oracle.stagedAmountByWallet(mockedResolutionEngine.address, wallet))
+          .should.eq.BN(100);
     });
   });
 

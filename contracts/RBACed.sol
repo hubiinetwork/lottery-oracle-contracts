@@ -41,7 +41,7 @@ contract RBACed {
     }
 
     /// @notice Get the count of roles
-    /// @return The count of roles
+    /// @return the count of roles
     function rolesCount()
     public
     view

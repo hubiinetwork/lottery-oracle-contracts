@@ -194,6 +194,31 @@ contract('ResolutionEngineOperator', (accounts) => {
     });
   });
 
+  describe('stageBounty()', () => {
+    let wallet;
+
+    beforeEach(() => {
+      wallet = Wallet.createRandom().address;
+    });
+
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        await operator.stageBounty(mockedResolutionEngine.address, wallet, {from: accounts[1]})
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully stage bounty', async () => {
+        const result = await operator.stageBounty(mockedResolutionEngine.address, wallet);
+
+        result.logs[0].event.should.equal('BountyStaged');
+
+        (await mockedResolutionEngine._stageBountyWallet()).should.equal(wallet);
+      });
+    });
+  });
+
   describe('setMinimumTimeout()', () => {
     describe('if called by non-owner', () => {
       it('should revert', async () => {

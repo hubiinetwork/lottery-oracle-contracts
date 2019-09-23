@@ -25,6 +25,7 @@ contract ResolutionEngineOperator is RBACed {
     event DisablementTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
     event DisablementTimerStopped(address indexed _resolutionEngine);
     event Disabled(address indexed _resolutionEngine);
+    event BountyStaged(address indexed _resolutionEngine);
     event MinimumTimeoutSet(uint256 minimumTimeout);
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -97,7 +98,7 @@ contract ResolutionEngineOperator is RBACed {
         emit DisablementTimerStopped(_resolutionEngine);
     }
 
-    /// @notice Gauge whether the disablement timer of the given resolution engine is expired
+    /// @notice Gauge whether the disablement timer for the given resolution engine is expired
     /// @param _resolutionEngine The address of the concerned resolution engine
     /// @return true if the resolution engine's disablement timer is expired, else false
     function isDisablementTimerExpired(address _resolutionEngine)
@@ -128,6 +129,23 @@ contract ResolutionEngineOperator is RBACed {
 
         // Emit event
         emit Disabled(_resolutionEngine);
+    }
+
+    /// @notice Stage bounty for the given resolution engine
+    /// @param _resolutionEngine The address of the concerned resolution engine
+    /// @param _wallet The recipient address of the bounty transfer
+    function stageBounty(address _resolutionEngine, address _wallet)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Stage the bounty
+        resolutionEngine.stageBounty(_wallet);
+
+        // Emit event
+        emit BountyStaged(_resolutionEngine);
     }
 
     /// @notice Set the minimum timeout criterion
