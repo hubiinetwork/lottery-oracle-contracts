@@ -11,7 +11,6 @@ import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {BountyFund} from "./BountyFund.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-// TODO Rename to Operator
 /// @title ResolutionEngineOperator
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice An operator of resolution engines
