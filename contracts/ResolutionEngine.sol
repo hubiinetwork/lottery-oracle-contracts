@@ -23,13 +23,10 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     event Frozen();
     event BountyAllocatorSet(address indexed _bountyAllocator);
-    event Initialized();
     event Staked(address indexed _wallet, uint256 indexed _verificationPhaseNumber, bool _status,
         uint256 _amount);
-    event Resolved(uint256 indexed _verificationPhaseNumber);
-    event BountyImported(uint256 indexed _verificationPhaseNumber, uint256 _bountyAmount);
-    event BountyStaged(address indexed _wallet, uint256 _bountyAmount);
-    event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber);
+    event BountyWithdrawn(address indexed _wallet, uint256 _bountyAmount);
+    event VerificationPhaseOpened(uint256 indexed _verificationPhaseNumber, uint256 _bountyAmount);
     event VerificationPhaseClosed(uint256 indexed _verificationPhaseNumber);
     event PayoutStaged(address indexed _wallet, uint256 indexed _firstVerificationPhaseNumber,
         uint256 indexed _lastVerificationPhaseNumber, uint256 _payout);
@@ -48,7 +45,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
 
     ERC20 public token;
 
-    bool public initialized;
     bool public frozen;
 
     uint256 public verificationPhaseNumber;
@@ -61,7 +57,6 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     VerificationPhaseLib.Status public verificationStatus;
 
     mapping(address => mapping(uint256 => bool)) public payoutStagedByWalletPhase;
-    mapping(address => bool) public stakeStagedByWallet;
     mapping(address => uint256) public stagedAmountByWallet;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -127,22 +122,10 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Require no previous initialization
-        require(!initialized, "ResolutionEngine: already initialized");
-
-        // Require that a bounty allocator has been set
-        require(address(0) != bountyAllocator, "ResolutionEngine: missing bounty allocator");
-
-        // Set initialized flag
-        initialized = true;
-
-        // Import bounty
-        uint256 bountyAmount = _importBounty();
+        require(0 == verificationPhaseNumber, "ResolutionEngine: already initialized");
 
         // Open verification phase
-        _openVerificationPhase(bountyAmount);
-
-        // Emit event
-        emit Initialized();
+        _openVerificationPhase();
     }
 
     /// @notice Disable the given action
@@ -198,14 +181,8 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
             // Close existing verification phase
             _closeVerificationPhase();
 
-            // Emit event
-            emit Resolved(verificationPhaseNumber);
-
-            // Import bounty
-            uint256 bountyAmount = _importBounty();
-
             // Open new verification phase
-            _openVerificationPhase(bountyAmount);
+            _openVerificationPhase();
         }
     }
 
@@ -306,26 +283,12 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyOracle
     {
         // For each verification phase number in the inclusive range stage payout
-        uint256 payout = 0;
+        uint256 amount = 0;
         for (uint256 i = _firstVerificationPhaseNumber; i <= _lastVerificationPhaseNumber; i++)
-            payout = payout.add(_stagePayout(_wallet, i));
+            amount = amount.add(_stagePayout(_wallet, i));
 
         // Emit event
-        emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, payout);
-    }
-
-    /// @notice Stage the bounty to the given address
-    /// @param _wallet The recipient address of the bounty transfer
-    function stageBounty(address _wallet)
-    public
-    onlyOperator
-    onlyDisabled(RESOLVE_ACTION)
-    {
-        // Stage the bounty amount
-        _stage(_wallet, verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
-
-        // Emit event
-        emit BountyStaged(_wallet, verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
+        emit PayoutStaged(_wallet, _firstVerificationPhaseNumber, _lastVerificationPhaseNumber, amount);
     }
 
     /// @notice Stage the amount staked in the current verification phase
@@ -336,21 +299,17 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyOracle
     onlyDisabled(RESOLVE_ACTION)
     {
-        // Return wallet payout has already been staged for this verification phase number
-        if (stakeStagedByWallet[_wallet])
-            return 0;
-
-        // Register payout of wallet and verification phase number
-        stakeStagedByWallet[_wallet] = true;
-
-        // Retrieve the verification phase
-        VerificationPhaseLib.VerificationPhase storage verificationPhase =
-        verificationPhaseByPhaseNumber[verificationPhaseNumber];
-
         // Calculate the amount staked by the wallet
-        uint256 amount = verificationPhase.stakedAmountByWalletStatus[_wallet][true].add(
-            verificationPhase.stakedAmountByWalletStatus[_wallet][false]
+        uint256 amount = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][true].add(
+            verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][false]
         );
+
+        // Require no previous stage stage
+        require(0 < amount, "ResolutionEngine: stake is zero");
+
+        // Reset wallet's stakes
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][true] = 0;
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][false] = 0;
 
         // Stage the amount
         _stage(_wallet, amount);
@@ -382,52 +341,69 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     public
     onlyOracle
     {
-        // Withdraw the amount
-        _withdraw(_wallet, _amount);
+        // Require that the withdrawal amount is smaller than the wallet's staged amount
+        require(_amount <= stagedAmountByWallet[_wallet], "ResolutionEngine: amount is greater than staged amount");
+
+        // Unstage the amount
+        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);
+
+        // Transfer the amount
+        token.transfer(_wallet, _amount);
 
         // Emit event
         emit Withdrawn(_wallet, _amount);
     }
 
+    /// @notice Stage the bounty to the given address
+    /// @param _wallet The recipient address of the bounty transfer
+    function withdrawBounty(address _wallet)
+    public
+    onlyOperator
+    onlyDisabled(RESOLVE_ACTION)
+    {
+        // Require no previous bounty withdrawal
+        require(0 < verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount,
+            "ResolutionEngine: bounty is zero");
+
+        // Store the bounty amount locally
+        uint256 amount = verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount;
+
+        // Reset the bounty amount
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount = 0;
+
+        // Transfer the amount
+        token.transfer(_wallet, amount);
+
+        // Emit event
+        emit BountyWithdrawn(_wallet, amount);
+    }
+
     /// @notice Open verification phase
-    function _openVerificationPhase(uint256 _bountyAmount)
+    function _openVerificationPhase()
     internal
     {
         // Require that verification phase is not open
-        require(
-            verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
-            "ResolutionEngine: verification phase is not in unopened state"
-        );
+        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
+            "ResolutionEngine: verification phase is not in unopened state");
 
         // Bump verification phase number
         verificationPhaseNumber = verificationPhaseNumber.add(1);
 
+        // Allocate from bounty fund using the set bounty allocator
+        uint256 bountyAmount = bountyFund.allocateTokens(bountyAllocator);
+
         // Open the verification phase
-        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(_bountyAmount);
+        verificationPhaseByPhaseNumber[verificationPhaseNumber].open(bountyAmount);
 
         // Add criteria params
         _addVerificationCriteria();
 
         // Emit event
-        emit VerificationPhaseOpened(verificationPhaseNumber);
+        emit VerificationPhaseOpened(verificationPhaseNumber, bountyAmount);
     }
 
     /// @notice Augment the verification phase with verification criteria params
     function _addVerificationCriteria() internal;
-
-    /// @notice Import from bounty fund
-    function _importBounty()
-    internal
-    returns (uint256)
-    {
-        // Allocate from bounty fund using the set bounty allocator
-        uint256 bountyAmount = bountyFund.allocateTokens(bountyAllocator);
-
-        // Emit event
-        emit BountyImported(verificationPhaseNumber, bountyAmount);
-
-        return bountyAmount;
-    }
 
     /// @notice Close verification phase
     function _closeVerificationPhase()
@@ -512,30 +488,9 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     }
 
     /// @notice Stage the given amount for the given wallet
-    function _withdraw(address _wallet, uint256 _amount)
-    internal
-    {
-        // Require that the withdrawal amount is smaller than the wallet's staged amount
-        require(_amount <= stagedAmountByWallet[_wallet], "ResolutionEngine: amount is greater than staged amount");
-
-        // Unstage the amount
-        _unstage(_wallet, _amount);
-
-        // Transfer the amount
-        token.transfer(_wallet, _amount);
-    }
-
-    /// @notice Stage the given amount for the given wallet
     function _stage(address _wallet, uint256 _amount)
     internal
     {
         stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].add(_amount);
-    }
-
-    /// @notice Unstage the given amount for the given wallet
-    function _unstage(address _wallet, uint256 _amount)
-    internal
-    {
-        stagedAmountByWallet[_wallet] = stagedAmountByWallet[_wallet].sub(_amount);
     }
 }

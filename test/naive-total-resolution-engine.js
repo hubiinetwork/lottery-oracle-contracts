@@ -134,26 +134,15 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if bounty allocator is zero-address', () => {
-      beforeEach(async () => {
-        await resolutionEngine.setBountyAllocator(AddressZero);
-      });
-
-      it('should revert', async () => {
-        await resolutionEngine.initialize()
-          .should.be.rejected;
-      });
-    });
-
     describe('if called by owner', () => {
       it('should successfully initialize', async () => {
         const result = await resolutionEngine.initialize();
 
-        result.logs.map(l => l.event).should.include('Initialized');
+        result.logs.map(l => l.event).should.include('VerificationPhaseOpened');
 
         (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(1);
         (await resolutionEngine.verificationPhaseByPhaseNumber(1)).bountyAmount.should.be.eq.BN(10);
-        (await bountyFund._tokenAllocatee()).should.equal(resolutionEngine.address);
+        (await bountyFund._tokenAllocateWallet()).should.equal(resolutionEngine.address);
       });
     });
 
@@ -447,7 +436,6 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
         const result = await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
 
         result.logs.map(l => l.event).should.include('VerificationPhaseOpened');
-        result.logs.map(l => l.event).should.include('Resolved');
         result.logs.map(l => l.event).should.include('VerificationPhaseClosed');
 
         (await resolutionEngine.verificationPhaseNumber()).should.be.eq.BN(2);
@@ -652,22 +640,22 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
   });
 
-  describe('stageBounty()', () => {
+  describe('withdrawBounty()', () => {
     describe('if called by non-operator', () => {
       it('should revert', async () => {
-        await resolutionEngine.stageBounty(accounts[2], {from: oracleAddress})
+        await resolutionEngine.withdrawBounty(accounts[2], {from: oracleAddress})
           .should.be.rejected;
       });
     });
 
     describe('if called on enabled resolution engine', () => {
       it('should revert', async () => {
-        await resolutionEngine.stageBounty(accounts[2])
+        await resolutionEngine.withdrawBounty(accounts[2])
           .should.be.rejected;
       });
     });
 
-    describe('if called by operator on disabled resolution engine', () => {
+    describe('if called once by operator on disabled resolution engine', () => {
       let bountyAmount;
 
       beforeEach(async () => {
@@ -675,13 +663,37 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
           await resolutionEngine.verificationPhaseNumber()
         )).bountyAmount;
 
+        await stakeToken.mint(resolutionEngine.address, bountyAmount);
+
         await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
       });
 
       it('should successfully stage the bounty', async () => {
-        const result = await resolutionEngine.stageBounty(accounts[2]);
-        result.logs[0].event.should.equal('BountyStaged');
-        (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(bountyAmount);
+        const result = await resolutionEngine.withdrawBounty(accounts[2]);
+
+        result.logs[0].event.should.equal('BountyWithdrawn');
+
+        (await stakeToken.balanceOf(accounts[2])).should.eq.BN(bountyAmount);
+      });
+    });
+
+    describe('if called once by operator on disabled resolution engine', () => {
+      let bountyAmount;
+
+      beforeEach(async () => {
+        bountyAmount = (await resolutionEngine.metricsByVerificationPhaseNumber(
+          await resolutionEngine.verificationPhaseNumber()
+        )).bountyAmount;
+
+        await stakeToken.mint(resolutionEngine.address, bountyAmount);
+
+        await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
+
+        await resolutionEngine.withdrawBounty(accounts[2]);
+      });
+
+      it('should revert', async () => {
+        await resolutionEngine.withdrawBounty(accounts[2]).should.be.rejected;
       });
     });
   });
