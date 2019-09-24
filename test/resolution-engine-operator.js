@@ -17,15 +17,20 @@ chai.should();
 
 const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
+const MockedBountyFund = artifacts.require('MockedBountyFund');
 
 contract('ResolutionEngineOperator', (accounts) => {
-  let provider, operator, mockedResolutionEngine;
+  let provider, operator, mockedResolutionEngine, mockedBountyFund;
 
   beforeEach(async () => {
     provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(accounts[0]).provider;
 
-    operator = await ResolutionEngineOperator.new(2);
     mockedResolutionEngine = await MockedResolutionEngine.new();
+
+    mockedBountyFund = await MockedBountyFund.new();
+    await mockedBountyFund.setResolutionEngine(mockedResolutionEngine.address);
+
+    operator = await ResolutionEngineOperator.new(2);
   });
 
   describe('constructor()', () => {
@@ -194,7 +199,7 @@ contract('ResolutionEngineOperator', (accounts) => {
     });
   });
 
-  describe('stageBounty()', () => {
+  describe('withdrawAllocatedBounty()', () => {
     let wallet;
 
     beforeEach(() => {
@@ -203,18 +208,54 @@ contract('ResolutionEngineOperator', (accounts) => {
 
     describe('if called by non-owner', () => {
       it('should revert', async () => {
-        await operator.stageBounty(mockedResolutionEngine.address, wallet, {from: accounts[1]})
+        await operator.withdrawAllocatedBounty(mockedResolutionEngine.address, wallet, {from: accounts[1]})
           .should.be.rejected;
       });
     });
 
     describe('if called by owner', () => {
       it('should successfully stage bounty', async () => {
-        const result = await operator.stageBounty(mockedResolutionEngine.address, wallet);
+        const result = await operator.withdrawAllocatedBounty(mockedResolutionEngine.address, wallet);
 
-        result.logs[0].event.should.equal('BountyStaged');
+        result.logs[0].event.should.equal('AllocatedBountyWithdrawn');
 
-        (await mockedResolutionEngine._stageBountyWallet()).should.equal(wallet);
+        (await mockedResolutionEngine._withdrawBountyWallet()).should.equal(wallet);
+      });
+    });
+  });
+
+  describe('withdrawUnallocatedBounty()', () => {
+    let wallet;
+
+    beforeEach(() => {
+      wallet = Wallet.createRandom().address;
+    });
+
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        await operator.withdrawUnallocatedBounty(mockedResolutionEngine.address, wallet, {from: accounts[1]})
+          .should.be.rejected;
+      });
+    });
+
+    describe('if resolve action of resolution engine is not disabled', () => {
+      it('should revert', async () => {
+        await operator.withdrawUnallocatedBounty(mockedResolutionEngine.address, wallet)
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner and resolution engine is disabled', () => {
+      beforeEach(async () => {
+        await mockedResolutionEngine._setDisabled(true);
+      });
+
+      it('should successfully stage bounty', async () => {
+        const result = await operator.withdrawUnallocatedBounty(mockedBountyFund.address, wallet);
+
+        result.logs[0].event.should.equal('UnallocatedBountyWithdrawn');
+
+        (await mockedBountyFund._withdrawWallet()).should.equal(wallet);
       });
     });
   });

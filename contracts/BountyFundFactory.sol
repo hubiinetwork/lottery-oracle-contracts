@@ -9,6 +9,7 @@ pragma solidity ^0.5.11;
 import {RBACed} from "./RBACed.sol";
 import {BountyFund} from "./BountyFund.sol";
 
+// TODO Remove
 /// @title BountyFundFactory
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A factory of instances
@@ -27,7 +28,7 @@ contract BountyFundFactory is RBACed {
     returns (address)
     {
         // Instantiate bounty fund
-        BountyFund bountyFund = new BountyFund(_token);
+        BountyFund bountyFund = new BountyFund(_token, address(0));
 
         // Add owner role accessor
         bountyFund.addRoleAccessor(OWNER_ROLE, msg.sender);

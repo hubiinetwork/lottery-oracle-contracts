@@ -9,6 +9,7 @@ pragma solidity ^0.5.11;
 import {RBACed} from "./RBACed.sol";
 import {FractionalBalanceAllocator} from "./FractionalBalanceAllocator.sol";
 
+// TODO Remove
 /// @title FractionalBalanceAllocatorFactory
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
 /// @notice A factory of fractional balance allocators
