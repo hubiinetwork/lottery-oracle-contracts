@@ -54,7 +54,7 @@ contract('BountyFund', (accounts) => {
       });
     });
 
-    describe('when called the first time', () => {
+    describe('when called once', () => {
       beforeEach(() => {
         resolutionEngine = Wallet.createRandom().address;
       });
@@ -68,7 +68,7 @@ contract('BountyFund', (accounts) => {
       });
     });
 
-    describe('when called the second time', () => {
+    describe('when called twice', () => {
       beforeEach(async () => {
         resolutionEngine = Wallet.createRandom().address;
         await bountyFund.setResolutionEngine(resolutionEngine);

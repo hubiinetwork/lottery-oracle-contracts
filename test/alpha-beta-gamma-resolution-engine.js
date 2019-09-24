@@ -691,7 +691,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if called the first time on verification phase that has closed', () => {
+    describe('if called once on verification phase that has closed', () => {
       beforeEach(async () => {
         await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
       });
@@ -703,7 +703,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if called the second time on verification phase that has closed', () => {
+    describe('if called twice on verification phase that has closed', () => {
       beforeEach(async () => {
         await resolutionEngine.resolveIfCriteriaMet({from: oracleAddress});
 
@@ -739,7 +739,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
       });
     });
 
-    describe('if called by oracle when resolve action is disabled', () => {
+    describe('if called once by oracle when resolve action is disabled', () => {
       beforeEach(async () => {
         await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
       });
@@ -748,6 +748,17 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
         await resolutionEngine.stageStake(accounts[2], {from: oracleAddress});
 
         (await resolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(30);
+      });
+    });
+
+    describe('if called twice by oracle when resolve action is disabled', () => {
+      beforeEach(async () => {
+        await resolutionEngine.disable(await resolutionEngine.RESOLVE_ACTION());
+        await resolutionEngine.stageStake(accounts[2], {from: oracleAddress});
+      });
+
+      it('should successfully stage stake', async () => {
+        await resolutionEngine.stageStake(accounts[2], {from: oracleAddress}).should.be.rejected;
       });
     });
   });

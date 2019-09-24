@@ -56,13 +56,12 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     mapping(uint256 => VerificationPhaseLib.VerificationPhase) public verificationPhaseByPhaseNumber;
 
     mapping(address => mapping(bool => uint256)) public stakedAmountByWalletStatus;
-
     mapping(uint256 => mapping(bool => uint256)) public stakedAmountByBlockStatus;
 
     VerificationPhaseLib.Status public verificationStatus;
 
     mapping(address => mapping(uint256 => bool)) public payoutStagedByWalletPhase;
-
+    mapping(address => bool) public stakeStagedByWallet;
     mapping(address => uint256) public stagedAmountByWallet;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -337,6 +336,13 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyOracle
     onlyDisabled(RESOLVE_ACTION)
     {
+        // Return wallet payout has already been staged for this verification phase number
+        if (stakeStagedByWallet[_wallet])
+            return 0;
+
+        // Register payout of wallet and verification phase number
+        stakeStagedByWallet[_wallet] = true;
+
         // Retrieve the verification phase
         VerificationPhaseLib.VerificationPhase storage verificationPhase =
         verificationPhaseByPhaseNumber[verificationPhaseNumber];
@@ -492,11 +498,11 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         if (payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber])
             return 0;
 
-        // Calculate payout
-        uint256 payout = _calculatePayout(_wallet, _verificationPhaseNumber);
-
         // Register payout of wallet and verification phase number
         payoutStagedByWalletPhase[_wallet][_verificationPhaseNumber] = true;
+
+        // Calculate payout
+        uint256 payout = _calculatePayout(_wallet, _verificationPhaseNumber);
 
         // Stage the payout
         _stage(_wallet, payout);
