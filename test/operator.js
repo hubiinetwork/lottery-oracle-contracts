@@ -15,11 +15,11 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
+const Operator = artifacts.require('Operator');
 const MockedResolutionEngine = artifacts.require('MockedResolutionEngine');
 const MockedBountyFund = artifacts.require('MockedBountyFund');
 
-contract('ResolutionEngineOperator', (accounts) => {
+contract('Operator', (accounts) => {
   let provider, operator, mockedResolutionEngine, mockedBountyFund;
 
   beforeEach(async () => {
@@ -30,7 +30,7 @@ contract('ResolutionEngineOperator', (accounts) => {
     mockedBountyFund = await MockedBountyFund.new();
     await mockedBountyFund.setResolutionEngine(mockedResolutionEngine.address);
 
-    operator = await ResolutionEngineOperator.new(2);
+    operator = await Operator.new(2);
   });
 
   describe('constructor()', () => {

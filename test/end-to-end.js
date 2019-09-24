@@ -20,7 +20,7 @@ const BountyFund = artifacts.require('BountyFund');
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 const Oracle = artifacts.require('Oracle');
-const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
+const Operator = artifacts.require('Operator');
 const StakeToken = artifacts.require('StakeToken');
 
 contract('*', (accounts) => {
@@ -31,8 +31,8 @@ contract('*', (accounts) => {
     provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(accounts[0]).provider;
   });
 
-  // Focus on on the ResolutionEngineOperator
-  describe('ResolutionEngineOperator', () => {
+  // Focus on on the Operator
+  describe('Operator', () => {
     let naiveTotalResolutionEngine;
     let balanceBeforeAccount1, balanceBeforeAccount2;
 
@@ -47,7 +47,7 @@ contract('*', (accounts) => {
       oracle = await Oracle.new();
 
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
 
       // Deploy bounty fund
       bountyFund = await BountyFund.new(stakeToken.address, operator.address);
@@ -201,7 +201,7 @@ contract('*', (accounts) => {
       oracle = await Oracle.new();
 
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
 
       // Deploy bounty fund
       bountyFund = await BountyFund.new(stakeToken.address, operator.address);
@@ -377,7 +377,7 @@ contract('*', (accounts) => {
       oracle = await Oracle.new();
 
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
 
       // Deploy bounty fund
       bountyFund = await BountyFund.new(stakeToken.address, operator.address);
