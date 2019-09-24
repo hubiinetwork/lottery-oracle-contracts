@@ -20,12 +20,12 @@ const StakeToken = artifacts.require('StakeToken');
 const MockedAllocator = artifacts.require('MockedAllocator');
 
 contract('BountyFund', (accounts) => {
-  let stakeToken, bountyFund;
+  let stakeToken, bountyFund, operator;
 
   beforeEach(async () => {
     stakeToken = await StakeToken.new('Lottery Oracle Token', 'LOT', 15);
-
-    bountyFund = await BountyFund.new(stakeToken.address);
+    operator = accounts[0];
+    bountyFund = await BountyFund.new(stakeToken.address, operator);
   });
 
   describe('constructor()', () => {
@@ -41,6 +41,12 @@ contract('BountyFund', (accounts) => {
   describe('token()', () => {
     it('should equal the value passed as constructor argument', async () => {
       (await bountyFund.token()).should.equal(stakeToken.address);
+    });
+  });
+
+  describe('operator()', () => {
+    it('should equal the value passed as constructor argument', async () => {
+      (await bountyFund.operator()).should.equal(operator);
     });
   });
 
@@ -131,6 +137,28 @@ contract('BountyFund', (accounts) => {
           .should.eq.BN(balanceBefore.subn(10));
         (await stakeToken.balanceOf(accounts[0]))
           .should.eq.BN(10);
+      });
+    });
+  });
+
+  describe('withdraw()', () => {
+    describe('if called by non-operator', () => {
+      it('should revert', async () => {
+        await bountyFund.withdraw(accounts[1], {from: accounts[1]}).should.be.rejected;
+      });
+    });
+
+    describe('if called by operator', () => {
+      beforeEach(async () => {
+        await stakeToken.mint(bountyFund.address, 100);
+      });
+
+      it('should successfully transfer tokens', async () => {
+        const result = await bountyFund.withdraw(accounts[1]);
+
+        result.logs[0].event.should.equal('Withdrawn');
+
+        (await stakeToken.balanceOf(accounts[1])).should.eq.BN(100);
       });
     });
   });

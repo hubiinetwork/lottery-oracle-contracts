@@ -1,3 +1,4 @@
+
 /*
  * Lottery oracle
  *
@@ -16,8 +17,9 @@ contract MockedBountyFund {
     address public token;
     address public resolutionEngine;
 
-    address public _tokenAllocatee;
+    address public _tokenAllocateWallet;
     uint256 private _allocation;
+    address public _withdrawWallet;
 
     function _setToken(address _token)
     public
@@ -35,7 +37,7 @@ contract MockedBountyFund {
     public
     returns (uint256)
     {
-        _tokenAllocatee = msg.sender;
+        _tokenAllocateWallet = msg.sender;
         return _allocation;
     }
 
@@ -51,5 +53,11 @@ contract MockedBountyFund {
     public
     {
         _allocation = allocation;
+    }
+
+    function withdraw(address _wallet)
+    public
+    {
+        _withdrawWallet = _wallet;
     }
 }
