@@ -110,8 +110,8 @@ exports.getMinters = () => {
   return minters;
 };
 
-exports.getResolutionEngineOperatorTimeout = () => {
-  const minters = process.env.RESOLUTION_ENGINE_OPERATOR_TIMEOUT || 30 * 24 * 60 * 60; // 30 days
+exports.getOperatorTimeout = () => {
+  const minters = process.env.OPERATOR_TIMEOUT || 30 * 24 * 60 * 60; // 30 days
   debug(`Minters: ${minters}`);
   return minters;
 };

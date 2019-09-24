@@ -20,7 +20,7 @@ const BountyFund = artifacts.require('BountyFund');
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
 const Oracle = artifacts.require('Oracle');
-const ResolutionEngineOperator = artifacts.require('ResolutionEngineOperator');
+const Operator = artifacts.require('Operator');
 const StakeToken = artifacts.require('StakeToken');
 
 contract('*', (accounts) => {
@@ -31,8 +31,8 @@ contract('*', (accounts) => {
     provider = (new providers.Web3Provider(web3.currentProvider)).getSigner(accounts[0]).provider;
   });
 
-  // Focus on on the ResolutionEngineOperator
-  describe('ResolutionEngineOperator', () => {
+  // Focus on on the Operator
+  describe('Operator', () => {
     let naiveTotalResolutionEngine;
     let balanceBeforeAccount1, balanceBeforeAccount2;
 
@@ -46,11 +46,12 @@ contract('*', (accounts) => {
       // Deploy oracle
       oracle = await Oracle.new();
 
-      // Deploy bounty fund
-      bountyFund = await BountyFund.new(stakeToken.address);
-
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
+
+      // Deploy bounty fund
+      bountyFund = await BountyFund.new(stakeToken.address, operator.address);
+      await stakeToken.mint(bountyFund.address, 1000);
 
       // Deploy fractional balance allocator for bounty
       bountyAllocator = await FractionalBalanceAllocator.new(web3.utils.toBN(1e17));
@@ -64,10 +65,6 @@ contract('*', (accounts) => {
 
       // Add resolution engine to oracle
       await oracle.addResolutionEngine(naiveTotalResolutionEngine.address);
-
-      // Deposit tokens into bounty fund
-      await stakeToken.approve(bountyFund.address, 1000);
-      await bountyFund.depositTokens(1000);
 
       // Mint tokens for wallet and approve of oracle transferring
       await stakeToken.mint(accounts[1], 1000);
@@ -128,33 +125,6 @@ contract('*', (accounts) => {
       });
     });
 
-    describe('stage bounty from resolution engine', () => {
-      it('should stage successfully', async () => {
-        await operator.stageBounty(naiveTotalResolutionEngine.address, accounts[2]);
-
-        (await naiveTotalResolutionEngine.stagedAmountByWallet(accounts[2])).should.eq.BN(
-          (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(1)).bountyAmount
-        );
-      });
-    });
-
-    describe('withdraw bounty from resolution engine', () => {
-      let bountyAmount;
-
-      before(async () => {
-        balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
-        bountyAmount = (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(1)).bountyAmount;
-      });
-
-      it('should withdraw successfully', async () => {
-        await oracle.withdraw(naiveTotalResolutionEngine.address, bountyAmount, {from: accounts[2]});
-
-        (await stakeToken.balanceOf(accounts[2])).should.eq.BN(
-          balanceBeforeAccount2.add(bountyAmount)
-        );
-      });
-    });
-
     describe('stage stake from resolution engine', () => {
       it('should stage successfully', async () => {
         await oracle.stageStake(naiveTotalResolutionEngine.address, {from: accounts[1]});
@@ -179,6 +149,40 @@ contract('*', (accounts) => {
         );
       });
     });
+
+    describe('withdraw allocated bounty from resolution engine', () => {
+      let bountyAmount;
+
+      before(async () => {
+        balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
+        bountyAmount = (await naiveTotalResolutionEngine.metricsByVerificationPhaseNumber(1)).bountyAmount;
+      });
+
+      it('should withdraw successfully', async () => {
+        await operator.withdrawAllocatedBounty(naiveTotalResolutionEngine.address, accounts[2]);
+
+        (await stakeToken.balanceOf(accounts[2])).should.eq.BN(
+            balanceBeforeAccount2.add(bountyAmount)
+        );
+      });
+    });
+
+    describe('withdraw unallocated bounty from bounty fund', () => {
+      let bountyAmount;
+
+      before(async () => {
+        balanceBeforeAccount2 = await stakeToken.balanceOf(accounts[2]);
+        bountyAmount = await stakeToken.balanceOf(bountyFund.address);
+      });
+
+      it('should withdraw successfully', async () => {
+        await operator.withdrawUnallocatedBounty(bountyFund.address, accounts[2]);
+
+        (await stakeToken.balanceOf(accounts[2])).should.eq.BN(
+            balanceBeforeAccount2.add(bountyAmount)
+        );
+      });
+    });
   });
 
   // Focus on on the NaiveTotalResolutionEngine
@@ -197,10 +201,10 @@ contract('*', (accounts) => {
       oracle = await Oracle.new();
 
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
 
       // Deploy bounty fund
-      bountyFund = await BountyFund.new(stakeToken.address);
+      bountyFund = await BountyFund.new(stakeToken.address, operator.address);
 
       // Deploy fractional balance allocator for bounty
       bountyAllocator = await FractionalBalanceAllocator.new(web3.utils.toBN(1e17));
@@ -373,10 +377,10 @@ contract('*', (accounts) => {
       oracle = await Oracle.new();
 
       // Deploy resolution engine operator
-      operator = await ResolutionEngineOperator.new(2);
+      operator = await Operator.new(2);
 
       // Deploy bounty fund
-      bountyFund = await BountyFund.new(stakeToken.address);
+      bountyFund = await BountyFund.new(stakeToken.address, operator.address);
 
       // Deploy fractional balance allocator for bounty
       bountyAllocator = await FractionalBalanceAllocator.new(web3.utils.toBN(1e17));

@@ -12,16 +12,19 @@ const BountyFund = artifacts.require('./BountyFund.sol');
 const ConstantsLib = artifacts.require('./ConstantsLib.sol');
 const FractionalBalanceAllocator = artifacts.require('./FractionalBalanceAllocator.sol');
 const NaiveTotalResolutionEngine = artifacts.require('./NaiveTotalResolutionEngine.sol');
+const Operator = artifacts.require('./Operator.sol');
 const Oracle = artifacts.require('./Oracle.sol');
 const StakeToken = artifacts.require('./StakeToken.sol');
-const ResolutionEngineOperator = artifacts.require('./ResolutionEngineOperator.sol');
 const VerificationPhaseLib = artifacts.require('./VerificationPhaseLib.sol');
 
 module.exports = async (deployer, network, accounts) => {
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
+  const oracle = await Oracle.deployed();
+  const operator = await Operator.deployed();
+
   const stakeToken = 'mainnet' === network ? utils.getStakeToken() : (await StakeToken.deployed()).address;
-  const bountyFund = await deployer.deploy(BountyFund, stakeToken, {from: ownerAccount});
+  const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
   await FractionalBalanceAllocator.link({
@@ -29,8 +32,6 @@ module.exports = async (deployer, network, accounts) => {
   });
   const bountyAllocator = await deployer.deploy(FractionalBalanceAllocator, bountyFraction, {from: ownerAccount});
 
-  const oracle = await Oracle.deployed();
-  const operator = await ResolutionEngineOperator.deployed();
   const amount = web3.utils.toBN(utils.getNaiveTotalCriterionAmount());
   await NaiveTotalResolutionEngine.link({
     VerificationPhaseLib: (await VerificationPhaseLib.deployed()).address

@@ -66,7 +66,7 @@ contract MockedResolutionEngine is Resolvable {
     string public _disabledAction;
     string public _enabledAction;
 
-    address public _stageBountyWallet;
+    address public _withdrawBountyWallet;
 
     uint256 public _calculatedPayout;
 
@@ -207,10 +207,10 @@ contract MockedResolutionEngine is Resolvable {
         _enabledAction = _action;
     }
 
-    function stageBounty(address _wallet)
+    function withdrawBounty(address _wallet)
     public
     {
-        _stageBountyWallet = _wallet;
+        _withdrawBountyWallet = _wallet;
     }
 
     function _setCalculatedPayout(uint256 _calcPay)

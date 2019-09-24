@@ -8,12 +8,13 @@ pragma solidity ^0.5.11;
 
 import {RBACed} from "./RBACed.sol";
 import {ResolutionEngine} from "./ResolutionEngine.sol";
+import {BountyFund} from "./BountyFund.sol";
 import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-/// @title ResolutionEngineOperator
+/// @title Operator
 /// @author Jens Ivar Jørdre <jensivar@hubii.com>
-/// @notice An operator of resolution engines
-contract ResolutionEngineOperator is RBACed {
+/// @notice An operator of resolution engines and bounty funds
+contract Operator is RBACed {
     using SafeMath for uint256;
 
     bool public frozen;
@@ -25,7 +26,8 @@ contract ResolutionEngineOperator is RBACed {
     event DisablementTimerStarted(address indexed _resolutionEngine, uint256 _timeout);
     event DisablementTimerStopped(address indexed _resolutionEngine);
     event Disabled(address indexed _resolutionEngine);
-    event BountyStaged(address indexed _resolutionEngine);
+    event AllocatedBountyWithdrawn(address indexed _resolutionEngine);
+    event UnallocatedBountyWithdrawn(address indexed _bountyFund);
     event MinimumTimeoutSet(uint256 minimumTimeout);
 
     /// @notice `msg.sender` will be added as accessor to the owner role
@@ -36,7 +38,7 @@ contract ResolutionEngineOperator is RBACed {
     }
 
     modifier onlyNotFrozen() {
-        require(!frozen, "ResolutionEngineOperator: is frozen");
+        require(!frozen, "Operator: is frozen");
         _;
     }
 
@@ -62,7 +64,7 @@ contract ResolutionEngineOperator is RBACed {
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Require that the given timeout beyond the minimum
-        require(_timeout >= minimumTimeout, "ResolutionEngineOperator: timeout is smaller than the set minimum");
+        require(_timeout >= minimumTimeout, "Operator: timeout is smaller than the set minimum");
 
         // Set the timeout
         disablementTimeoutByResolutionEngine[_resolutionEngine] = block.timestamp.add(_timeout);
@@ -118,7 +120,7 @@ contract ResolutionEngineOperator is RBACed {
         // Require that the disablement timer has expired
         require(
             isDisablementTimerExpired(_resolutionEngine),
-            "ResolutionEngineOperator: disablement timer is not expired"
+            "Operator: disablement timer is not expired"
         );
 
         // Initialize resolution engine
@@ -131,21 +133,45 @@ contract ResolutionEngineOperator is RBACed {
         emit Disabled(_resolutionEngine);
     }
 
-    /// @notice Stage bounty for the given resolution engine
+    /// @notice Withdraw allocated bounty for the given resolution engine
     /// @param _resolutionEngine The address of the concerned resolution engine
     /// @param _wallet The recipient address of the bounty transfer
-    function stageBounty(address _resolutionEngine, address _wallet)
+    function withdrawAllocatedBounty(address _resolutionEngine, address _wallet)
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
 
-        // Stage the bounty
-        resolutionEngine.stageBounty(_wallet);
+        // Withdraw the allocated bounty
+        resolutionEngine.withdrawBounty(_wallet);
 
         // Emit event
-        emit BountyStaged(_resolutionEngine);
+        emit AllocatedBountyWithdrawn(_resolutionEngine);
+    }
+
+    /// @notice Withdraw unallocated bounty for the given bounty fund
+    /// @param _bountyFund The address of the concerned bounty fund
+    /// @param _wallet The recipient address of the bounty transfer
+    function withdrawUnallocatedBounty(address _bountyFund, address _wallet)
+    public
+    onlyRoleAccessor(OWNER_ROLE)
+    {
+        // Initialize bounty fund
+        BountyFund bountyFund = BountyFund(_bountyFund);
+
+        // Initialize resolution engine
+        ResolutionEngine resolutionEngine = ResolutionEngine(bountyFund.resolutionEngine());
+
+        // Require that the resolution engine's resolve action is disabled
+        require(resolutionEngine.disabled(resolutionEngine.RESOLVE_ACTION()),
+            "Operator: resolution engine's resolve action not disabled");
+
+        // Withdraw the unallocated bounty
+        bountyFund.withdraw(_wallet);
+
+        // Emit event
+        emit UnallocatedBountyWithdrawn(_bountyFund);
     }
 
     /// @notice Set the minimum timeout criterion

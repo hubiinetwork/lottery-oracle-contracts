@@ -21,20 +21,31 @@ contract BountyFund is RBACed {
     event TokensDeposited(address indexed _wallet, uint256 _amount, uint256 _balance);
     event TokensAllocated(address indexed _wallet, address indexed _allocator,
         uint256 _amount, uint256 _balance);
+    event Withdrawn(address indexed _wallet, uint256 _amount);
 
     ERC20 public token;
+
+    address public operator;
     address public resolutionEngine;
 
     /// @notice `msg.sender` will be added as accessor to the owner role
-    constructor(address _token)
+    constructor(address _token, address _operator)
     public
     {
         // Initialize token
         token = ERC20(_token);
+
+        // Initialize operator
+        operator = _operator;
     }
 
     modifier onlyResolutionEngine() {
         require(msg.sender == resolutionEngine, "BountyFund: sender is not the defined resolution engine");
+        _;
+    }
+
+    modifier onlyOperator() {
+        require(msg.sender == operator, "BountyFund: sender is not the defined operator");
         _;
     }
 
@@ -85,5 +96,21 @@ contract BountyFund is RBACed {
 
         // Return calculated amount
         return amount;
+    }
+
+    /// @notice Withdraw the to the given address
+    /// @param _wallet The recipient address of the bounty transfer
+    function withdraw(address _wallet)
+    public
+    onlyOperator
+    {
+        // Determine amount to transfer
+        uint256 amount = token.balanceOf(address(this));
+
+        // Transfer tokens to wallet
+        token.transfer(_wallet, amount);
+
+        // Emit event
+        emit Withdrawn(_wallet, amount);
     }
 }
