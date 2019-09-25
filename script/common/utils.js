@@ -16,9 +16,18 @@ const isTestNetwork = (network) => {
   return network.includes('develop') || network.includes('test') || network.includes('ganache');
 };
 
-const getNetworkCredentials = () => {
-  return {account: process.env.ETH_TESTNET_ACCOUNT, secret: process.env.ETH_TESTNET_SECRET};
+const getNetworkCredentials = (network) => {
+  switch (network) {
+  case 'mainnet':
+    return {account: process.env.ETH_MAINNET_ACCOUNT, secret: process.env.ETH_MAINNET_SECRET};
+  case 'ropsten':
+    return {account: process.env.ETH_TESTNET_ACCOUNT, secret: process.env.ETH_TESTNET_SECRET};
+  default:
+    throw new Error(`No credentials defined for ${network}`);
+  }
 };
+
+exports.getNetworkCredentials = getNetworkCredentials;
 
 const unlockAccount = async (web3, account, password) => {
   if (!unlockByAccount.get(account)) {
@@ -49,7 +58,7 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
   if (isTestNetwork(network))
     ownerAccount = accounts[0];
   else {
-    const {account, secret} = getNetworkCredentials();
+    const {account, secret} = getNetworkCredentials(network);
     await unlockAccount(web3, account, secret);
     ownerAccount = account;
   }
