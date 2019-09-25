@@ -90,11 +90,11 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
         _;
     }
 
-    /// @notice Freeze this resolution engine
+    /// @notice Freeze updates to this resolution engine
     /// @dev This operation can not be undone
     function freeze()
-    onlyRoleAccessor(OWNER_ROLE)
     public
+    onlyRoleAccessor(OWNER_ROLE)
     {
         // Set the frozen flag
         frozen = true;
