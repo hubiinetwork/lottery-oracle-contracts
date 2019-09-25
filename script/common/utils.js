@@ -104,12 +104,6 @@ exports.getAlphaBetaGammaCriterionGamma = () => {
   return gamma;
 };
 
-exports.getMinters = () => {
-  const minters = process.env.MINTERS ? process.env.MINTERS.split(',') : [];
-  debug(`Minters: ${minters}`);
-  return minters;
-};
-
 exports.getOperatorTimeout = () => {
   const minters = process.env.OPERATOR_TIMEOUT || 30 * 24 * 60 * 60; // 30 days
   debug(`Minters: ${minters}`);
