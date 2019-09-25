@@ -300,8 +300,10 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     onlyDisabled(RESOLVE_ACTION)
     {
         // Calculate the amount staked by the wallet
-        uint256 amount = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][true].add(
-            verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByWalletStatus[_wallet][false]
+        uint256 amount = verificationPhaseByPhaseNumber[verificationPhaseNumber]
+        .stakedAmountByWalletStatus[_wallet][true].add(
+            verificationPhaseByPhaseNumber[verificationPhaseNumber]
+            .stakedAmountByWalletStatus[_wallet][false]
         );
 
         // Require no previous stage stage
@@ -383,8 +385,10 @@ contract ResolutionEngine is Resolvable, RBACed, Able {
     internal
     {
         // Require that verification phase is not open
-        require(verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
-            "ResolutionEngine: verification phase is not in unopened state");
+        require(
+            verificationPhaseByPhaseNumber[verificationPhaseNumber.add(1)].state == VerificationPhaseLib.State.Unopened,
+            "ResolutionEngine: verification phase is not in unopened state"
+        );
 
         // Bump verification phase number
         verificationPhaseNumber = verificationPhaseNumber.add(1);

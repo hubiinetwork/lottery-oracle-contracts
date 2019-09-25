@@ -9,7 +9,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, providers, constants: {AddressZero}} = require('ethers');
+const {Wallet, providers} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));

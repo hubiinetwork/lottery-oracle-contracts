@@ -273,7 +273,7 @@ contract('Oracle', (accounts) => {
 
     it('should successfully return calculated payout', async () => {
       (await oracle.stagedAmountByWallet(mockedResolutionEngine.address, wallet))
-          .should.eq.BN(100);
+        .should.eq.BN(100);
     });
   });
 

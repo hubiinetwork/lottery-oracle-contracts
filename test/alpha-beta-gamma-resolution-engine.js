@@ -9,7 +9,7 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const BN = require('bn.js');
 const bnChai = require('bn-chai');
-const {Wallet, providers, constants: {AddressZero}} = require('ethers');
+const {Wallet, providers} = require('ethers');
 
 chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
@@ -810,14 +810,14 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
     describe('if called by non-operator', () => {
       it('should revert', async () => {
         await resolutionEngine.withdrawBounty(accounts[2], {from: oracleAddress})
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
     describe('if called on enabled resolution engine', () => {
       it('should revert', async () => {
         await resolutionEngine.withdrawBounty(accounts[2])
-            .should.be.rejected;
+          .should.be.rejected;
       });
     });
 
@@ -826,7 +826,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
       beforeEach(async () => {
         bountyAmount = (await resolutionEngine.metricsByVerificationPhaseNumber(
-            await resolutionEngine.verificationPhaseNumber()
+          await resolutionEngine.verificationPhaseNumber()
         )).bountyAmount;
 
         await stakeToken.mint(resolutionEngine.address, bountyAmount);
@@ -848,7 +848,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
       beforeEach(async () => {
         bountyAmount = (await resolutionEngine.metricsByVerificationPhaseNumber(
-            await resolutionEngine.verificationPhaseNumber()
+          await resolutionEngine.verificationPhaseNumber()
         )).bountyAmount;
 
         await stakeToken.mint(resolutionEngine.address, bountyAmount);

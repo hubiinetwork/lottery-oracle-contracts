@@ -162,7 +162,7 @@ contract('*', (accounts) => {
         await operator.withdrawAllocatedBounty(naiveTotalResolutionEngine.address, accounts[2]);
 
         (await stakeToken.balanceOf(accounts[2])).should.eq.BN(
-            balanceBeforeAccount2.add(bountyAmount)
+          balanceBeforeAccount2.add(bountyAmount)
         );
       });
     });
@@ -179,7 +179,7 @@ contract('*', (accounts) => {
         await operator.withdrawUnallocatedBounty(bountyFund.address, accounts[2]);
 
         (await stakeToken.balanceOf(accounts[2])).should.eq.BN(
-            balanceBeforeAccount2.add(bountyAmount)
+          balanceBeforeAccount2.add(bountyAmount)
         );
       });
     });
