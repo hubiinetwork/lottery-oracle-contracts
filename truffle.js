@@ -41,7 +41,7 @@ module.exports = {
       network_id: '1',
       gas: 8000000,
       skipDryRun: true, // default: false for public nets
-      gasPrice: 20000000000, // default: 20 Gwei
+      gasPrice: 35000000000, // default: 20 Gwei
       timeoutBlocks: 200 // minimum/default: 50
       // confirmations: 2,       // default: 0
     }

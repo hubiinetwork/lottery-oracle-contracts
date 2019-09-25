@@ -27,8 +27,6 @@ const getNetworkCredentials = (network) => {
   }
 };
 
-exports.getNetworkCredentials = getNetworkCredentials;
-
 const unlockAccount = async (web3, account, password) => {
   if (!unlockByAccount.get(account)) {
     unlockByAccount.set(account, true);
