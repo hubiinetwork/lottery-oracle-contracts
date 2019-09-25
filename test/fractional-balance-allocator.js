@@ -18,7 +18,7 @@ const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator
 const StakeToken = artifacts.require('StakeToken');
 const MockedBountyFund = artifacts.require('MockedBountyFund');
 
-contract('FractionalBalanceAllocator', () => {
+contract('FractionalBalanceAllocator', (accounts) => {
   let allocator, stakeToken, bountyFund;
 
   beforeEach(async () => {
@@ -30,6 +30,62 @@ contract('FractionalBalanceAllocator', () => {
       allocator.address.should.have.lengthOf(42);
 
       (await allocator.fraction()).should.eq.BN(web3.utils.toBN(1e17));
+    });
+  });
+
+  describe('freeze()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        await allocator.freeze({from: accounts[1]})
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner', () => {
+      it('should successfully freeze', async () => {
+        const result = await allocator.freeze();
+
+        result.logs[0].event.should.equal('Frozen');
+
+        (await allocator.frozen()).should.be.true;
+      });
+    });
+  });
+
+  describe('setFraction()', () => {
+    describe('if called by non-owner', () => {
+      it('should revert', async () => {
+        await allocator.setFraction(web3.utils.toBN(5e17), {from: accounts[1]})
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called after allocator was frozen', () => {
+      beforeEach(async () => {
+        await allocator.freeze();
+      });
+
+      it('should revert', async () => {
+        await allocator.setFraction(web3.utils.toBN(5e17))
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called with argument out of bounds', () => {
+      it('should revert', async () => {
+        await allocator.setFraction(web3.utils.toBN(2e18))
+          .should.be.rejected;
+      });
+    });
+
+    describe('if called by owner on non-frozen allocator with sizeable argument', () => {
+      it('should successfully set the bounty allocator', async () => {
+        const result = await allocator.setFraction(web3.utils.toBN(5e17));
+
+        result.logs[0].event.should.equal('FractionSet');
+
+        (await allocator.fraction()).should.eq.BN(web3.utils.toBN(5e17));
+      });
     });
   });
 
