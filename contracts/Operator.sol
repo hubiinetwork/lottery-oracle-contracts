@@ -87,11 +87,15 @@ contract Operator is RBACed {
     public
     onlyRoleAccessor(OWNER_ROLE)
     {
-        // Set the timeout
-        disablementTimeoutByResolutionEngine[_resolutionEngine] = 0;
-
         // Initialize resolution engine
         ResolutionEngine resolutionEngine = ResolutionEngine(_resolutionEngine);
+
+        // Require that the resolution engine's resolve action has not been disabled
+        require(!resolutionEngine.disabled(resolutionEngine.RESOLVE_ACTION()),
+            "Operator: resolution engine has already been disabled");
+
+        // Set the timeout
+        disablementTimeoutByResolutionEngine[_resolutionEngine] = 0;
 
         // Enable staking in the resolution engine
         resolutionEngine.enable(resolutionEngine.STAKE_ACTION());
