@@ -108,10 +108,14 @@ contract('Operator', (accounts) => {
       });
     });
 
-    describe('if called by with timeout param less than the minimum', () => {
+    describe('if called with resolution engine that is already disabled', () => {
+      beforeEach(async () => {
+        await mockedResolutionEngine._setDisabled(true);
+      });
+
       it('should revert', async () => {
         await operator.stopDisablementTimer(
-          Wallet.createRandom().address, {from: accounts[0]}
+          mockedResolutionEngine.address
         ).should.be.rejected;
       });
     });
