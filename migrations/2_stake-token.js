@@ -13,7 +13,7 @@ const StakeToken = artifacts.require('./StakeToken');
 
 module.exports = async (deployer, network, accounts) => {
   if ('mainnet' === network)
-    return debug(`Not deploying StakeToken to ${network}`);
+    return debug(`Not deploying to ${network}`);
 
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 

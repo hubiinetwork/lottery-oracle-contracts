@@ -18,6 +18,9 @@ const StakeToken = artifacts.require('./StakeToken.sol');
 const VerificationPhaseLib = artifacts.require('./VerificationPhaseLib.sol');
 
 module.exports = async (deployer, network, accounts) => {
+  if ('mainnet' === network)
+    return debug(`Not deploying to ${network}`);
+
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
   const oracle = await Oracle.deployed();
