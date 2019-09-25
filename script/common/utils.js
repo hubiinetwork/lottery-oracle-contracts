@@ -31,11 +31,13 @@ const unlockAccount = async (web3, account, password) => {
   if (!unlockByAccount.get(account)) {
     unlockByAccount.set(account, true);
 
-    debug(`Unlocking account ${account}...`);
+    debug(`Unlocking account ${account}`);
     await web3.eth.personal.unlockAccount(account, password, unlockTimeInSeconds);
 
     await exports.timeout(3000);
-  }
+
+  } else
+    debug(`Account ${account} found unlocked`);
 
   const lockAccount = async () => {
     if (unlockByAccount.get(account)) {
