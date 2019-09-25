@@ -6,7 +6,7 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
-const debug = require('debug')('2_token');
+const debug = require('debug')('2_stake-token');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const StakeToken = artifacts.require('./StakeToken');

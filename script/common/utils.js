@@ -60,6 +60,7 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
     await unlockAccount(web3, account, secret);
     ownerAccount = account;
   }
+  debug(`Owner account ${ownerAccount} initialized`);
   return ownerAccount;
 };
 
