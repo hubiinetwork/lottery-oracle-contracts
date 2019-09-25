@@ -42,11 +42,11 @@ contract Operator is RBACed {
         _;
     }
 
-    /// @notice Freeze this resolution engine
+    /// @notice Freeze updates to this operator
     /// @dev This operation can not be undone
     function freeze()
-    onlyRoleAccessor(OWNER_ROLE)
     public
+    onlyRoleAccessor(OWNER_ROLE)
     {
         // Set the frozen flag
         frozen = true;
