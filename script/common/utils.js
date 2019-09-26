@@ -12,7 +12,7 @@ const unlockTimeInSeconds = typeof process.env.ETH_UNLOCK_SECONDS === 'undefined
   7200 :
   Number.parseInt(process.env.ETH_UNLOCK_SECONDS);
 
-const isTestNetwork = (network) => {
+exports.isTestNetwork = (network) => {
   return network.includes('develop') || network.includes('test') || network.includes('ganache');
 };
 
@@ -55,7 +55,7 @@ const unlockAccount = async (web3, account, password) => {
 
 exports.initializeOwnerAccount = async (web3, network, accounts) => {
   let ownerAccount;
-  if (isTestNetwork(network))
+  if (exports.isTestNetwork(network))
     ownerAccount = accounts[0];
   else {
     const {account, secret} = getNetworkCredentials(network);

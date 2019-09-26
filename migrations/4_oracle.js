@@ -8,8 +8,8 @@
 const utils = require('../script/common/utils.js');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
-const AddressStoreLib = artifacts.require('./AddressStoreLib.sol');
-const Oracle = artifacts.require('./Oracle.sol');
+const AddressStoreLib = artifacts.require('AddressStoreLib');
+const Oracle = artifacts.require('Oracle');
 
 module.exports = async (deployer, network, accounts) => {
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);

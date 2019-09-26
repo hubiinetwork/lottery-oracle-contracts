@@ -6,19 +6,20 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
+const debug = require('debug')('7_alpha-beta-gamma-resolution-engine');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
-const AlphaBetaGammaResolutionEngine = artifacts.require('./AlphaBetaGammaResolutionEngine.sol');
-const BountyFund = artifacts.require('./BountyFund.sol');
-const ConstantsLib = artifacts.require('./ConstantsLib.sol');
-const FractionalBalanceAllocator = artifacts.require('./FractionalBalanceAllocator.sol');
-const Operator = artifacts.require('./Operator.sol');
-const Oracle = artifacts.require('./Oracle.sol');
-const StakeToken = artifacts.require('./StakeToken.sol');
-const VerificationPhaseLib = artifacts.require('./VerificationPhaseLib.sol');
+const AlphaBetaGammaResolutionEngine = artifacts.require('AlphaBetaGammaResolutionEngine');
+const BountyFund = artifacts.require('BountyFund');
+const ConstantsLib = artifacts.require('ConstantsLib');
+const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
+const Operator = artifacts.require('Operator');
+const Oracle = artifacts.require('Oracle');
+const StakeToken = artifacts.require('StakeToken');
+const VerificationPhaseLib = artifacts.require('VerificationPhaseLib');
 
 module.exports = async (deployer, network, accounts) => {
-  if ('mainnet' === network)
+  if (!utils.isTestNetwork(network))
     return debug(`Not deploying to ${network}`);
 
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
@@ -26,7 +27,7 @@ module.exports = async (deployer, network, accounts) => {
   const oracle = await Oracle.deployed();
   const operator = await Operator.deployed();
 
-  const stakeToken = 'mainnet' === network ? utils.getStakeToken() : (await StakeToken.deployed()).address;
+  const stakeToken = !utils.isTestNetwork(network) ? utils.getStakeToken() : (await StakeToken.deployed()).address;
   const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getAlphaBetaGammaBountyFraction());
