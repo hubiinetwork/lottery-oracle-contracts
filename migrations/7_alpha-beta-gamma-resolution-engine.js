@@ -9,7 +9,7 @@ const utils = require('../script/common/utils.js');
 const debug = require('debug')('7_alpha-beta-gamma-resolution-engine');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
-const AlphaBetaGammaResolutionEngine = artifacts.require('AlphaBetaGammaResolutionEngine');
+const BergenResolutionEngine = artifacts.require('BergenResolutionEngine');
 const BountyFund = artifacts.require('BountyFund');
 const ConstantsLib = artifacts.require('ConstantsLib');
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
@@ -39,12 +39,12 @@ module.exports = async (deployer, network, accounts) => {
   const alpha = web3.utils.toBN(utils.getAlphaBetaGammaCriterionAlpha());
   const beta = web3.utils.toBN(utils.getAlphaBetaGammaCriterionBeta());
   const gamma = web3.utils.toBN(utils.getAlphaBetaGammaCriterionGamma());
-  await AlphaBetaGammaResolutionEngine.link({
+  await BergenResolutionEngine.link({
     ConstantsLib: (await ConstantsLib.deployed()).address,
     VerificationPhaseLib: (await VerificationPhaseLib.deployed()).address
   });
   const resolutionEngine = await deployer.deploy(
-    AlphaBetaGammaResolutionEngine, oracle.address, operator.address, bountyFund.address,
+    BergenResolutionEngine, oracle.address, operator.address, bountyFund.address,
     alpha, beta, gamma,
     {from: ownerAccount}
   );
