@@ -6,7 +6,7 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
-const debug = require('debug')('7_alpha-beta-gamma-resolution-engine');
+const debug = require('debug')('7_bergen-resolution-engine');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const BergenResolutionEngine = artifacts.require('BergenResolutionEngine');
@@ -27,18 +27,18 @@ module.exports = async (deployer, network, accounts) => {
   const oracle = await Oracle.deployed();
   const operator = await Operator.deployed();
 
-  const stakeToken = !utils.isTestNetwork(network) ? utils.getStakeToken() : (await StakeToken.deployed()).address;
+  const stakeToken = utils.getStakeToken() || (await StakeToken.deployed()).address;
   const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
-  const bountyFraction = web3.utils.toBN(utils.getAlphaBetaGammaBountyFraction());
+  const bountyFraction = web3.utils.toBN(utils.getBergenBountyFraction());
   await FractionalBalanceAllocator.link({
     ConstantsLib: (await ConstantsLib.deployed()).address
   });
   const bountyAllocator = await deployer.deploy(FractionalBalanceAllocator, bountyFraction, {from: ownerAccount});
 
-  const alpha = web3.utils.toBN(utils.getAlphaBetaGammaCriterionAlpha());
-  const beta = web3.utils.toBN(utils.getAlphaBetaGammaCriterionBeta());
-  const gamma = web3.utils.toBN(utils.getAlphaBetaGammaCriterionGamma());
+  const alpha = web3.utils.toBN(utils.getBergenCriterionAlpha());
+  const beta = web3.utils.toBN(utils.getBergenCriterionBeta());
+  const gamma = web3.utils.toBN(utils.getBergenCriterionGamma());
   await BergenResolutionEngine.link({
     ConstantsLib: (await ConstantsLib.deployed()).address,
     VerificationPhaseLib: (await VerificationPhaseLib.deployed()).address
