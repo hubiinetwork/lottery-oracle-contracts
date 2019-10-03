@@ -19,7 +19,7 @@ const StakeToken = artifacts.require('StakeToken');
 const VerificationPhaseLib = artifacts.require('VerificationPhaseLib');
 
 module.exports = async (deployer, network, accounts) => {
-  if (!utils.isTestNetwork(network))
+  if (network.includes('mainnet'))
     return debug(`Not deploying to ${network}`);
 
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
