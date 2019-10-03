@@ -11,14 +11,15 @@ import {ResolutionEngine} from "./ResolutionEngine.sol";
 import {ConstantsLib} from "./ConstantsLib.sol";
 import {Math} from "openzeppelin-solidity/contracts/math/Math.sol";
 
-/// @title AlphaBetaGammaResolutionEngine
+/// @title BergenResolutionEngine
 /// @author Mark Briscombe <mark@hubii.com> & Jens Ivar Jørdre <jensivar@hubii.com>
-/// @notice A resolution engine with Bounty with Ratio, Percentage and Addresses
+/// @notice A resolution engine with criteria of Total Stake Amount relative to Bounty,
+///   Directional Stake Fraction and Total Staking Wallets Count
 /// Resolve the staking market when:
 /// - The total number of tokens staked on the market is >= alpha times the number of tokens posted for the Bounty AND;
 /// - The percentage of tokens staked on either option across the market is >= beta % AND;
 /// - The total number of addresses staking tokens is >= gamma
-contract AlphaBetaGammaResolutionEngine is Resolvable, ResolutionEngine {
+contract BergenResolutionEngine is Resolvable, ResolutionEngine {
 
     event NextAlphaSet(uint256 alpha);
     event NextBetaSet(uint256 beta);
