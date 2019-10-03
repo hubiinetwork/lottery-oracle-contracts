@@ -23,7 +23,7 @@ module.exports = async (deployer, network, accounts) => {
   const oracle = await Oracle.deployed();
   const operator = await Operator.deployed();
 
-  const stakeToken = !utils.isTestNetwork(network) ? utils.getStakeToken() : (await StakeToken.deployed()).address;
+  const stakeToken = utils.getStakeToken() || (await StakeToken.deployed()).address;
   const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());

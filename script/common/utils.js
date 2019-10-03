@@ -86,38 +86,38 @@ exports.lockAddress = async (web3, address) => {
 };
 
 exports.getNaiveTotalBountyFraction = () => {
-  const bountyFraction = process.env.NAIVE_TOTAL_BOUNTY_FRACTION || 1e17;
+  const bountyFraction = process.env.NAIVE_TOTAL_BOUNTY_FRACTION || '50000000000000000'; // 5e16
   debug(`Naive total bounty fraction: ${bountyFraction}`);
   return bountyFraction;
 };
 
 exports.getNaiveTotalCriterionAmount = () => {
-  const criterionAmount = process.env.NAIVE_TOTAL_CRITERION_AMOUNT || 1000;
+  const criterionAmount = process.env.NAIVE_TOTAL_CRITERION_AMOUNT || '50000000000000000000'; // 5e19
   debug(`Naive total amount criterion: ${criterionAmount}`);
   return criterionAmount;
 };
 
-exports.getAlphaBetaGammaBountyFraction = () => {
-  const bountyFraction = process.env.ALPHA_BETA_GAMMA_BOUNTY_FRACTION || 1e17;
-  debug(`Alpha-beta-gamma bounty fraction: ${bountyFraction}`);
+exports.getBergenBountyFraction = () => {
+  const bountyFraction = process.env.BERGEN_BOUNTY_FRACTION || '50000000000000000'; // 5e16
+  debug(`Bergen bounty fraction: ${bountyFraction}`);
   return bountyFraction;
 };
 
-exports.getAlphaBetaGammaCriterionAlpha = () => {
-  const alpha = process.env.ALPHA_BETA_GAMMA_CRITERION_ALPHA || 2;
-  debug(`Alpha-beta-gamma alpha criterion: ${alpha}`);
+exports.getBergenCriterionAlpha = () => {
+  const alpha = process.env.BERGEN_CRITERION_ALPHA || 10;
+  debug(`Bergen alpha criterion: ${alpha}`);
   return alpha;
 };
 
-exports.getAlphaBetaGammaCriterionBeta = () => {
-  const beta = process.env.ALPHA_BETA_GAMMA_CRITERION_BETA || 6e17;
-  debug(`Alpha-beta-gamma beta criterion: ${beta}`);
+exports.getBergenCriterionBeta = () => {
+  const beta = process.env.BERGEN_CRITERION_BETA || '660000000000000000'; // 66e16
+  debug(`Bergen beta criterion: ${beta}`);
   return beta;
 };
 
-exports.getAlphaBetaGammaCriterionGamma = () => {
-  const gamma = process.env.ALPHA_BETA_GAMMA_CRITERION_GAMMA || 3;
-  debug(`Alpha-beta-gamma gamma criterion: ${gamma}`);
+exports.getBergenCriterionGamma = () => {
+  const gamma = process.env.BERGEN_CRITERION_GAMMA || 5;
+  debug(`Bergen gamma criterion: ${gamma}`);
   return gamma;
 };
 
