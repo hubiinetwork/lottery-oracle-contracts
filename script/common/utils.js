@@ -5,6 +5,7 @@
  */
 
 'use strict';
+const {Wallet} = require('ethers');
 const debug = require('debug')('utils');
 
 const unlockByAccount = new Map();
@@ -14,6 +15,10 @@ const unlockTimeInSeconds = typeof process.env.ETH_UNLOCK_SECONDS === 'undefined
 
 exports.isTestNetwork = (network) => {
   return network.includes('develop') || network.includes('test') || network.includes('ganache');
+};
+
+exports.isInfuraNetwork = (network) => {
+  return network.includes('infura');
 };
 
 const getNetworkCredentials = (network) => {
@@ -57,6 +62,8 @@ exports.initializeOwnerAccount = async (web3, network, accounts) => {
   let ownerAccount;
   if (exports.isTestNetwork(network))
     ownerAccount = accounts[0];
+  else if (exports.isInfuraNetwork(network))
+    ownerAccount = Wallet.fromMnemonic(process.env.MNEMONIC).address;
   else {
     const {account, secret} = getNetworkCredentials(network);
     await unlockAccount(web3, account, secret);
