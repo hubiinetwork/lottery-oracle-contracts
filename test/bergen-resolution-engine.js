@@ -16,11 +16,11 @@ chai.use(bnChai(BN));
 chai.should();
 
 const StakeToken = artifacts.require('StakeToken');
-const AlphaBetaGammaResolutionEngine = artifacts.require('AlphaBetaGammaResolutionEngine');
+const BergenResolutionEngine = artifacts.require('BergenResolutionEngine');
 const MockedBountyFund = artifacts.require('MockedBountyFund');
 const MockedAllocator = artifacts.require('MockedAllocator');
 
-contract('AlphaBetaGammaResolutionEngine', (accounts) => {
+contract('BergenResolutionEngine', (accounts) => {
   let ownerAddress, operatorAddress, oracleAddress;
   let provider;
   let nextAlpha, nextBeta, nextGamma;
@@ -48,7 +48,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
     bountyAllocator = await MockedAllocator.new();
 
-    resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+    resolutionEngine = await BergenResolutionEngine.new(
       oracleAddress, operatorAddress, bountyFund.address,
       nextAlpha, nextBeta, nextGamma
     );
@@ -60,7 +60,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
   describe('constructor()', () => {
     beforeEach(async () => {
-      resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+      resolutionEngine = await BergenResolutionEngine.new(
         oracleAddress, operatorAddress, bountyFund.address,
         nextAlpha, nextBeta, nextGamma
       );
@@ -132,7 +132,7 @@ contract('AlphaBetaGammaResolutionEngine', (accounts) => {
 
   describe('initialize()', () => {
     beforeEach(async () => {
-      resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+      resolutionEngine = await BergenResolutionEngine.new(
         oracleAddress, operatorAddress, bountyFund.address,
         nextAlpha, nextBeta, nextGamma
       );

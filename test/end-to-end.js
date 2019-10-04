@@ -15,7 +15,7 @@ chai.use(chaiAsPromised);
 chai.use(bnChai(BN));
 chai.should();
 
-const AlphaBetaGammaResolutionEngine = artifacts.require('AlphaBetaGammaResolutionEngine');
+const BergenResolutionEngine = artifacts.require('BergenResolutionEngine');
 const BountyFund = artifacts.require('BountyFund');
 const FractionalBalanceAllocator = artifacts.require('FractionalBalanceAllocator');
 const NaiveTotalResolutionEngine = artifacts.require('NaiveTotalResolutionEngine');
@@ -361,8 +361,8 @@ contract('*', (accounts) => {
     });
   });
 
-  // Focus on on the AlphaBetaGammaResolutionEngine
-  describe('AlphaBetaGammaResolutionEngine', () => {
+  // Focus on on the BergenResolutionEngine
+  describe('BergenResolutionEngine', () => {
     let resolutionEngine;
     let balanceBeforeAccount1, balanceBeforeAccount2, balanceBeforeAccount3;
 
@@ -398,7 +398,7 @@ contract('*', (accounts) => {
       await stakeToken.approve(oracle.address, 1000, {from: accounts[3]});
 
       // Deploy naïve total resolution engine and register it with oracle
-      resolutionEngine = await AlphaBetaGammaResolutionEngine.new(
+      resolutionEngine = await BergenResolutionEngine.new(
         oracle.address, operator.address, bountyFund.address,
         2, web3.utils.toBN(6e17), 3
       );
