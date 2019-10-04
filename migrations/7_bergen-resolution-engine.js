@@ -19,15 +19,14 @@ const StakeToken = artifacts.require('StakeToken');
 const VerificationPhaseLib = artifacts.require('VerificationPhaseLib');
 
 module.exports = async (deployer, network, accounts) => {
-  if (network.includes('mainnet'))
-    return debug(`Not deploying to ${network}`);
-
   const ownerAccount = await utils.initializeOwnerAccount(web3, network, accounts);
 
   const oracle = await Oracle.deployed();
   const operator = await Operator.deployed();
 
   const stakeToken = utils.getStakeToken() || (await StakeToken.deployed()).address;
+  debug(`Stake token: ${stakeToken}`);
+
   const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getBergenBountyFraction());
