@@ -86,19 +86,19 @@ exports.lockAddress = async (web3, address) => {
 };
 
 exports.getNaiveTotalBountyFraction = () => {
-  const bountyFraction = process.env.NAIVE_TOTAL_BOUNTY_FRACTION || 5e16;
+  const bountyFraction = process.env.NAIVE_TOTAL_BOUNTY_FRACTION || '50000000000000000'; // 5e16
   debug(`Naive total bounty fraction: ${bountyFraction}`);
   return bountyFraction;
 };
 
 exports.getNaiveTotalCriterionAmount = () => {
-  const criterionAmount = process.env.NAIVE_TOTAL_CRITERION_AMOUNT || 50000000000000000000;
+  const criterionAmount = process.env.NAIVE_TOTAL_CRITERION_AMOUNT || '50000000000000000000'; // 5e19
   debug(`Naive total amount criterion: ${criterionAmount}`);
   return criterionAmount;
 };
 
 exports.getBergenBountyFraction = () => {
-  const bountyFraction = process.env.BERGEN_BOUNTY_FRACTION || 5e16;
+  const bountyFraction = process.env.BERGEN_BOUNTY_FRACTION || '50000000000000000'; // 5e16
   debug(`Bergen bounty fraction: ${bountyFraction}`);
   return bountyFraction;
 };
@@ -110,7 +110,7 @@ exports.getBergenCriterionAlpha = () => {
 };
 
 exports.getBergenCriterionBeta = () => {
-  const beta = process.env.BERGEN_CRITERION_BETA || 66e16;
+  const beta = process.env.BERGEN_CRITERION_BETA || '660000000000000000'; // 66e16
   debug(`Bergen beta criterion: ${beta}`);
   return beta;
 };
