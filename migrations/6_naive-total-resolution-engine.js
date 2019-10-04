@@ -6,6 +6,7 @@
 
 'use strict';
 const utils = require('../script/common/utils.js');
+const debug = require('debug')('6_naive-total-resolution-engine');
 
 // Using './Contract.sol' rather than 'Contract' because of https://github.com/trufflesuite/truffle/issues/611
 const BountyFund = artifacts.require('BountyFund');
@@ -24,6 +25,8 @@ module.exports = async (deployer, network, accounts) => {
   const operator = await Operator.deployed();
 
   const stakeToken = utils.getStakeToken() || (await StakeToken.deployed()).address;
+  debug(`Stake token: ${stakeToken}`);
+
   const bountyFund = await deployer.deploy(BountyFund, stakeToken, operator.address, {from: ownerAccount});
 
   const bountyFraction = web3.utils.toBN(utils.getNaiveTotalBountyFraction());
