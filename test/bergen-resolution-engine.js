@@ -290,24 +290,24 @@ contract('BergenResolutionEngine', (accounts) => {
     describe('if alpha resolution delta amount dominates', () => {
       beforeEach(async () => {
         await resolutionEngine.stake(accounts[2], true, 1, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[3], false, 2, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[4], false, 3, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 1, {from: oracleAddress});
       });
 
-      it('should return false', async () => {
-        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(14);
+      it('should the amount of alpha resolution delta amount', async () => {
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(18);
+        (await resolutionEngine.resolutionDeltaAmount(false)).should.eq.BN(18);
       });
     });
 
-    describe('if alpha resolution delta amount dominates', () => {
+    describe('if beta resolution delta amount dominates', () => {
       beforeEach(async () => {
-        await resolutionEngine.stake(accounts[2], true, 10, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[3], false, 20, {from: oracleAddress});
-        await resolutionEngine.stake(accounts[4], true, 10, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[2], true, 9, {from: oracleAddress});
+        await resolutionEngine.stake(accounts[3], false, 10, {from: oracleAddress});
       });
 
-      it('should return false', async () => {
-        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(10);
+      it('should the amount of beta resolution delta amount', async () => {
+        (await resolutionEngine.resolutionDeltaAmount(true)).should.eq.BN(6);
+        (await resolutionEngine.resolutionDeltaAmount(false)).should.eq.BN(4);
       });
     });
   });
