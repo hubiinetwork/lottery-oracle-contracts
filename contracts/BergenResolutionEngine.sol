@@ -70,34 +70,56 @@ contract BergenResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (uint256)
     {
+        // Obtain alpha * bounty amount
         uint256 scaledBountyAmount = alphaByPhaseNumber(verificationPhaseNumber)
         .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].bountyAmount);
-        return (
-        scaledBountyAmount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount ?
+
+        return scaledBountyAmount > verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount ?
         scaledBountyAmount.sub(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount) :
-        0
-        );
+        0;
     }
 
     /// @notice Return the amount needed to resolve the beta criterion for the given status
     /// @param _status The concerned status
     /// @return the amount needed to obtain to resolve the beta criterion
+    ///
+    /// With E, A and a respectively representing the entirety (100%) value, the total amount staked and
+    /// the amount staked on the given status the initial delta amount is calculated as
+    ///
+    ///    delta = (beta * A - E * a) / (E - beta)
+    ///
+    /// If there is a non-zero remainder in the calculation the delta is incremented by an additional unit
     function betaResolutionDeltaAmount(bool _status)
     public
     view
     returns (uint256)
     {
+        // Obtain beta * total amount staked
         uint256 scaledStakedAmount = betaByPhaseNumber(verificationPhaseNumber)
         .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount);
+
+        // Obtain entirety * directional amount staked
         uint256 scaledStatusStakedAmount = ConstantsLib.PARTS_PER()
         .mul(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[_status]);
-        return (
-        scaledStatusStakedAmount < scaledStakedAmount ?
-        scaledStakedAmount.sub(scaledStatusStakedAmount).div(
-            ConstantsLib.PARTS_PER().sub(betaByPhaseNumber(verificationPhaseNumber))
-        ) :
-        0
-        );
+
+        // If scaled amounts are exactly equal return 0
+        if (scaledStakedAmount <= scaledStatusStakedAmount)
+            return 0;
+
+        // Else calculate the delta and add 1 for round off error
+        else {
+            uint256 scaledAmountsDiff = scaledStakedAmount.sub(scaledStatusStakedAmount);
+            uint256 dividend = ConstantsLib.PARTS_PER().sub(betaByPhaseNumber(verificationPhaseNumber));
+
+            // Calculate the minimum delta
+            uint256 delta = scaledAmountsDiff.div(dividend);
+
+            // Add 1 to delta if the above calculation left a remainder
+            if (0 != scaledAmountsDiff.mod(dividend))
+                delta = delta.add(1);
+
+            return delta;
+        }
     }
 
     /// @notice Return the number of staking wallets needed to resolve the gamma criterion
@@ -140,14 +162,17 @@ contract BergenResolutionEngine is Resolvable, ResolutionEngine {
     view
     returns (bool)
     {
+        // Return false if nothing was staked
         if (0 == verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount)
             return false;
 
+        // Determine whether true criterion was met
         bool trueCriterionMet = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[true]
         .mul(ConstantsLib.PARTS_PER())
         .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount)
         >= betaByPhaseNumber(verificationPhaseNumber);
 
+        // Determine whether false criterion was met
         bool falseCriterionMet = verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmountByStatus[false]
         .mul(ConstantsLib.PARTS_PER())
         .div(verificationPhaseByPhaseNumber[verificationPhaseNumber].stakedAmount)
@@ -222,7 +247,7 @@ contract BergenResolutionEngine is Resolvable, ResolutionEngine {
     {
         return verificationPhaseByPhaseNumber[_verificationPhaseNumber].uintCriteria[ALPHA_INDEX];
     }
-    
+
     /// @notice Get the beta parameter by the given verification phase number
     /// @param _verificationPhaseNumber The concerned verification phase number
     /// @return the beta value
