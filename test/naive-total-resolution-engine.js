@@ -232,9 +232,18 @@ contract('NaiveTotalResolutionEngine', (accounts) => {
     });
 
     describe('if called by oracle', () => {
-      it('should successfully update metrics', async () => {
-        const result = await resolutionEngine.stake(accounts[2], true, 100, {from: oracleAddress});
-        result.logs[0].event.should.equal('Staked');
+      describe('if called with non-zero amount', () => {
+        it('should successfully stake', async () => {
+          const result = await resolutionEngine.stake(accounts[2], true, 100, {from: oracleAddress});
+          result.logs[0].event.should.equal('Staked');
+        });
+      });
+
+      describe('if called with zero amount', () => {
+        it('should successfully stake', async () => {
+          const result = await resolutionEngine.stake(accounts[2], true, 0, {from: oracleAddress});
+          result.logs[0].event.should.equal('Staked');
+        });
       });
     });
   });
