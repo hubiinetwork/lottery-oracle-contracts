@@ -112,7 +112,8 @@ contract Operator is RBACed {
     view
     returns (bool)
     {
-        return block.timestamp >= disablementTimeoutByResolutionEngine[_resolutionEngine];
+        return 0 < disablementTimeoutByResolutionEngine[_resolutionEngine] &&
+        block.timestamp >= disablementTimeoutByResolutionEngine[_resolutionEngine];
     }
 
     /// @notice Disable the given resolution engine
@@ -124,7 +125,7 @@ contract Operator is RBACed {
         // Require that the disablement timer has expired
         require(
             isDisablementTimerExpired(_resolutionEngine),
-            "Operator: disablement timer is not expired"
+            "Operator: disablement timer is not started or not expired"
         );
 
         // Initialize resolution engine

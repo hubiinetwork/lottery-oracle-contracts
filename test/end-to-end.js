@@ -92,7 +92,7 @@ contract('*', (accounts) => {
       it('should stop successfully', async () => {
         await operator.stopDisablementTimer(naiveTotalResolutionEngine.address);
 
-        (await operator.isDisablementTimerExpired(naiveTotalResolutionEngine.address)).should.be.true;
+        (await operator.isDisablementTimerExpired(naiveTotalResolutionEngine.address)).should.be.false;
 
         (await naiveTotalResolutionEngine.disabled(await naiveTotalResolutionEngine.STAKE_ACTION())).should.be.false;
         (await naiveTotalResolutionEngine.disabled(await naiveTotalResolutionEngine.RESOLVE_ACTION())).should.be.false;

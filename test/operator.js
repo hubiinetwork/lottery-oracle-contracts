@@ -140,11 +140,18 @@ contract('Operator', (accounts) => {
   });
 
   describe('isDisablementTimerExpired()', () => {
-    beforeEach(async () => {
-      await operator.startDisablementTimer(mockedResolutionEngine.address, 2);
+    describe('if disablement timer has not started', () => {
+      it('should return false', async () => {
+        (await operator.isDisablementTimerExpired(mockedResolutionEngine.address))
+          .should.be.false;
+      });
     });
 
     describe('if called before disablement timer has expired', () => {
+      beforeEach(async () => {
+        await operator.startDisablementTimer(mockedResolutionEngine.address, 2);
+      });
+
       it('should return false', async () => {
         (await operator.isDisablementTimerExpired(mockedResolutionEngine.address))
           .should.be.false;
@@ -153,6 +160,8 @@ contract('Operator', (accounts) => {
 
     describe('if called after disablement timer has expired', () => {
       beforeEach(async () => {
+        await operator.startDisablementTimer(mockedResolutionEngine.address, 2);
+
         // TODO Factor this fast forward out into separate function in ./helpers.js
         await provider.send('evm_increaseTime', [3]);
         await provider.send('evm_mine');
